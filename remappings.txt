@@ -1,4 +1,6 @@
-@openzeppelin=lib/openzeppelin-contracts/
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
+forge-std/=lib/forge-std/src/
 
 @superfluid-finance/ethereum-contracts/=lib/superfluid-protocol-monorepo/packages/ethereum-contracts/
 @superfluid-finance/solidity-semantic-money/=lib/superfluid-protocol-monorepo/packages/solidity-semantic-money/

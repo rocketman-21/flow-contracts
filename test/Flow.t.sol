@@ -26,7 +26,7 @@ contract FlowTest is Test {
 
     address erc721Votes;
 
-    address manager = address(0x198);
+    address manager = address(0x1998);
 
     function setUp() public virtual {
         flowImpl = address(new Flow());
