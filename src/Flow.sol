@@ -61,8 +61,8 @@ contract Flow is
 
         snapshotBlock = block.number;
 
-        // Set the pool config
-        _setSuperTokenAndCreatePool(_superToken);
+        superToken = ISuperToken(_superToken);
+        pool = superToken.createPool(address(this), poolConfig);
 
         // if total member units is 0, set 1 member unit to address(this)
         // do this to prevent distribution pool from resetting flow rate to 0
@@ -71,15 +71,6 @@ contract Flow is
         }
 
         emit FlowInitialized(msg.sender, _superToken, _flowImpl);
-    }
-
-    /**
-     * @notice Sets the SuperToken and creates a pool from it, can only be called by the owner
-     * @param _superToken The address of the SuperToken to be set and used for the pool
-     */
-    function _setSuperTokenAndCreatePool(address _superToken) internal {
-        superToken = ISuperToken(_superToken);
-        pool = superToken.createPool(address(this), poolConfig);
     }
 
     /**

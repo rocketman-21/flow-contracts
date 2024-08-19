@@ -2,8 +2,9 @@
 pragma solidity ^0.8.26;
 
 import {FlowTest} from "./Flow.t.sol";
-import {IFlowEvents} from "../src/interfaces/IFlow.sol";
+import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
 import {Flow} from "../src/Flow.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract BasicFlowTest is FlowTest {
 
@@ -58,17 +59,33 @@ contract BasicFlowTest is FlowTest {
         deployFlow(votingPowerAddress, address(superToken));
     }
 
-    // function test_initializeFailures() public {
-    //     // Test initialization with zero address for _nounsToken
-    //     vm.expectRevert(Flow.ADDRESS_ZERO.selector);
-    //     Flow(flow).initialize(address(0), address(superToken), address(flowImpl), flowParams);
+    function testInitializeFailures() public {
+        // Test initialization with zero address for _nounsToken
+        address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+        vm.prank(address(manager));
+        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
+        IFlow(flowProxy).initialize({
+            nounsToken: address(0),
+            superToken: address(superToken),
+            flowImpl: flowImpl,
+            flowParams: flowParams
+        });
 
-    //     // Test initialization with zero address for _flowImpl
-    //     vm.expectRevert(Flow.ADDRESS_ZERO.selector);
-    //     Flow(flow).initialize(address(0x1), address(superToken), address(0), flowParams);
+        // Test initialization with zero address for _flowImpl
+        address originalFlowImpl = flowImpl;
+        flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+        vm.prank(address(manager));
+        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
+        IFlow(flowProxy).initialize({
+            nounsToken: address(0x1),
+            superToken: address(superToken),
+            flowImpl: address(0),
+            flowParams: flowParams
+        });
+        flowImpl = originalFlowImpl;
 
-    //     // Test double initialization (should revert)
-    //     vm.expectRevert("Initializable: contract is already initialized");
-    //     Flow(flow).initialize(address(0x1), address(superToken), address(flowImpl), flowParams);
-    // }
+        // Test double initialization (should revert)
+        vm.expectRevert("Initializable: contract is already initialized");
+        Flow(payable(flow)).initialize(address(0x1), address(superToken), address(flowImpl), flowParams);
+    }
 }
