@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.26;
 
-import { Test } from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
-import { IFlow } from "../src/interfaces/IFlow.sol";
-import { Flow } from "../src/Flow.sol";
+import {IFlow} from "../src/interfaces/IFlow.sol";
+import {Flow} from "../src/Flow.sol";
 
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
-import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
-import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
-import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
-import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
+import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import {PoolConfig} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import {ERC1820RegistryCompiled} from
+    "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
+import {SuperfluidFrameworkDeployer} from
+    "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
+import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
+import {SuperToken} from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
 
 contract FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
@@ -48,13 +50,8 @@ contract FlowTest is Test {
         deployer = new SuperfluidFrameworkDeployer();
         deployer.deployTestFramework();
         sf = deployer.getFramework();
-        (TestToken underlyingToken, SuperToken token) = deployer.deployWrapperSuperToken(
-            "MR Token",
-            "MRx",
-            18,
-            10000000,
-            manager
-        );
+        (TestToken underlyingToken, SuperToken token) =
+            deployer.deployWrapperSuperToken("MR Token", "MRx", 18, 10000000, manager);
 
         superToken = token;
 

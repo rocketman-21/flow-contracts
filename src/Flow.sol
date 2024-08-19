@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.26;
 
-import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
-import { IFlow } from "./interfaces/IFlow.sol";
-import { IERC721Checkpointable } from "./interfaces/IERC721Checkpointable.sol";
+import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
+import {IFlow} from "./interfaces/IFlow.sol";
+import {IERC721Checkpointable} from "./interfaces/IERC721Checkpointable.sol";
 
-import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import { EIP712Upgradeable } from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
-import { PausableUpgradeable } from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
-import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
 contract Flow is
     IFlow,
@@ -38,12 +38,10 @@ contract Flow is
      * @param _flowImpl The address of the flow implementation contract
      * @param _flowParams The parameters for the flow contract
      */
-    function initialize(
-        address _nounsToken,
-        address _superToken,
-        address _flowImpl,
-        FlowParams memory _flowParams
-    ) public initializer {
+    function initialize(address _nounsToken, address _superToken, address _flowImpl, FlowParams memory _flowParams)
+        public
+        initializer
+    {
         if (_nounsToken == address(0)) revert ADDRESS_ZERO();
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
 
@@ -187,7 +185,7 @@ contract Flow is
         uint128 memberUnits = currentUnits + newUnits;
 
         // update votes, track recipient, bps, and total member units assigned
-        votes[voter].push(VoteAllocation({ recipient: recipient, bps: bps, memberUnits: newUnits }));
+        votes[voter].push(VoteAllocation({recipient: recipient, bps: bps, memberUnits: newUnits}));
 
         // update member units
         updateMemberUnits(recipient, memberUnits);
@@ -228,10 +226,10 @@ contract Flow is
      * @param recipients The addresses of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function setVotesAllocations(
-        address[] memory recipients,
-        uint32[] memory percentAllocations
-    ) external nonReentrant {
+    function setVotesAllocations(address[] memory recipients, uint32[] memory percentAllocations)
+        external
+        nonReentrant
+    {
         _setVotesAllocations(msg.sender, recipients, percentAllocations);
     }
 
@@ -241,11 +239,9 @@ contract Flow is
      * @param recipients The addresses of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function _setVotesAllocations(
-        address voter,
-        address[] memory recipients,
-        uint32[] memory percentAllocations
-    ) internal {
+    function _setVotesAllocations(address voter, address[] memory recipients, uint32[] memory percentAllocations)
+        internal
+    {
         uint256 weight = getAccountVotingPower(voter);
 
         // Ensure the voter has enough voting power to vote
@@ -311,14 +307,15 @@ contract Flow is
         superToken.distributeFlow(address(this), pool, _flowRate);
     }
 
-    /** @notice Sums array of uint32s
+    /**
+     * @notice Sums array of uint32s
      *  @param numbers Array of uint32s to sum
      *  @return sum Sum of `numbers`.
      */
     function _getSum(uint32[] memory numbers) internal pure returns (uint32 sum) {
         // overflow should be impossible in for-loop index
         uint256 numbersLength = numbers.length;
-        for (uint256 i = 0; i < numbersLength; ) {
+        for (uint256 i = 0; i < numbersLength;) {
             sum += numbers[i];
             unchecked {
                 // overflow should be impossible in for-loop index
@@ -327,15 +324,17 @@ contract Flow is
         }
     }
 
-    /** @notice Multiplies an amount by a scaled percentage
+    /**
+     * @notice Multiplies an amount by a scaled percentage
      *  @param amount Amount to get `scaledPercentage` of
      *  @param scaledPercent Percent scaled by PERCENTAGE_SCALE
      *  @return scaledAmount Percent of `amount`.
      */
-    function _scaleAmountByPercentage(
-        uint256 amount,
-        uint256 scaledPercent
-    ) internal pure returns (uint256 scaledAmount) {
+    function _scaleAmountByPercentage(uint256 amount, uint256 scaledPercent)
+        internal
+        pure
+        returns (uint256 scaledAmount)
+    {
         // use assembly to bypass checking for overflow & division by 0
         // scaledPercent has been validated to be < PERCENTAGE_SCALE)
         // & PERCENTAGE_SCALE will never be 0
@@ -368,7 +367,7 @@ contract Flow is
      * @return claimableBalance The claimable balance for the member
      */
     function getClaimableBalanceNow(address member) public view returns (int256 claimableBalance) {
-        (claimableBalance, ) = pool.getClaimableNow(member);
+        (claimableBalance,) = pool.getClaimableNow(member);
     }
 
     /**

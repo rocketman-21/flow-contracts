@@ -122,10 +122,6 @@ interface IFlow is IFlowEvents {
      * @param flowImpl The address of the flow implementation contract
      * @param flowParams The parameters for the flow contract
      */
-    function initialize(
-        address nounsToken,
-        address superToken,
-        address flowImpl,
-        FlowParams memory flowParams
-    ) external;
+    function initialize(address nounsToken, address superToken, address flowImpl, FlowParams memory flowParams)
+        external;
 }
