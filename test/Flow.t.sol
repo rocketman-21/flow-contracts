@@ -43,7 +43,28 @@ contract FlowTest is Test {
             flowParams: flowParams
         });
 
+        _transferTestTokenToFlow(flowProxy);
+
         return flowProxy;
+    }
+
+    function _transferTestTokenToFlow(address flowAddress) internal {
+        uint256 amount = 1e6 * 10**18; 
+        vm.startPrank(manager);
+        
+        // Mint underlying tokens
+        TestToken(testUSDC).mint(manager, amount);
+        
+        // Approve SuperToken to spend underlying tokens
+        TestToken(testUSDC).approve(address(superToken), amount);
+        
+        // Upgrade (wrap) the tokens
+        ISuperToken(address(superToken)).upgrade(amount);
+        
+        // Transfer the wrapped tokens to the Flow contract
+        ISuperToken(address(superToken)).transfer(flowAddress, amount);
+        
+        vm.stopPrank();
     }
 
     function setUp() public virtual {
@@ -63,7 +84,7 @@ contract FlowTest is Test {
         deployer.deployTestFramework();
         sf = deployer.getFramework();
         (TestToken underlyingToken, SuperToken token) =
-            deployer.deployWrapperSuperToken("MR Token", "MRx", 18, 10000000, manager);
+            deployer.deployWrapperSuperToken("MR Token", "MRx", 18, 1e18 * 1e9, manager);
 
         superToken = token;
         testUSDC = address(underlyingToken);

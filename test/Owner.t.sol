@@ -5,6 +5,8 @@ import {FlowTest} from "./Flow.t.sol";
 import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
 import {Flow} from "../src/Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
+import {console} from "forge-std/console.sol";
 
 contract OwnerFlowTest is FlowTest {
 
@@ -56,6 +58,20 @@ contract OwnerFlowTest is FlowTest {
         assertEq(Flow(flow).flowImpl(), newFlowImpl);
     }
 
+    function testSetFlowRate() public {
+        int96 newFlowRate = 10;
+        vm.prank(address(0)); // Non-owner address
+        vm.expectRevert("Ownable: caller is not the owner");
+        Flow(flow).setFlowRate(newFlowRate);
+
+        // Log the balance of Flow contract before setting the flow rate
+        uint256 balanceBefore = TestToken(testUSDC).balanceOf(address(flow));
+        console.log("Flow contract balance before setting flow rate:", balanceBefore);
+
+        vm.prank(manager); // Owner address
+        Flow(flow).setFlowRate(newFlowRate);
+        assertEq(Flow(flow).getTotalFlowRate(), newFlowRate);
+    }
 
     function testUpgrade() public {
         address newImplementation = address(new Flow());
