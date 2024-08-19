@@ -91,6 +91,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if bps does not sum to 10000
     error INVALID_BPS_SUM();
 
+    /// @dev Reverts if bps is greater than 10000
+    error INVALID_BPS();
+
     /// @dev Reverts if sender is not manager
     error SENDER_NOT_MANAGER();
 

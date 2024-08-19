@@ -39,9 +39,6 @@ contract BasicFlowTest is FlowTest {
 
         // Check if the contract is properly initialized as Ownable
         assertEq(Flow(flow).owner(), manager);
-
-        // Check if the contract is not paused initially
-        assert(!Flow(flow).paused());
     }
 
     function testInitializePoolConfig() public {

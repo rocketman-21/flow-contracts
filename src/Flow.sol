@@ -8,7 +8,6 @@ import {IERC721Checkpointable} from "./interfaces/IERC721Checkpointable.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -21,7 +20,6 @@ contract Flow is
     Ownable2StepUpgradeable,
     ReentrancyGuardUpgradeable,
     EIP712Upgradeable,
-    PausableUpgradeable,
     FlowStorageV1
 {
     using SuperTokenV1Library for ISuperToken;
@@ -78,7 +76,8 @@ contract Flow is
      * @param _quorumVotesBPS The new quorum votes basis points
      */
     function setQuorumVotesBPS(uint256 _quorumVotesBPS) public onlyOwner {
-        require(_quorumVotesBPS <= PERCENTAGE_SCALE, "Invalid BPS value");
+        if (_quorumVotesBPS > PERCENTAGE_SCALE) revert INVALID_BPS();
+
         emit QuorumVotesBPSSet(quorumVotesBPS, _quorumVotesBPS);
 
         quorumVotesBPS = _quorumVotesBPS;
@@ -109,7 +108,8 @@ contract Flow is
      * @param _flowImpl The new address of the grants implementation contract
      */
     function setFlowImpl(address _flowImpl) public onlyOwner {
-        require(_flowImpl != address(0), "Invalid address");
+        if (_flowImpl == address(0)) revert ADDRESS_ZERO();
+        
         flowImpl = _flowImpl;
         emit FlowImplementationSet(_flowImpl);
     }
