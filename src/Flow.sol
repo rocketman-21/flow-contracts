@@ -69,6 +69,8 @@ contract Flow is
         if (getTotalUnits() == 0) {
             updateMemberUnits(address(this), 1);
         }
+
+        emit FlowInitialized(msg.sender, _superToken, _flowImpl);
     }
 
     /**
@@ -405,13 +407,17 @@ contract Flow is
     }
 
     /**
-     * @notice Ensures the caller is authorized to upgrade the contract and that the new implementation is valid
-     * @dev This function is called in `upgradeTo` & `upgradeToAndCall`
+     * @notice Ensures the caller is authorized to upgrade the contract
      * @param _newImpl The new implementation address
      */
-    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {
-        // Ensure the new implementation is a registered upgrade
-        // just using my EOA for now
-        // if (!manager.isRegisteredUpgrade(_getImplementation(), _newImpl)) revert INVALID_UPGRADE(_newImpl);
+    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
+
+    /**
+     * @notice Get the pool config
+     * @return transferabilityForUnitsOwner The transferability for units owner
+     * @return distributionFromAnyAddress The distribution from any address
+     */
+    function getPoolConfig() public view returns (bool transferabilityForUnitsOwner, bool distributionFromAnyAddress) {
+        return (poolConfig.transferabilityForUnitsOwner, poolConfig.distributionFromAnyAddress);
     }
 }

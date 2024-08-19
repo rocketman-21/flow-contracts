@@ -25,20 +25,32 @@ contract FlowTest is Test {
 
     address flow;
     address flowImpl;
+    address testUSDC;
+    IFlow.FlowParams flowParams;
 
     address erc721Votes;
 
     address manager = address(0x1998);
 
+    function deployFlow(address votingPowerAddress, address superTokenAddress) internal returns (address) {
+        address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+
+        vm.prank(address(manager));
+        IFlow(flowProxy).initialize({
+            nounsToken: votingPowerAddress,
+            superToken: superTokenAddress,
+            flowImpl: flowImpl,
+            flowParams: flowParams
+        });
+
+        return flowProxy;
+    }
+
     function setUp() public virtual {
-        flowImpl = address(new Flow());
-        flow = address(new ERC1967Proxy(flowImpl, ""));
-
-        flow = address(new ERC1967Proxy(flowImpl, ""));
         address votingPowerAddress = address(0x1);
-        address initialOwner = address(this); // This contract is the initial owner
+        flowImpl = address(new Flow());
 
-        IFlow.FlowParams memory params = IFlow.FlowParams({
+        flowParams = IFlow.FlowParams({
             tokenVoteWeight: 1e18, // Example token vote weight
             quorumVotesBPS: 5000, // Example quorum votes in basis points (50%)
             minVotingPowerToVote: 1e18, // Minimum voting power required to vote
@@ -54,14 +66,9 @@ contract FlowTest is Test {
             deployer.deployWrapperSuperToken("MR Token", "MRx", 18, 10000000, manager);
 
         superToken = token;
+        testUSDC = address(underlyingToken);
 
-        vm.prank(address(manager));
-        IFlow(flow).initialize({
-            nounsToken: votingPowerAddress,
-            superToken: address(superToken),
-            flowImpl: flowImpl,
-            flowParams: params
-        });
+        flow = deployFlow(votingPowerAddress, address(superToken));
     }
 
 }

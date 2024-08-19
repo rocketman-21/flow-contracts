@@ -18,6 +18,9 @@ interface IFlowEvents {
     /// @notice Emitted when quorum votes basis points is set
     event QuorumVotesBPSSet(uint256 oldQuorumVotesBPS, uint256 newQuorumVotesBPS);
 
+    /// @notice Emitted when the flow is initialized
+    event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
+
     /// @notice Emitted when a new grants recipient is set
     event GrantRecipientApproved(address indexed recipient, address indexed approvedBy);
 
