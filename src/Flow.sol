@@ -8,7 +8,6 @@ import {IERC721Checkpointable} from "./interfaces/IERC721Checkpointable.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -21,7 +20,6 @@ contract Flow is
     Ownable2StepUpgradeable,
     ReentrancyGuardUpgradeable,
     EIP712Upgradeable,
-    PausableUpgradeable,
     FlowStorageV1
 {
     using SuperTokenV1Library for ISuperToken;
@@ -61,23 +59,16 @@ contract Flow is
 
         snapshotBlock = block.number;
 
-        // Set the pool config
-        _setSuperTokenAndCreatePool(_superToken);
+        superToken = ISuperToken(_superToken);
+        pool = superToken.createPool(address(this), poolConfig);
 
         // if total member units is 0, set 1 member unit to address(this)
         // do this to prevent distribution pool from resetting flow rate to 0
         if (getTotalUnits() == 0) {
             updateMemberUnits(address(this), 1);
         }
-    }
 
-    /**
-     * @notice Sets the SuperToken and creates a pool from it, can only be called by the owner
-     * @param _superToken The address of the SuperToken to be set and used for the pool
-     */
-    function _setSuperTokenAndCreatePool(address _superToken) internal {
-        superToken = ISuperToken(_superToken);
-        pool = superToken.createPool(address(this), poolConfig);
+        emit FlowInitialized(msg.sender, _superToken, _flowImpl);
     }
 
     /**
@@ -85,7 +76,8 @@ contract Flow is
      * @param _quorumVotesBPS The new quorum votes basis points
      */
     function setQuorumVotesBPS(uint256 _quorumVotesBPS) public onlyOwner {
-        require(_quorumVotesBPS <= PERCENTAGE_SCALE, "Invalid BPS value");
+        if (_quorumVotesBPS > PERCENTAGE_SCALE) revert INVALID_BPS();
+
         emit QuorumVotesBPSSet(quorumVotesBPS, _quorumVotesBPS);
 
         quorumVotesBPS = _quorumVotesBPS;
@@ -116,7 +108,8 @@ contract Flow is
      * @param _flowImpl The new address of the grants implementation contract
      */
     function setFlowImpl(address _flowImpl) public onlyOwner {
-        require(_flowImpl != address(0), "Invalid address");
+        if (_flowImpl == address(0)) revert ADDRESS_ZERO();
+        
         flowImpl = _flowImpl;
         emit FlowImplementationSet(_flowImpl);
     }
@@ -405,13 +398,17 @@ contract Flow is
     }
 
     /**
-     * @notice Ensures the caller is authorized to upgrade the contract and that the new implementation is valid
-     * @dev This function is called in `upgradeTo` & `upgradeToAndCall`
+     * @notice Ensures the caller is authorized to upgrade the contract
      * @param _newImpl The new implementation address
      */
-    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {
-        // Ensure the new implementation is a registered upgrade
-        // just using my EOA for now
-        // if (!manager.isRegisteredUpgrade(_getImplementation(), _newImpl)) revert INVALID_UPGRADE(_newImpl);
+    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
+
+    /**
+     * @notice Get the pool config
+     * @return transferabilityForUnitsOwner The transferability for units owner
+     * @return distributionFromAnyAddress The distribution from any address
+     */
+    function getPoolConfig() public view returns (bool transferabilityForUnitsOwner, bool distributionFromAnyAddress) {
+        return (poolConfig.transferabilityForUnitsOwner, poolConfig.distributionFromAnyAddress);
     }
 }
