@@ -154,7 +154,6 @@ contract VotingFlowTest is FlowTest {
 
     function test__InvalidPercentAllocations() public {
         address voter1 = address(1);
-        address voter2 = address(2);
         uint256 tokenId = 0;
 
         nounsToken.mint(voter1, tokenId);
@@ -187,11 +186,16 @@ contract VotingFlowTest is FlowTest {
         vm.expectRevert(IFlow.ALLOCATION_MUST_BE_POSITIVE.selector);
         vm.prank(voter1);
         flow.castVotes(tokenIds, recipientsTwo, percentAllocationsTwo);
+
+        percentAllocationsTwo[0] = 1e6;
+        percentAllocationsTwo[1] = 1e6;
+        vm.prank(voter1);
+        vm.expectRevert(IFlow.INVALID_BPS_SUM.selector);
+        flow.castVotes(tokenIds, recipientsTwo, percentAllocationsTwo);
     }
 
     function test__InvalidRecipients() public {
         address voter1 = address(1);
-        address voter2 = address(2);
         uint256 tokenId = 0;
 
         nounsToken.mint(voter1, tokenId);
