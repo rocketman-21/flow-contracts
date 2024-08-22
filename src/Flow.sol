@@ -166,8 +166,8 @@ contract Flow is
         nonReentrant
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if(erc721Votes.ownerOf(tokenIds[i]) != msg.sender) revert NOT_TOKEN_OWNER();
-            _setVotesAllocations(tokenIds[i], recipients, percentAllocations);
+            if (erc721Votes.ownerOf(tokenIds[i]) != msg.sender) revert NOT_TOKEN_OWNER();
+            _setVotesAllocationForTokenId(tokenIds[i], recipients, percentAllocations);
         }
     }
 
@@ -177,7 +177,7 @@ contract Flow is
      * @param recipients The addresses of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function _setVotesAllocations(uint256 tokenId, address[] memory recipients, uint32[] memory percentAllocations)
+    function _setVotesAllocationForTokenId(uint256 tokenId, address[] memory recipients, uint32[] memory percentAllocations)
         internal
     {
         uint256 weight = tokenVoteWeight;
@@ -328,12 +328,6 @@ contract Flow is
     }
 
     /**
-     * @notice Ensures the caller is authorized to upgrade the contract
-     * @param _newImpl The new implementation address
-     */
-    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
-
-    /**
      * @notice Get the pool config
      * @return transferabilityForUnitsOwner The transferability for units owner
      * @return distributionFromAnyAddress The distribution from any address
@@ -341,4 +335,10 @@ contract Flow is
     function getPoolConfig() public view returns (bool transferabilityForUnitsOwner, bool distributionFromAnyAddress) {
         return (poolConfig.transferabilityForUnitsOwner, poolConfig.distributionFromAnyAddress);
     }
+
+    /**
+     * @notice Ensures the caller is authorized to upgrade the contract
+     * @param _newImpl The new implementation address
+     */
+    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
 }
