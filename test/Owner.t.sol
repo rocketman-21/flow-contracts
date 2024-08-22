@@ -14,17 +14,6 @@ contract OwnerFlowTest is FlowTest {
         super.setUp();
     }
 
-    function testSetQuorumVotesBPS() public {
-        uint256 newQuorumVotesBPS = 6000;
-        vm.prank(address(0)); // Non-owner address
-        vm.expectRevert("Ownable: caller is not the owner");
-        Flow(flow).setQuorumVotesBPS(newQuorumVotesBPS);
-
-        vm.prank(manager); // Owner address
-        Flow(flow).setQuorumVotesBPS(newQuorumVotesBPS);
-        assertEq(Flow(flow).quorumVotesBPS(), newQuorumVotesBPS);
-    }
-
     function testSetFlowImpl() public {
         address newFlowImpl = address(0x123);
         vm.prank(address(0)); // Non-owner address

@@ -15,9 +15,6 @@ interface IFlowEvents {
      */
     event VoteCast(address indexed recipient, uint256 indexed tokenId, uint256 memberUnits, uint256 bps);
 
-    /// @notice Emitted when quorum votes basis points is set
-    event QuorumVotesBPSSet(uint256 oldQuorumVotesBPS, uint256 newQuorumVotesBPS);
-
     /// @notice Emitted when the flow is initialized
     event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
 
@@ -61,9 +58,6 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if the function caller is not the manager.
     error NOT_MANAGER();
 
-    /// @dev Reverts if the quorum votes basis points exceed the maximum allowed value.
-    error INVALID_QUORUM_BPS();
-
     /// @dev Reverts if voting allocation casts will overflow
     error OVERFLOW();
 
@@ -72,9 +66,6 @@ interface IFlow is IFlowEvents {
 
     /// @dev Reverts if the ERC20 voting token weight is invalid (i.e., 0).
     error INVALID_ERC20_VOTING_WEIGHT();
-
-    /// @dev Reverts if the total vote weights do not meet the required quorum votes for a grant to receive funding.
-    error DOES_NOT_MEET_QUORUM();
 
     /// @dev Reverts if the voting signature has expired
     error SIGNATURE_EXPIRED();
@@ -107,11 +98,9 @@ interface IFlow is IFlowEvents {
     /**
      * @notice Structure to hold the parameters for initializing a Flow contract.
      * @param tokenVoteWeight The voting weight of the individual ERC721 tokens.
-     * @param quorumVotesBPS The initial quorum votes threshold in basis points.
      */
     struct FlowParams {
         uint256 tokenVoteWeight;
-        uint256 quorumVotesBPS;
     }
 
     /**

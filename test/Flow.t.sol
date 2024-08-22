@@ -78,8 +78,7 @@ contract FlowTest is Test {
         flowImpl = address(new Flow());
 
         flowParams = IFlow.FlowParams({
-            tokenVoteWeight: 1e18, // Example token vote weight
-            quorumVotesBPS: 5000 // Example quorum votes in basis points (50%)
+            tokenVoteWeight: 1e18 // Example token vote weight
         });
 
         vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);

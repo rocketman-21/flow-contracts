@@ -53,10 +53,6 @@ contract Flow is
         tokenVoteWeight = _flowParams.tokenVoteWeight;
         flowImpl = _flowImpl;
 
-        quorumVotesBPS = _flowParams.quorumVotesBPS;
-
-        snapshotBlock = block.number;
-
         superToken = ISuperToken(_superToken);
         pool = superToken.createPool(address(this), poolConfig);
 
@@ -67,18 +63,6 @@ contract Flow is
         }
 
         emit FlowInitialized(msg.sender, _superToken, _flowImpl);
-    }
-
-    /**
-     * @notice Sets the quorum votes basis points required for a grant to be funded
-     * @param _quorumVotesBPS The new quorum votes basis points
-     */
-    function setQuorumVotesBPS(uint256 _quorumVotesBPS) public onlyOwner {
-        if (_quorumVotesBPS > PERCENTAGE_SCALE) revert INVALID_BPS();
-
-        emit QuorumVotesBPSSet(quorumVotesBPS, _quorumVotesBPS);
-
-        quorumVotesBPS = _quorumVotesBPS;
     }
 
     /**
@@ -146,9 +130,6 @@ contract Flow is
         // update member units
         updateMemberUnits(recipient, memberUnits);
 
-        // update tokenIdToRecipientMemberUnits
-        tokenIdToRecipientMemberUnits[tokenId][recipient] = newUnits;
-
         emit VoteCast(recipient, tokenId, memberUnits, bps);
     }
 
@@ -168,9 +149,6 @@ contract Flow is
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
             updateMemberUnits(recipient, currentUnits - unitsDelta);
-
-            // update tokenIdToRecipientMemberUnits
-            tokenIdToRecipientMemberUnits[tokenId][recipient] = 0;
         }
 
         // Clear out the votes for the tokenId

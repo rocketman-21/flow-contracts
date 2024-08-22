@@ -16,9 +16,6 @@ contract FlowStorageV1 {
     /// @notice constant to scale uints into percentages (1e6 == 100%)
     uint256 public constant PERCENTAGE_SCALE = 1e6;
 
-    /// The snapshot block number for voting
-    uint256 public snapshotBlock;
-
     /// The flow implementation
     address public flowImpl;
 
@@ -42,9 +39,6 @@ contract FlowStorageV1 {
 
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
-
-    /// @notice The basis point number of votes in support of a grant required in order for a quorum to be reached and for a grant to be funded.
-    uint256 public quorumVotesBPS;
 
     // The weight of the 721 voting token
     uint256 public tokenVoteWeight;
