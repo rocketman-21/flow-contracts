@@ -40,9 +40,6 @@ contract FlowStorageV1 {
     /// The Superfluid pool configuration
     PoolConfig public poolConfig = PoolConfig({transferabilityForUnitsOwner: false, distributionFromAnyAddress: false});
 
-    /// @notice An account's nonce for gasless votes
-    mapping(address => uint256) public nonces;
-
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
 
@@ -61,8 +58,8 @@ contract FlowStorageV1 {
     // The weight of the 20 voting token
     uint256 public pointsVoteWeight;
 
-    // The mapping of a voter to a list of votes allocations (recipient, BPS)
-    mapping(address => VoteAllocation[]) public votes;
+    // The mapping of a token to a list of votes allocations (recipient, BPS)
+    mapping(uint256 => VoteAllocation[]) public votes;
 
     // Struct to hold the recipient and their corresponding BPS for a vote
     struct VoteAllocation {

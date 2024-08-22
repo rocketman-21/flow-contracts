@@ -119,10 +119,21 @@ contract Flow is
      * @param tokenId The tokenId of the account to retrieve votes for
      * @return allocations An array of VoteAllocation structs representing each vote made by the token
      */
-    function getVotesForTokenId(address account) public view returns (VoteAllocation[] memory allocations) {
-        if (account == address(0)) revert ADDRESS_ZERO();
+    function getVotesForTokenId(uint256 tokenId) public view returns (VoteAllocation[] memory allocations) {
+        return votes[tokenId];
+    }
 
-        return votes[account];
+    /**
+     * @notice Retrieves all vote allocations for multiple ERC721 tokenIds
+     * @param tokenIds An array of tokenIds to retrieve votes for
+     * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
+     */
+    function getVotesForTokenIds(uint256[] memory tokenIds) public view returns (VoteAllocation[][] memory allocations) {
+        allocations = new VoteAllocation[][](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            allocations[i] = votes[tokenIds[i]];
+        }
+        return allocations;
     }
 
     /**
