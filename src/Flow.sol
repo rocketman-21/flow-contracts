@@ -54,7 +54,6 @@ contract Flow is
         flowImpl = _flowImpl;
 
         quorumVotesBPS = _flowParams.quorumVotesBPS;
-        minVotingPowerToVote = _flowParams.minVotingPowerToVote;
         minVotingPowerToCreate = _flowParams.minVotingPowerToCreate;
 
         snapshotBlock = block.number;
@@ -83,15 +82,6 @@ contract Flow is
         quorumVotesBPS = _quorumVotesBPS;
     }
 
-    /**
-     * @notice Sets the minimum voting power required to vote on a grant
-     * @param _minVotingPowerToVote The new minimum voting power to vote
-     */
-    function setMinVotingPowerToVote(uint256 _minVotingPowerToVote) public onlyOwner {
-        emit MinVotingPowerToVoteSet(minVotingPowerToVote, _minVotingPowerToVote);
-
-        minVotingPowerToVote = _minVotingPowerToVote;
-    }
 
     /**
      * @notice Sets the minimum voting power required to create a grant
@@ -137,14 +127,6 @@ contract Flow is
     }
 
     /**
-     * @notice Get account voting power
-     * @param account The address of the voter.
-     */
-    function getAccountVotingPower(address account) public view returns (uint256) {
-        return getVotingPowerForBlock(account, snapshotBlock);
-    }
-
-    /**
      * @notice Get account voting power for a specific block
      * @param account The address of the voter.
      * @param blockNumber The block number to get the voting power for.
@@ -157,12 +139,12 @@ contract Flow is
      * @notice Cast a vote for a specific grant address.
      * @param recipient The address of the grant recipient.
      * @param bps The basis points of the vote to be split with the recipient.
-     * @param voter The address of the voter.
+     * @param tokenId The tokenId owned by the voter.
      * @param totalWeight The voting power of the voter.
      * @dev Requires that the recipient is valid, and the weight is greater than the minimum vote weight.
      * Emits a VoteCast event upon successful execution.
      */
-    function _vote(address recipient, uint32 bps, address voter, uint256 totalWeight) internal {
+    function _vote(address recipient, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
         if (recipient == address(0)) revert ADDRESS_ZERO();
         if (approvedRecipients[recipient] == false) revert NOT_APPROVED_RECIPIENT();
 
@@ -180,25 +162,25 @@ contract Flow is
         uint128 memberUnits = currentUnits + newUnits;
 
         // update votes, track recipient, bps, and total member units assigned
-        votes[voter].push(VoteAllocation({recipient: recipient, bps: bps, memberUnits: newUnits}));
+        votes[tokenId].push(VoteAllocation({recipient: recipient, bps: bps, memberUnits: newUnits}));
 
         // update member units
         updateMemberUnits(recipient, memberUnits);
 
-        // update voterToRecipientMemberUnits
-        voterToRecipientMemberUnits[voter][recipient] = newUnits;
+        // update tokenIdToRecipientMemberUnits
+        tokenIdToRecipientMemberUnits[tokenId][recipient] = newUnits;
 
-        emit VoteCast(recipient, voter, memberUnits, bps);
+        emit VoteCast(recipient, tokenId, memberUnits, bps);
     }
 
     /**
-     * @notice Clears out units from previous votes allocation for a specific voter.
-     * @param voter The address of the voter whose previous votes are to be cleared.
-     * @dev This function resets the member units for all recipients that the voter has previously voted for.
+     * @notice Clears out units from previous votes allocation for a specific tokenId.
+     * @param tokenId The tokenId whose previous votes are to be cleared.
+     * @dev This function resets the member units for all recipients that the tokenId has previously voted for.
      * It should be called before setting new votes to ensure accurate vote allocations.
      */
-    function _clearPreviousVotes(address voter) internal {
-        VoteAllocation[] memory allocations = votes[voter];
+    function _clearPreviousVotes(uint256 tokenId) internal {
+        VoteAllocation[] memory allocations = votes[tokenId];
         for (uint256 i = 0; i < allocations.length; i++) {
             address recipient = allocations[i].recipient;
             uint128 currentUnits = pool.getUnits(recipient);
@@ -208,49 +190,50 @@ contract Flow is
             // Update the member units in the pool
             updateMemberUnits(recipient, currentUnits - unitsDelta);
 
-            // update voterToRecipientMemberUnits
-            voterToRecipientMemberUnits[voter][recipient] = 0;
+            // update tokenIdToRecipientMemberUnits
+            tokenIdToRecipientMemberUnits[tokenId][recipient] = 0;
         }
 
-        // Clear out the votes for the voter
-        delete votes[voter];
+        // Clear out the votes for the tokenId
+        delete votes[tokenId];
     }
 
     /**
      * @notice Cast a vote for a set of grant addresses.
+     * @param tokenIds The tokenIds of the grant recipients.
      * @param recipients The addresses of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function setVotesAllocations(address[] memory recipients, uint32[] memory percentAllocations)
+    function setVotesAllocations(uint256[] memory tokenIds, address[] memory recipients, uint32[] memory percentAllocations)
         external
         nonReentrant
     {
-        _setVotesAllocations(msg.sender, recipients, percentAllocations);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            if(erc721Votes.ownerOf(tokenIds[i]) != msg.sender) revert NOT_TOKEN_OWNER();
+            _setVotesAllocations(tokenIds[i], recipients, percentAllocations);
+        }
     }
 
     /**
      * @notice Cast a vote for a set of grant addresses.
-     * @param voter The address of the voter.
+     * @param tokenId The tokenId owned by the voter.
      * @param recipients The addresses of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function _setVotesAllocations(address voter, address[] memory recipients, uint32[] memory percentAllocations)
+    function _setVotesAllocations(uint256 tokenId, address[] memory recipients, uint32[] memory percentAllocations)
         internal
     {
-        uint256 weight = getAccountVotingPower(voter);
-
-        // Ensure the voter has enough voting power to vote
-        if (weight <= minVotingPowerToVote) revert WEIGHT_TOO_LOW();
+        uint256 weight = tokenVoteWeight;
 
         // _getSum should overflow if sum != PERCENTAGE_SCALE
         if (_getSum(percentAllocations) != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
 
         // update member units for previous votes
-        _clearPreviousVotes(voter);
+        _clearPreviousVotes(tokenId);
 
         // set new votes
         for (uint256 i = 0; i < recipients.length; i++) {
-            _vote(recipients[i], percentAllocations[i], voter, weight);
+            _vote(recipients[i], percentAllocations[i], tokenId, weight);
         }
 
         // if flow rate is 0, restart it

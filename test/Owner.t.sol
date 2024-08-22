@@ -25,17 +25,6 @@ contract OwnerFlowTest is FlowTest {
         assertEq(Flow(flow).quorumVotesBPS(), newQuorumVotesBPS);
     }
 
-    function testSetMinVotingPowerToVote() public {
-        uint256 newMinVotingPower = 2e18;
-        vm.prank(address(0)); // Non-owner address
-        vm.expectRevert("Ownable: caller is not the owner");
-        Flow(flow).setMinVotingPowerToVote(newMinVotingPower);
-
-        vm.prank(manager); // Owner address
-        Flow(flow).setMinVotingPowerToVote(newMinVotingPower);
-        assertEq(Flow(flow).minVotingPowerToVote(), newMinVotingPower);
-    }
-
     function testSetMinVotingPowerToCreate() public {
         uint256 newMinVotingPower = 200e18;
         vm.prank(address(0)); // Non-owner address

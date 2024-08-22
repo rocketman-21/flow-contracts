@@ -74,7 +74,6 @@ contract FlowTest is Test {
         flowParams = IFlow.FlowParams({
             tokenVoteWeight: 1e18, // Example token vote weight
             quorumVotesBPS: 5000, // Example quorum votes in basis points (50%)
-            minVotingPowerToVote: 1e18, // Minimum voting power required to vote
             minVotingPowerToCreate: 100 * 1e18 // Minimum voting power required to create a grant
         });
 
