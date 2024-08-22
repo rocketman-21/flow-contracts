@@ -145,15 +145,6 @@ contract Flow is
     }
 
     /**
-     * @notice Retrieves all votes made by a specific account
-     * @param voter The address of the voter to retrieve votes for
-     * @return votesArray An array of VoteAllocation structs representing each vote made by the voter
-     */
-    function getAllVotes(address voter) public view returns (VoteAllocation[] memory votesArray) {
-        return votes[voter];
-    }
-
-    /**
      * @notice Get account voting power for a specific block
      * @param account The address of the voter.
      * @param blockNumber The block number to get the voting power for.
