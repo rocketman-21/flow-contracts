@@ -43,9 +43,6 @@ contract FlowStorageV1 {
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
 
-    /// @notice The minimum voting power required to create a grant
-    uint256 public minVotingPowerToCreate;
-
     /// @notice The basis point number of votes in support of a grant required in order for a quorum to be reached and for a grant to be funded.
     uint256 public quorumVotesBPS;
 

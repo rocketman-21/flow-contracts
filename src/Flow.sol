@@ -54,7 +54,6 @@ contract Flow is
         flowImpl = _flowImpl;
 
         quorumVotesBPS = _flowParams.quorumVotesBPS;
-        minVotingPowerToCreate = _flowParams.minVotingPowerToCreate;
 
         snapshotBlock = block.number;
 
@@ -80,17 +79,6 @@ contract Flow is
         emit QuorumVotesBPSSet(quorumVotesBPS, _quorumVotesBPS);
 
         quorumVotesBPS = _quorumVotesBPS;
-    }
-
-
-    /**
-     * @notice Sets the minimum voting power required to create a grant
-     * @param _minVotingPowerToCreate The new minimum voting power to create a grant
-     */
-    function setMinVotingPowerToCreate(uint256 _minVotingPowerToCreate) public onlyOwner {
-        emit MinVotingPowerToCreateSet(minVotingPowerToCreate, _minVotingPowerToCreate);
-
-        minVotingPowerToCreate = _minVotingPowerToCreate;
     }
 
     /**
@@ -124,15 +112,6 @@ contract Flow is
             allocations[i] = votes[tokenIds[i]];
         }
         return allocations;
-    }
-
-    /**
-     * @notice Get account voting power for a specific block
-     * @param account The address of the voter.
-     * @param blockNumber The block number to get the voting power for.
-     */
-    function getVotingPowerForBlock(address account, uint256 blockNumber) public view returns (uint256) {
-        return erc721Votes.getPriorVotes(account, blockNumber);
     }
 
     /**
@@ -235,14 +214,6 @@ contract Flow is
         for (uint256 i = 0; i < recipients.length; i++) {
             _vote(recipients[i], percentAllocations[i], tokenId, weight);
         }
-
-        // if flow rate is 0, restart it
-        // could happen at beginning when few users are voting
-        // where the member units briefly become 0
-        int96 flowRate = pool.getTotalFlowRate();
-        if (flowRate == 0) {
-            superToken.distributeFlow(address(this), pool, flowRate);
-        }
     }
 
     /**
@@ -251,10 +222,6 @@ contract Flow is
      */
     function addApprovedRecipient(address recipient) public {
         if (recipient == address(0)) revert ADDRESS_ZERO();
-
-        // check voting power of the caller
-        uint256 weight = getVotingPowerForBlock(msg.sender, block.number - 1);
-        if (weight <= minVotingPowerToCreate) revert WEIGHT_TOO_LOW();
 
         approvedRecipients[recipient] = true;
 

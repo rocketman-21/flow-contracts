@@ -27,9 +27,6 @@ interface IFlowEvents {
     /// @notice Emitted when the flow rate is updated
     event FlowRateUpdated(int96 oldFlowRate, int96 newFlowRate);
 
-    /// @notice Emitted when min voting power to create is set
-    event MinVotingPowerToCreateSet(uint256 oldMinVotingPowerToCreate, uint256 newMinVotingPowerToCreate);
-
     /// @notice Emitted when a new child flow contract is created
     event FlowCreated(address indexed parent, address indexed flow);
 
@@ -111,12 +108,10 @@ interface IFlow is IFlowEvents {
      * @notice Structure to hold the parameters for initializing a Flow contract.
      * @param tokenVoteWeight The voting weight of the individual ERC721 tokens.
      * @param quorumVotesBPS The initial quorum votes threshold in basis points.
-     * @param minVotingPowerToCreate The minimum vote weight that a voter must have to be able to create a grant.
      */
     struct FlowParams {
         uint256 tokenVoteWeight;
         uint256 quorumVotesBPS;
-        uint256 minVotingPowerToCreate;
     }
 
     /**
