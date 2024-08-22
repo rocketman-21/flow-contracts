@@ -155,15 +155,41 @@ contract Flow is
         delete votes[tokenId];
     }
 
+     /**
+     * @notice Checks that the recipients and percentAllocations are valid 
+     * @param recipients The addresses of the grant recipients.
+     * @param percentAllocations The basis points of the vote to be split with the recipients.
+     */
+     modifier validVotes(address[] memory recipients, uint32[] memory percentAllocations) {
+        // must have recipients
+        if (recipients.length < 1) {
+            revert TOO_FEW_RECIPIENTS();
+        }
+
+        // recipients & percentAllocations must be equal length
+        if (recipients.length != percentAllocations.length) {
+            revert RECIPIENTS_ALLOCATIONS_MISMATCH(recipients.length, percentAllocations.length);
+        }
+
+        // ensure recipients are not 0 address and allocations are > 0
+        for (uint256 i = 0; i < recipients.length; i++) {
+            if (recipients[i] == address(0)) revert ADDRESS_ZERO();
+            if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
+        }
+
+        _;
+     }
+
     /**
      * @notice Cast a vote for a set of grant addresses.
      * @param tokenIds The tokenIds of the grant recipients.
      * @param recipients The addresses of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function setVotesAllocations(uint256[] memory tokenIds, address[] memory recipients, uint32[] memory percentAllocations)
+    function castVotes(uint256[] memory tokenIds, address[] memory recipients, uint32[] memory percentAllocations)
         external
         nonReentrant
+        validVotes(recipients, percentAllocations)
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (erc721Votes.ownerOf(tokenIds[i]) != msg.sender) revert NOT_TOKEN_OWNER();

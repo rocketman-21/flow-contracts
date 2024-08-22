@@ -36,7 +36,7 @@ contract VotingFlowTest is FlowTest {
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
-        flow.setVotesAllocations(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
 
         // get current member units of the pool
         uint128 currentUnits = flow.pool().getUnits(recipient);
@@ -47,7 +47,7 @@ contract VotingFlowTest is FlowTest {
         nounsToken.transferFrom(voter1, voter2, tokenId);
 
         vm.prank(voter2);
-        flow.setVotesAllocations(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
 
         uint128 newUnits = flow.pool().getUnits(recipient);
 
@@ -72,7 +72,7 @@ contract VotingFlowTest is FlowTest {
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
-        flow.setVotesAllocations(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
 
         // get current member units of the pool
         uint128 currentUnits = flow.pool().getUnits(recipient);
@@ -84,7 +84,7 @@ contract VotingFlowTest is FlowTest {
         twoTokenIds[1] = tokenId;
 
         vm.prank(voter1);
-        flow.setVotesAllocations(twoTokenIds, recipients, percentAllocations);
+        flow.castVotes(twoTokenIds, recipients, percentAllocations);
 
         uint128 newUnits = flow.pool().getUnits(recipient);
 
@@ -110,14 +110,14 @@ contract VotingFlowTest is FlowTest {
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
-        flow.setVotesAllocations(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
 
         vm.prank(voter1);
         nounsToken.transferFrom(voter1, voter2, tokenId);
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
-        flow.setVotesAllocations(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
     }
 
     function test__NotTokenOwner_MultiTokens() public {
@@ -142,14 +142,73 @@ contract VotingFlowTest is FlowTest {
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
-        flow.setVotesAllocations(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
 
         vm.prank(voter1);
         nounsToken.transferFrom(voter1, voter2, tokenId);
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
-        flow.setVotesAllocations(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
+    }
+
+    function test__InvalidPercentAllocations() public {
+        address voter1 = address(1);
+        address voter2 = address(2);
+        uint256 tokenId = 0;
+
+        nounsToken.mint(voter1, tokenId);
+
+        address recipient = address(3);
+        flow.addApprovedRecipient(recipient);
+
+        address[] memory recipients =  new address[](1);
+        uint32[] memory percentAllocations = new uint32[](0);
+        uint256[] memory tokenIds = new uint256[](1);
+
+        recipients[0] = recipient;
+        tokenIds[0] = tokenId;
+
+        vm.prank(voter1);
+        bytes4 selector = bytes4(keccak256("RECIPIENTS_ALLOCATIONS_MISMATCH(uint256,uint256)"));
+
+        vm.expectRevert(abi.encodeWithSelector(selector, 1, 0));
+        flow.castVotes(tokenIds, recipients, percentAllocations);
+
+        uint32[] memory percentAllocationsTwo = new uint32[](2);
+        vm.prank(voter1);
+        vm.expectRevert(abi.encodeWithSelector(selector, 1, 2));
+        flow.castVotes(tokenIds, recipients, percentAllocationsTwo);
+
+        address[] memory recipientsTwo =  new address[](2);
+        recipientsTwo[0] = recipient;
+        recipientsTwo[1] = recipient;
+
+        vm.expectRevert(IFlow.ALLOCATION_MUST_BE_POSITIVE.selector);
+        vm.prank(voter1);
+        flow.castVotes(tokenIds, recipientsTwo, percentAllocationsTwo);
+    }
+
+    function test__InvalidRecipients() public {
+        address voter1 = address(1);
+        address voter2 = address(2);
+        uint256 tokenId = 0;
+
+        nounsToken.mint(voter1, tokenId);
+
+        address recipient = address(3);
+        flow.addApprovedRecipient(recipient);
+
+        address[] memory recipients =  new address[](0);
+        uint32[] memory percentAllocations = new uint32[](1);
+        uint256[] memory tokenIds = new uint256[](1);
+
+        percentAllocations[0] = 1e6;
+        tokenIds[0] = tokenId;
+
+        vm.prank(voter1);
+        vm.expectRevert(IFlow.TOO_FEW_RECIPIENTS.selector);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
     }
 
 

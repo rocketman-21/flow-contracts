@@ -85,6 +85,18 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if msg.sender is not owner of tokenId when voting
     error NOT_TOKEN_OWNER();
 
+    /// @dev Array lengths of recipients & percentAllocations don't match (`recipientsLength` != `allocationsLength`)
+    /// @param recipientsLength Length of recipients array
+    /// @param allocationsLength Length of percentAllocations array
+    error RECIPIENTS_ALLOCATIONS_MISMATCH(uint256 recipientsLength, uint256 allocationsLength);
+
+    /// @dev Reverts if no recipients are specified
+    error TOO_FEW_RECIPIENTS();
+
+    /// @dev Reverts if voting allocation is not positive
+    error ALLOCATION_MUST_BE_POSITIVE();
+
+
     ///                                                          ///
     ///                         STRUCTS                          ///
     ///                                                          ///
