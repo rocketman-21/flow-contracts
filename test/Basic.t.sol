@@ -15,7 +15,7 @@ contract BasicFlowTest is FlowTest {
     function testInitializeBasicParameters() public view {
         // Ensure the Flow contract is initialized correctly
         assertEq(address(flow.erc721Votes()), address(nounsToken));
-        assertEq(flow.tokenVoteWeight(), 1e18);
+        assertEq(flow.tokenVoteWeight(), 1e18 * 1000);
 
         // Check if the total member units is set to 1 if it was initially 0
         assertEq(flow.getTotalUnits(), 1);
