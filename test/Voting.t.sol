@@ -213,6 +213,15 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter1);
         vm.expectRevert(IFlow.TOO_FEW_RECIPIENTS.selector);
         flow.castVotes(tokenIds, recipients, percentAllocations);
+
+        address recipient2 = address(4);
+
+        address[] memory recipients2 =  new address[](1);
+        recipients2[0] = recipient2;
+
+        vm.prank(voter1);
+        vm.expectRevert(IFlow.NOT_APPROVED_RECIPIENT.selector);
+        flow.castVotes(tokenIds, recipients2, percentAllocations);
     }
 
     function test__RecipientZeroAddr() public {

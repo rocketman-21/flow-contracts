@@ -108,9 +108,6 @@ contract Flow is
      * Emits a VoteCast event upon successful execution.
      */
     function _vote(address recipient, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
-        if (recipient == address(0)) revert ADDRESS_ZERO();
-        if (approvedRecipients[recipient] == false) revert NOT_APPROVED_RECIPIENT();
-
         // calculate new member units for recipient
         // make sure to add the current units to the new units
         uint128 currentUnits = pool.getUnits(recipient);
@@ -173,7 +170,9 @@ contract Flow is
 
         // ensure recipients are not 0 address and allocations are > 0
         for (uint256 i = 0; i < recipients.length; i++) {
-            if (recipients[i] == address(0)) revert ADDRESS_ZERO();
+            address recipient = recipients[i];
+            if (recipient == address(0)) revert ADDRESS_ZERO();
+            if (approvedRecipients[recipient] == false) revert NOT_APPROVED_RECIPIENT();
             if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
         }
 
