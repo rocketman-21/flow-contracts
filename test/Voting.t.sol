@@ -215,5 +215,66 @@ contract VotingFlowTest is FlowTest {
         flow.castVotes(tokenIds, recipients, percentAllocations);
     }
 
+    function test__RecipientZeroAddr() public {
+        address voter1 = address(1);
+        uint256 tokenId = 0;
+
+        nounsToken.mint(voter1, tokenId);
+
+        address recipient = address(3);
+        flow.addApprovedRecipient(recipient);
+
+        address[] memory recipients =  new address[](1);
+        uint32[] memory percentAllocations = new uint32[](1);
+        uint256[] memory tokenIds = new uint256[](1);
+
+        percentAllocations[0] = 1e6;
+        tokenIds[0] = tokenId;
+        recipients[0] = address(0);
+
+        vm.prank(voter1);
+        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
+    }
+
+    function test__RecipientVotesCleared() public {
+        address voter1 = address(1);
+        uint256 tokenId = 0;
+
+        nounsToken.mint(voter1, tokenId);
+
+        address recipient = address(3);
+        address recipient2 = address(4);
+        flow.addApprovedRecipient(recipient);
+        flow.addApprovedRecipient(recipient2);
+
+        address[] memory recipients =  new address[](1);
+        uint32[] memory percentAllocations = new uint32[](1);
+        uint256[] memory tokenIds = new uint256[](1);
+
+        percentAllocations[0] = 1e6;
+        tokenIds[0] = tokenId;
+        recipients[0] = recipient;
+
+        vm.prank(voter1);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
+
+        // get current member units of the pool
+        uint128 currentUnits = flow.pool().getUnits(recipient);
+
+        assertGt(currentUnits, 0);
+
+        recipients[0] = recipient2;
+
+        vm.prank(voter1);
+        flow.castVotes(tokenIds, recipients, percentAllocations);
+
+        uint128 recipient2Units = flow.pool().getUnits(recipient2);
+
+        assertGt(recipient2Units, 0);
+
+        assertEq(flow.pool().getUnits(recipient), 0);
+    }
+
 
 }
