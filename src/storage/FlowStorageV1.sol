@@ -16,9 +16,6 @@ contract FlowStorageV1 {
     /// @notice constant to scale uints into percentages (1e6 == 100%)
     uint256 public constant PERCENTAGE_SCALE = 1e6;
 
-    /// The snapshot block number for voting
-    uint256 public snapshotBlock;
-
     /// The flow implementation
     address public flowImpl;
 
@@ -34,35 +31,20 @@ contract FlowStorageV1 {
     /// The child flow pools, mapping of recipients to whether or not they are a flow pool
     mapping(address => bool) public isGrantPool;
 
-    /// The mapping of a voter to the member units assigned to each recipient they voted for
-    mapping(address => mapping(address => uint256)) public voterToRecipientMemberUnits;
+    /// The mapping of a tokenId to the member units assigned to each recipient they voted for
+    mapping(uint256 => mapping(address => uint256)) public tokenIdToRecipientMemberUnits;
 
     /// The Superfluid pool configuration
     PoolConfig public poolConfig = PoolConfig({transferabilityForUnitsOwner: false, distributionFromAnyAddress: false});
 
-    /// @notice An account's nonce for gasless votes
-    mapping(address => uint256) public nonces;
-
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
-
-    /// @notice The minimum vote power required to vote on a grant
-    uint256 public minVotingPowerToVote;
-
-    /// @notice The minimum voting power required to create a grant
-    uint256 public minVotingPowerToCreate;
-
-    /// @notice The basis point number of votes in support of a grant required in order for a quorum to be reached and for a grant to be funded.
-    uint256 public quorumVotesBPS;
 
     // The weight of the 721 voting token
     uint256 public tokenVoteWeight;
 
-    // The weight of the 20 voting token
-    uint256 public pointsVoteWeight;
-
-    // The mapping of a voter to a list of votes allocations (recipient, BPS)
-    mapping(address => VoteAllocation[]) public votes;
+    // The mapping of a token to a list of votes allocations (recipient, BPS)
+    mapping(uint256 => VoteAllocation[]) public votes;
 
     // Struct to hold the recipient and their corresponding BPS for a vote
     struct VoteAllocation {

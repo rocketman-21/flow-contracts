@@ -53,12 +53,6 @@ contract Flow is
         tokenVoteWeight = _flowParams.tokenVoteWeight;
         flowImpl = _flowImpl;
 
-        quorumVotesBPS = _flowParams.quorumVotesBPS;
-        minVotingPowerToVote = _flowParams.minVotingPowerToVote;
-        minVotingPowerToCreate = _flowParams.minVotingPowerToCreate;
-
-        snapshotBlock = block.number;
-
         superToken = ISuperToken(_superToken);
         pool = superToken.createPool(address(this), poolConfig);
 
@@ -69,38 +63,6 @@ contract Flow is
         }
 
         emit FlowInitialized(msg.sender, _superToken, _flowImpl);
-    }
-
-    /**
-     * @notice Sets the quorum votes basis points required for a grant to be funded
-     * @param _quorumVotesBPS The new quorum votes basis points
-     */
-    function setQuorumVotesBPS(uint256 _quorumVotesBPS) public onlyOwner {
-        if (_quorumVotesBPS > PERCENTAGE_SCALE) revert INVALID_BPS();
-
-        emit QuorumVotesBPSSet(quorumVotesBPS, _quorumVotesBPS);
-
-        quorumVotesBPS = _quorumVotesBPS;
-    }
-
-    /**
-     * @notice Sets the minimum voting power required to vote on a grant
-     * @param _minVotingPowerToVote The new minimum voting power to vote
-     */
-    function setMinVotingPowerToVote(uint256 _minVotingPowerToVote) public onlyOwner {
-        emit MinVotingPowerToVoteSet(minVotingPowerToVote, _minVotingPowerToVote);
-
-        minVotingPowerToVote = _minVotingPowerToVote;
-    }
-
-    /**
-     * @notice Sets the minimum voting power required to create a grant
-     * @param _minVotingPowerToCreate The new minimum voting power to create a grant
-     */
-    function setMinVotingPowerToCreate(uint256 _minVotingPowerToCreate) public onlyOwner {
-        emit MinVotingPowerToCreateSet(minVotingPowerToCreate, _minVotingPowerToCreate);
-
-        minVotingPowerToCreate = _minVotingPowerToCreate;
     }
 
     /**
@@ -115,55 +77,37 @@ contract Flow is
     }
 
     /**
-     * @notice Retrieves all vote allocations for a given account
-     * @param account The address of the account to retrieve votes for
-     * @return allocations An array of VoteAllocation structs representing each vote made by the account
+     * @notice Retrieves all vote allocations for a given ERC721 tokenId
+     * @param tokenId The tokenId of the account to retrieve votes for
+     * @return allocations An array of VoteAllocation structs representing each vote made by the token
      */
-    function getVotesForAccount(address account) public view returns (VoteAllocation[] memory allocations) {
-        if (account == address(0)) revert ADDRESS_ZERO();
-
-        return votes[account];
+    function getVotesForTokenId(uint256 tokenId) public view returns (VoteAllocation[] memory allocations) {
+        return votes[tokenId];
     }
 
     /**
-     * @notice Get account voting power
-     * @param account The address of the voter.
+     * @notice Retrieves all vote allocations for multiple ERC721 tokenIds
+     * @param tokenIds An array of tokenIds to retrieve votes for
+     * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
      */
-    function getAccountVotingPower(address account) public view returns (uint256) {
-        return getVotingPowerForBlock(account, snapshotBlock);
-    }
-
-    /**
-     * @notice Retrieves all votes made by a specific account
-     * @param voter The address of the voter to retrieve votes for
-     * @return votesArray An array of VoteAllocation structs representing each vote made by the voter
-     */
-    function getAllVotes(address voter) public view returns (VoteAllocation[] memory votesArray) {
-        return votes[voter];
-    }
-
-    /**
-     * @notice Get account voting power for a specific block
-     * @param account The address of the voter.
-     * @param blockNumber The block number to get the voting power for.
-     */
-    function getVotingPowerForBlock(address account, uint256 blockNumber) public view returns (uint256) {
-        return erc721Votes.getPriorVotes(account, blockNumber);
+    function getVotesForTokenIds(uint256[] memory tokenIds) public view returns (VoteAllocation[][] memory allocations) {
+        allocations = new VoteAllocation[][](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            allocations[i] = votes[tokenIds[i]];
+        }
+        return allocations;
     }
 
     /**
      * @notice Cast a vote for a specific grant address.
      * @param recipient The address of the grant recipient.
      * @param bps The basis points of the vote to be split with the recipient.
-     * @param voter The address of the voter.
+     * @param tokenId The tokenId owned by the voter.
      * @param totalWeight The voting power of the voter.
      * @dev Requires that the recipient is valid, and the weight is greater than the minimum vote weight.
      * Emits a VoteCast event upon successful execution.
      */
-    function _vote(address recipient, uint32 bps, address voter, uint256 totalWeight) internal {
-        if (recipient == address(0)) revert ADDRESS_ZERO();
-        if (approvedRecipients[recipient] == false) revert NOT_APPROVED_RECIPIENT();
-
+    function _vote(address recipient, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
         // calculate new member units for recipient
         // make sure to add the current units to the new units
         uint128 currentUnits = pool.getUnits(recipient);
@@ -178,25 +122,22 @@ contract Flow is
         uint128 memberUnits = currentUnits + newUnits;
 
         // update votes, track recipient, bps, and total member units assigned
-        votes[voter].push(VoteAllocation({recipient: recipient, bps: bps, memberUnits: newUnits}));
+        votes[tokenId].push(VoteAllocation({recipient: recipient, bps: bps, memberUnits: newUnits}));
 
         // update member units
         updateMemberUnits(recipient, memberUnits);
 
-        // update voterToRecipientMemberUnits
-        voterToRecipientMemberUnits[voter][recipient] = newUnits;
-
-        emit VoteCast(recipient, voter, memberUnits, bps);
+        emit VoteCast(recipient, tokenId, memberUnits, bps);
     }
 
     /**
-     * @notice Clears out units from previous votes allocation for a specific voter.
-     * @param voter The address of the voter whose previous votes are to be cleared.
-     * @dev This function resets the member units for all recipients that the voter has previously voted for.
+     * @notice Clears out units from previous votes allocation for a specific tokenId.
+     * @param tokenId The tokenId whose previous votes are to be cleared.
+     * @dev This function resets the member units for all recipients that the tokenId has previously voted for.
      * It should be called before setting new votes to ensure accurate vote allocations.
      */
-    function _clearPreviousVotes(address voter) internal {
-        VoteAllocation[] memory allocations = votes[voter];
+    function _clearPreviousVotes(uint256 tokenId) internal {
+        VoteAllocation[] memory allocations = votes[tokenId];
         for (uint256 i = 0; i < allocations.length; i++) {
             address recipient = allocations[i].recipient;
             uint128 currentUnits = pool.getUnits(recipient);
@@ -205,58 +146,76 @@ contract Flow is
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
             updateMemberUnits(recipient, currentUnits - unitsDelta);
-
-            // update voterToRecipientMemberUnits
-            voterToRecipientMemberUnits[voter][recipient] = 0;
         }
 
-        // Clear out the votes for the voter
-        delete votes[voter];
+        // Clear out the votes for the tokenId
+        delete votes[tokenId];
     }
 
-    /**
-     * @notice Cast a vote for a set of grant addresses.
+     /**
+     * @notice Checks that the recipients and percentAllocations are valid 
      * @param recipients The addresses of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function setVotesAllocations(address[] memory recipients, uint32[] memory percentAllocations)
+     modifier validVotes(address[] memory recipients, uint32[] memory percentAllocations) {
+        // must have recipients
+        if (recipients.length < 1) {
+            revert TOO_FEW_RECIPIENTS();
+        }
+
+        // recipients & percentAllocations must be equal length
+        if (recipients.length != percentAllocations.length) {
+            revert RECIPIENTS_ALLOCATIONS_MISMATCH(recipients.length, percentAllocations.length);
+        }
+
+        // ensure recipients are not 0 address and allocations are > 0
+        for (uint256 i = 0; i < recipients.length; i++) {
+            address recipient = recipients[i];
+            if (recipient == address(0)) revert ADDRESS_ZERO();
+            if (approvedRecipients[recipient] == false) revert NOT_APPROVED_RECIPIENT();
+            if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
+        }
+
+        _;
+     }
+
+    /**
+     * @notice Cast a vote for a set of grant addresses.
+     * @param tokenIds The tokenIds of the grant recipients.
+     * @param recipients The addresses of the grant recipients.
+     * @param percentAllocations The basis points of the vote to be split with the recipients.
+     */
+    function castVotes(uint256[] memory tokenIds, address[] memory recipients, uint32[] memory percentAllocations)
         external
         nonReentrant
+        validVotes(recipients, percentAllocations)
     {
-        _setVotesAllocations(msg.sender, recipients, percentAllocations);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            if (erc721Votes.ownerOf(tokenIds[i]) != msg.sender) revert NOT_TOKEN_OWNER();
+            _setVotesAllocationForTokenId(tokenIds[i], recipients, percentAllocations);
+        }
     }
 
     /**
      * @notice Cast a vote for a set of grant addresses.
-     * @param voter The address of the voter.
+     * @param tokenId The tokenId owned by the voter.
      * @param recipients The addresses of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function _setVotesAllocations(address voter, address[] memory recipients, uint32[] memory percentAllocations)
+    function _setVotesAllocationForTokenId(uint256 tokenId, address[] memory recipients, uint32[] memory percentAllocations)
         internal
     {
-        uint256 weight = getAccountVotingPower(voter);
-
-        // Ensure the voter has enough voting power to vote
-        if (weight <= minVotingPowerToVote) revert WEIGHT_TOO_LOW();
+        uint256 weight = tokenVoteWeight;
 
         // _getSum should overflow if sum != PERCENTAGE_SCALE
         if (_getSum(percentAllocations) != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
 
         // update member units for previous votes
-        _clearPreviousVotes(voter);
+        _clearPreviousVotes(tokenId);
 
         // set new votes
         for (uint256 i = 0; i < recipients.length; i++) {
-            _vote(recipients[i], percentAllocations[i], voter, weight);
-        }
-
-        // if flow rate is 0, restart it
-        // could happen at beginning when few users are voting
-        // where the member units briefly become 0
-        int96 flowRate = pool.getTotalFlowRate();
-        if (flowRate == 0) {
-            superToken.distributeFlow(address(this), pool, flowRate);
+            _vote(recipients[i], percentAllocations[i], tokenId, weight);
         }
     }
 
@@ -266,10 +225,6 @@ contract Flow is
      */
     function addApprovedRecipient(address recipient) public {
         if (recipient == address(0)) revert ADDRESS_ZERO();
-
-        // check voting power of the caller
-        uint256 weight = getVotingPowerForBlock(msg.sender, block.number - 1);
-        if (weight <= minVotingPowerToCreate) revert WEIGHT_TOO_LOW();
 
         approvedRecipients[recipient] = true;
 
@@ -398,12 +353,6 @@ contract Flow is
     }
 
     /**
-     * @notice Ensures the caller is authorized to upgrade the contract
-     * @param _newImpl The new implementation address
-     */
-    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
-
-    /**
      * @notice Get the pool config
      * @return transferabilityForUnitsOwner The transferability for units owner
      * @return distributionFromAnyAddress The distribution from any address
@@ -411,4 +360,10 @@ contract Flow is
     function getPoolConfig() public view returns (bool transferabilityForUnitsOwner, bool distributionFromAnyAddress) {
         return (poolConfig.transferabilityForUnitsOwner, poolConfig.distributionFromAnyAddress);
     }
+
+    /**
+     * @notice Ensures the caller is authorized to upgrade the contract
+     * @param _newImpl The new implementation address
+     */
+    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
 }

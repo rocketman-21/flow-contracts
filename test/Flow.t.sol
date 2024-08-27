@@ -5,8 +5,10 @@ import {Test} from "forge-std/Test.sol";
 
 import {IFlow} from "../src/interfaces/IFlow.sol";
 import {Flow} from "../src/Flow.sol";
+import {MockERC721} from "./mocks/MockERC721.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
 
 import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
@@ -23,21 +25,21 @@ contract FlowTest is Test {
     SuperfluidFrameworkDeployer internal deployer;
     SuperToken internal superToken;
 
-    address flow;
+    Flow flow;
     address flowImpl;
     address testUSDC;
     IFlow.FlowParams flowParams;
 
-    address erc721Votes;
+    MockERC721 nounsToken;
 
     address manager = address(0x1998);
 
-    function deployFlow(address votingPowerAddress, address superTokenAddress) internal returns (address) {
+    function deployFlow(address erc721, address superTokenAddress) internal returns (Flow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
 
         vm.prank(address(manager));
         IFlow(flowProxy).initialize({
-            nounsToken: votingPowerAddress,
+            nounsToken: erc721,
             superToken: superTokenAddress,
             flowImpl: flowImpl,
             flowParams: flowParams
@@ -45,7 +47,7 @@ contract FlowTest is Test {
 
         _transferTestTokenToFlow(flowProxy);
 
-        return flowProxy;
+        return Flow(flowProxy);
     }
 
     function _transferTestTokenToFlow(address flowAddress) internal {
@@ -67,15 +69,16 @@ contract FlowTest is Test {
         vm.stopPrank();
     }
 
+    function deployMock721(string memory name, string memory symbol) public virtual returns(MockERC721) {
+        return new MockERC721(name, symbol);
+    }
+
     function setUp() public virtual {
-        address votingPowerAddress = address(0x1);
+        nounsToken = deployMock721("Nouns", "NOUN");
         flowImpl = address(new Flow());
 
         flowParams = IFlow.FlowParams({
-            tokenVoteWeight: 1e18, // Example token vote weight
-            quorumVotesBPS: 5000, // Example quorum votes in basis points (50%)
-            minVotingPowerToVote: 1e18, // Minimum voting power required to vote
-            minVotingPowerToCreate: 100 * 1e18 // Minimum voting power required to create a grant
+            tokenVoteWeight: 1e18 * 1000 // Example token vote weight
         });
 
         vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
@@ -89,7 +92,7 @@ contract FlowTest is Test {
         superToken = token;
         testUSDC = address(underlyingToken);
 
-        flow = deployFlow(votingPowerAddress, address(superToken));
+        flow = deployFlow(address(nounsToken), address(superToken));
     }
 
 }
