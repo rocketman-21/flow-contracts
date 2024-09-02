@@ -21,7 +21,7 @@ contract VotingValidationTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
         address[] memory recipients =  new address[](1);
         uint32[] memory percentAllocations = new uint32[](0);
@@ -63,7 +63,7 @@ contract VotingValidationTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
         address[] memory recipients =  new address[](0);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -93,7 +93,7 @@ contract VotingValidationTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
         address[] memory recipients =  new address[](1);
         uint32[] memory percentAllocations = new uint32[](1);

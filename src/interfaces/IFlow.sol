@@ -8,18 +8,18 @@ pragma solidity ^0.8.26;
 interface IFlowEvents {
     /**
      * @dev Emitted when a vote is cast for a grant application.
-     * @param recipient Address of the recipient of the grant.
+     * @param recipientId Id of the recipient of the grant.
      * @param tokenId TokenId owned by the voter.
      * @param memberUnits New member units as a result of the vote.
      * @param bps Basis points of the vote. Proportion of the voters weight that is allocated to the recipient.
      */
-    event VoteCast(address indexed recipient, uint256 indexed tokenId, uint256 memberUnits, uint256 bps);
+    event VoteCast(uint256 indexed recipientId, uint256 indexed tokenId, uint256 memberUnits, uint256 bps);
 
     /// @notice Emitted when the flow is initialized
     event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
 
     /// @notice Emitted when a new grants recipient is set
-    event GrantRecipientApproved(address indexed recipient, address indexed approvedBy);
+    event RecipientCreated(address indexed recipient, address indexed approvedBy);
 
     /// @notice Emitted when the flow rate is updated
     event FlowRateUpdated(int96 oldFlowRate, int96 newFlowRate);
@@ -51,6 +51,9 @@ interface IFlow is IFlowEvents {
 
     /// @dev Reverts if the voter's weight is below the minimum required vote weight.
     error WEIGHT_TOO_LOW();
+
+    /// @dev Reverts if invalid recipientId is passed
+    error INVALID_RECIPIENT_ID();
 
     /// @dev Reverts if the voting signature is invalid
     error INVALID_SIGNATURE();
