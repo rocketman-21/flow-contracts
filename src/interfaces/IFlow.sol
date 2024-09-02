@@ -29,6 +29,9 @@ interface IFlowEvents {
 
     /// @notice Emitted when a new flow implementation is set
     event FlowImplementationSet(address indexed flowImpl);
+
+    /// @notice Emitted when a recipient is approved
+    event RecipientApproved(address indexed recipient, uint256 indexed recipientId);
 }
 
 /**
@@ -84,6 +87,9 @@ interface IFlow is IFlowEvents {
 
     /// @dev Reverts if sender is not manager
     error SENDER_NOT_MANAGER();
+
+    /// @dev Reverts if recipient is already approved
+    error RECIPIENT_ALREADY_APPROVED();
 
     /// @dev Reverts if msg.sender is not owner of tokenId when voting
     error NOT_TOKEN_OWNER();

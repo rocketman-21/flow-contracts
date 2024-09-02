@@ -241,6 +241,22 @@ contract Flow is
     }
 
     /**
+     * @notice Approves a recipient for receiving funds
+     * @param recipientId The ID of the recipient to be approved
+     * @dev Only callable by the owner of the contract
+     * @dev Emits a RecipientApproved event if the recipient is successfully approved
+     // TODO update to only work for the TCR admin!
+     */
+    function approveRecipient(uint256 recipientId) public onlyOwner {
+        if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
+        if (recipients[recipientId].approved) revert RECIPIENT_ALREADY_APPROVED();
+
+        recipients[recipientId].approved = true;
+
+        emit RecipientApproved(recipients[recipientId].recipient, recipientId);
+    }
+
+    /**
      * @notice Updates the member units in the Superfluid pool
      * @param member The address of the member whose units are being updated
      * @param units The new number of units to be assigned to the member
