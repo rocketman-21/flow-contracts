@@ -14,6 +14,14 @@ contract OwnerFlowTest is FlowTest {
         super.setUp();
     }
 
+    function testApproveNonexistentRecipient() public {
+        uint256 nonexistentRecipientId = 999; // Assuming this ID doesn't exist
+
+        vm.prank(manager); // Owner address
+        vm.expectRevert(IFlow.INVALID_RECIPIENT_ID.selector);
+        flow.approveRecipient(nonexistentRecipientId);
+    }
+
     function testSetFlowImpl() public {
         address newFlowImpl = address(0x123);
         vm.prank(address(0)); // Non-owner address
