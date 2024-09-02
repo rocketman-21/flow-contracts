@@ -61,7 +61,6 @@ contract FlowStorageV1 {
         FlowContract
     }
 
-    //todo change recipient prefix in subfields
     // Struct to handle potential recipients
     struct FlowRecipient {
         // the account to stream funds to
@@ -70,7 +69,5 @@ contract FlowStorageV1 {
         bool approved;
         // the type of recipient, either account or flow contract
         RecipientType recipientType;
-        // the id of the recipient
-        uint256 recipientId;
     }
 }

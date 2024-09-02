@@ -231,8 +231,7 @@ contract Flow is
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.ExternalAccount,
             approved: false,
-            recipient: recipient,
-            recipientId: recipientCount
+            recipient: recipient
         });
 
         recipientCount++;
@@ -248,7 +247,7 @@ contract Flow is
      // TODO update to only work for the TCR admin!
      */
     function approveRecipient(uint256 recipientId) public onlyOwner {
-        if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
+        if (recipientId > recipientCount) revert INVALID_RECIPIENT_ID();
         if (recipients[recipientId].approved) revert RECIPIENT_ALREADY_APPROVED();
 
         recipients[recipientId].approved = true;

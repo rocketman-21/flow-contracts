@@ -44,15 +44,17 @@ contract VotingValidationTest is FlowTest {
         vm.expectRevert(abi.encodeWithSelector(selector, 1, 2));
         flow.castVotes(tokenIds, recipientIds, percentAllocationsTwo);
 
-        uint256[] memory recipientIdsTwo =  new uint256[](2);
-        recipientIdsTwo[0] = 0;
-        recipientIdsTwo[1] = 1;
-
         // add new recipient
         flow.addRecipient(address(23));
 
         vm.prank(flow.owner());
         flow.approveRecipient(1);
+
+        uint256[] memory recipientIdsTwo =  new uint256[](2);
+        recipientIdsTwo[0] = 0;
+        recipientIdsTwo[1] = 1;
+
+    
 
         vm.expectRevert(IFlow.ALLOCATION_MUST_BE_POSITIVE.selector);
         vm.prank(voter1);
