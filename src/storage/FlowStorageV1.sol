@@ -19,17 +19,18 @@ contract FlowStorageV1 {
     /// The flow implementation
     address public flowImpl;
 
-    /// The mapping of approved recipients
-    mapping(address => bool) public approvedRecipients;
+    /// Counter for recipients added
+    uint256 public recipientCount;
+
+    /// The mapping of recipients
+    /// [recipientCount++] = new FlowRecipient()
+    mapping(uint256 => FlowRecipient) public recipients;
 
     /// The SuperToken used to pay out the grantees
     ISuperToken public superToken;
 
     /// The Superfluid pool used to distribute the SuperToken
     ISuperfluidPool public pool;
-
-    /// The child flow pools, mapping of recipients to whether or not they are a flow pool
-    mapping(address => bool) public isGrantPool;
 
     /// The mapping of a tokenId to the member units assigned to each recipient they voted for
     mapping(uint256 => mapping(address => uint256)) public tokenIdToRecipientMemberUnits;
@@ -46,10 +47,27 @@ contract FlowStorageV1 {
     // The mapping of a token to a list of votes allocations (recipient, BPS)
     mapping(uint256 => VoteAllocation[]) public votes;
 
-    // Struct to hold the recipient and their corresponding BPS for a vote
+    // Struct to hold the recipientId and their corresponding BPS for a vote
     struct VoteAllocation {
-        address recipient;
+        uint256 recipientId;
         uint32 bps;
         uint128 memberUnits;
+    }
+
+    // Enum to handle type of grant recipient, either address or flow contract
+    // Helpful to set a flow rate if recipient is flow contract
+    enum RecipientType {
+        ExternalAccount,
+        FlowContract
+    }
+
+    // Struct to handle potential recipients
+    struct FlowRecipient {
+        // the account to stream funds to
+        address recipient;
+        // whether or not the recipient has been removed
+        bool removed;
+        // the type of recipient, either account or flow contract
+        RecipientType recipientType;
     }
 }

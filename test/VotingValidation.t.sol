@@ -21,39 +21,42 @@ contract VotingValidationTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
-        address[] memory recipients =  new address[](1);
+        uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](0);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipients[0] = recipient;
+        recipientIds[0] = 0;
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
         bytes4 selector = bytes4(keccak256("RECIPIENTS_ALLOCATIONS_MISMATCH(uint256,uint256)"));
 
         vm.expectRevert(abi.encodeWithSelector(selector, 1, 0));
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         uint32[] memory percentAllocationsTwo = new uint32[](2);
         vm.prank(voter1);
         vm.expectRevert(abi.encodeWithSelector(selector, 1, 2));
-        flow.castVotes(tokenIds, recipients, percentAllocationsTwo);
+        flow.castVotes(tokenIds, recipientIds, percentAllocationsTwo);
 
-        address[] memory recipientsTwo =  new address[](2);
-        recipientsTwo[0] = recipient;
-        recipientsTwo[1] = recipient;
+        // add new recipient
+        flow.addRecipient(address(23));
+
+        uint256[] memory recipientIdsTwo =  new uint256[](2);
+        recipientIdsTwo[0] = 0;
+        recipientIdsTwo[1] = 1;
 
         vm.expectRevert(IFlow.ALLOCATION_MUST_BE_POSITIVE.selector);
         vm.prank(voter1);
-        flow.castVotes(tokenIds, recipientsTwo, percentAllocationsTwo);
+        flow.castVotes(tokenIds, recipientIdsTwo, percentAllocationsTwo);
 
         percentAllocationsTwo[0] = 1e6;
         percentAllocationsTwo[1] = 1e6;
         vm.prank(voter1);
         vm.expectRevert(IFlow.INVALID_BPS_SUM.selector);
-        flow.castVotes(tokenIds, recipientsTwo, percentAllocationsTwo);
+        flow.castVotes(tokenIds, recipientIdsTwo, percentAllocationsTwo);
     }
 
     function test__InvalidRecipients() public {
@@ -63,9 +66,9 @@ contract VotingValidationTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
-        address[] memory recipients =  new address[](0);
+        uint256[] memory recipientIds =  new uint256[](0);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
@@ -74,38 +77,42 @@ contract VotingValidationTest is FlowTest {
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.TOO_FEW_RECIPIENTS.selector);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         address recipient2 = address(4);
+        flow.addRecipient(recipient2);
 
-        address[] memory recipients2 =  new address[](1);
-        recipients2[0] = recipient2;
+        vm.prank(flow.owner());
+        flow.removeRecipient(1);
+
+        uint256[] memory recipientIds2 =  new uint256[](1);
+        recipientIds2[0] = 1;
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.NOT_APPROVED_RECIPIENT.selector);
-        flow.castVotes(tokenIds, recipients2, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds2, percentAllocations);
     }
 
-    function test__RecipientZeroAddr() public {
+    function test__RecipientInvalidId() public {
         address voter1 = address(1);
         uint256 tokenId = 0;
 
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
-        address[] memory recipients =  new address[](1);
+        uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
         tokenIds[0] = tokenId;
-        recipients[0] = address(0);
+        recipientIds[0] = type(uint256).max; // Use an invalid recipient ID
 
         vm.prank(voter1);
-        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        vm.expectRevert(IFlow.INVALID_RECIPIENT_ID.selector);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
     }
 
 }

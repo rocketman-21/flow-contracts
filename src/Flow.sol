@@ -100,16 +100,18 @@ contract Flow is
 
     /**
      * @notice Cast a vote for a specific grant address.
-     * @param recipient The address of the grant recipient.
+     * @param recipientId The id of the grant recipient.
      * @param bps The basis points of the vote to be split with the recipient.
      * @param tokenId The tokenId owned by the voter.
      * @param totalWeight The voting power of the voter.
      * @dev Requires that the recipient is valid, and the weight is greater than the minimum vote weight.
      * Emits a VoteCast event upon successful execution.
      */
-    function _vote(address recipient, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
+    function _vote(uint256 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
         // calculate new member units for recipient
         // make sure to add the current units to the new units
+        // todo check this
+        address recipient = recipients[recipientId].recipient;
         uint128 currentUnits = pool.getUnits(recipient);
 
         // double check for overflow before casting
@@ -122,12 +124,12 @@ contract Flow is
         uint128 memberUnits = currentUnits + newUnits;
 
         // update votes, track recipient, bps, and total member units assigned
-        votes[tokenId].push(VoteAllocation({recipient: recipient, bps: bps, memberUnits: newUnits}));
+        votes[tokenId].push(VoteAllocation({recipientId: recipientId, bps: bps, memberUnits: newUnits}));
 
         // update member units
         updateMemberUnits(recipient, memberUnits);
 
-        emit VoteCast(recipient, tokenId, memberUnits, bps);
+        emit VoteCast(recipientId, tokenId, memberUnits, bps);
     }
 
     /**
@@ -139,7 +141,7 @@ contract Flow is
     function _clearPreviousVotes(uint256 tokenId) internal {
         VoteAllocation[] memory allocations = votes[tokenId];
         for (uint256 i = 0; i < allocations.length; i++) {
-            address recipient = allocations[i].recipient;
+            address recipient = recipients[allocations[i].recipientId].recipient;
             uint128 currentUnits = pool.getUnits(recipient);
             uint128 unitsDelta = allocations[i].memberUnits;
 
@@ -154,25 +156,25 @@ contract Flow is
 
      /**
      * @notice Checks that the recipients and percentAllocations are valid 
-     * @param recipients The addresses of the grant recipients.
+     * @param recipientIds The recipientIds of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-     modifier validVotes(address[] memory recipients, uint32[] memory percentAllocations) {
-        // must have recipients
-        if (recipients.length < 1) {
+     modifier validVotes(uint256[] memory recipientIds, uint32[] memory percentAllocations) {
+        // must have recipientIds
+        if (recipientIds.length < 1) {
             revert TOO_FEW_RECIPIENTS();
         }
 
-        // recipients & percentAllocations must be equal length
-        if (recipients.length != percentAllocations.length) {
-            revert RECIPIENTS_ALLOCATIONS_MISMATCH(recipients.length, percentAllocations.length);
+        // recipientIds & percentAllocations must be equal length
+        if (recipientIds.length != percentAllocations.length) {
+            revert RECIPIENTS_ALLOCATIONS_MISMATCH(recipientIds.length, percentAllocations.length);
         }
 
         // ensure recipients are not 0 address and allocations are > 0
-        for (uint256 i = 0; i < recipients.length; i++) {
-            address recipient = recipients[i];
-            if (recipient == address(0)) revert ADDRESS_ZERO();
-            if (approvedRecipients[recipient] == false) revert NOT_APPROVED_RECIPIENT();
+        for (uint256 i = 0; i < recipientIds.length; i++) {
+            uint256 recipientId = recipientIds[i];
+            if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
+            if (recipients[recipientId].removed == true) revert NOT_APPROVED_RECIPIENT();
             if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
         }
 
@@ -181,28 +183,28 @@ contract Flow is
 
     /**
      * @notice Cast a vote for a set of grant addresses.
-     * @param tokenIds The tokenIds of the grant recipients.
-     * @param recipients The addresses of the grant recipients.
+     * @param tokenIds The tokenIds that the voter is using to vote.
+     * @param recipientIds The recpientIds of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function castVotes(uint256[] memory tokenIds, address[] memory recipients, uint32[] memory percentAllocations)
+    function castVotes(uint256[] memory tokenIds, uint256[] memory recipientIds, uint32[] memory percentAllocations)
         external
         nonReentrant
-        validVotes(recipients, percentAllocations)
+        validVotes(recipientIds, percentAllocations)
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (erc721Votes.ownerOf(tokenIds[i]) != msg.sender) revert NOT_TOKEN_OWNER();
-            _setVotesAllocationForTokenId(tokenIds[i], recipients, percentAllocations);
+            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
         }
     }
 
     /**
      * @notice Cast a vote for a set of grant addresses.
      * @param tokenId The tokenId owned by the voter.
-     * @param recipients The addresses of the grant recipients.
+     * @param recipientIds The recipientIds of the grant recipients to vote for.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function _setVotesAllocationForTokenId(uint256 tokenId, address[] memory recipients, uint32[] memory percentAllocations)
+    function _setVotesAllocationForTokenId(uint256 tokenId, uint256[] memory recipientIds, uint32[] memory percentAllocations)
         internal
     {
         uint256 weight = tokenVoteWeight;
@@ -214,21 +216,44 @@ contract Flow is
         _clearPreviousVotes(tokenId);
 
         // set new votes
-        for (uint256 i = 0; i < recipients.length; i++) {
-            _vote(recipients[i], percentAllocations[i], tokenId, weight);
+        for (uint256 i = 0; i < recipientIds.length; i++) {
+            _vote(recipientIds[i], percentAllocations[i], tokenId, weight);
         }
     }
 
     /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
+          // TODO update to only work for the TCR admin! not owner
      */
-    function addApprovedRecipient(address recipient) public {
-        if (recipient == address(0)) revert ADDRESS_ZERO();
+    function addRecipient(address recipient) public {
+        if (recipient == address(0)) revert ADDRESS_ZERO(); 
 
-        approvedRecipients[recipient] = true;
+        recipients[recipientCount] = FlowRecipient({
+            recipientType: RecipientType.ExternalAccount,
+            removed: false,
+            recipient: recipient
+        });
 
-        emit GrantRecipientApproved(recipient, msg.sender);
+        recipientCount++;
+
+        emit RecipientCreated(recipient, msg.sender);
+    }
+
+    /**
+     * @notice Removes a recipient for receiving funds
+     * @param recipientId The ID of the recipient to be approved
+     * @dev Only callable by the owner of the contract
+     * @dev Emits a RecipientApproved event if the recipient is successfully approved
+     // TODO update to only work for the TCR admin!
+     */
+    function removeRecipient(uint256 recipientId) public onlyOwner {
+        if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
+        if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_APPROVED();
+
+        recipients[recipientId].removed = true;
+
+        emit RecipientRemoved(recipients[recipientId].recipient, recipientId);
     }
 
     /**

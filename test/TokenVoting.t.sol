@@ -25,18 +25,18 @@ contract TokenVotingFlowTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
-        address[] memory recipients =  new address[](1);
+        uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
-        recipients[0] = recipient;
+        recipientIds[0] = 0; // Assuming the first recipient has ID 0
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // get current member units of the pool
         uint128 currentUnits = flow.pool().getUnits(recipient);
@@ -47,7 +47,7 @@ contract TokenVotingFlowTest is FlowTest {
         nounsToken.transferFrom(voter1, voter2, tokenId);
 
         vm.prank(voter2);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         uint128 newUnits = flow.pool().getUnits(recipient);
 
@@ -61,18 +61,18 @@ contract TokenVotingFlowTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
-        address[] memory recipients =  new address[](1);
+        uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
-        recipients[0] = recipient;
+        recipientIds[0] = 0; // Assuming the first recipient has ID 0
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // get current member units of the pool
         uint128 currentUnits = flow.pool().getUnits(recipient);
@@ -84,7 +84,7 @@ contract TokenVotingFlowTest is FlowTest {
         twoTokenIds[1] = tokenId;
 
         vm.prank(voter1);
-        flow.castVotes(twoTokenIds, recipients, percentAllocations);
+        flow.castVotes(twoTokenIds, recipientIds, percentAllocations);
 
         uint128 newUnits = flow.pool().getUnits(recipient);
 
@@ -99,25 +99,25 @@ contract TokenVotingFlowTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
-        address[] memory recipients =  new address[](1);
+        uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
-        recipients[0] = recipient;
+        recipientIds[0] = 0; // Assuming the first recipient has ID 0
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         vm.prank(voter1);
         nounsToken.transferFrom(voter1, voter2, tokenId);
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
     }
 
     function test__NotTokenOwner_MultiTokens() public {
@@ -129,27 +129,27 @@ contract TokenVotingFlowTest is FlowTest {
         nounsToken.mint(voter2, 1);
 
         address recipient = address(3);
-        flow.addApprovedRecipient(recipient);
+        flow.addRecipient(recipient);
 
-        address[] memory recipients =  new address[](1);
+        uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](2);
 
         percentAllocations[0] = 1e6;
-        recipients[0] = recipient;
+        recipientIds[0] = 0; // Assuming the first recipient has ID 0
         tokenIds[0] = tokenId;
         tokenIds[1] = 1;
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         vm.prank(voter1);
         nounsToken.transferFrom(voter1, voter2, tokenId);
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
     }
 
 }

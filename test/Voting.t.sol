@@ -22,29 +22,29 @@ contract VotingFlowTest is FlowTest {
 
         address recipient = address(3);
         address recipient2 = address(4);
-        flow.addApprovedRecipient(recipient);
-        flow.addApprovedRecipient(recipient2);
+        flow.addRecipient(recipient);
+        flow.addRecipient(recipient2);
 
-        address[] memory recipients =  new address[](1);
+        uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
         tokenIds[0] = tokenId;
-        recipients[0] = recipient;
+        recipientIds[0] = 0;
 
         vm.prank(voter1);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // get current member units of the pool
         uint128 currentUnits = flow.pool().getUnits(recipient);
 
         assertGt(currentUnits, 0);
 
-        recipients[0] = recipient2;
+        recipientIds[0] = 1;
 
         vm.prank(voter1);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         uint128 recipient2Units = flow.pool().getUnits(recipient2);
 
@@ -64,10 +64,10 @@ contract VotingFlowTest is FlowTest {
 
         address recipient = address(3);
         address recipient2 = address(4);
-        flow.addApprovedRecipient(recipient);
-        flow.addApprovedRecipient(recipient2);
+        flow.addRecipient(recipient);
+        flow.addRecipient(recipient2);
 
-        address[] memory recipients =  new address[](1);
+        uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory tokenIds2 = new uint256[](1);
@@ -75,10 +75,10 @@ contract VotingFlowTest is FlowTest {
         percentAllocations[0] = 1e6;
         tokenIds[0] = tokenId;
         tokenIds2[0] = tokenId2;
-        recipients[0] = recipient;
+        recipientIds[0] = 0;
 
         vm.prank(voter2);
-        flow.castVotes(tokenIds2, recipients, percentAllocations);
+        flow.castVotes(tokenIds2, recipientIds, percentAllocations);
 
         // get current member units of the pool
         uint128 originalUnits = flow.pool().getUnits(recipient);
@@ -86,17 +86,17 @@ contract VotingFlowTest is FlowTest {
         assertGt(originalUnits, 0);
 
         vm.prank(voter1);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         uint128 secondVoteUnits = flow.pool().getUnits(recipient);
 
         assertGt(secondVoteUnits, originalUnits);
 
-        address[] memory newRecipients =  new address[](1);
-        newRecipients[0] = recipient2;
+        uint256[] memory newRecipientIds =  new uint256[](1);
+        newRecipientIds[0] = 1;
 
         vm.prank(voter1);
-        flow.castVotes(tokenIds, newRecipients, percentAllocations);
+        flow.castVotes(tokenIds, newRecipientIds, percentAllocations);
 
         uint128 recipient2Units = flow.pool().getUnits(recipient2);
         assertGt(recipient2Units, 0);
@@ -115,23 +115,23 @@ contract VotingFlowTest is FlowTest {
 
         address recipient1 = address(3);
         address recipient2 = address(4);
-        flow.addApprovedRecipient(recipient1);
-        flow.addApprovedRecipient(recipient2);
+        flow.addRecipient(recipient1);
+        flow.addRecipient(recipient2);
 
         // Step 3: Prepare vote data
-        address[] memory recipients = new address[](2);
+        uint256[] memory recipientIds = new uint256[](2);
         uint32[] memory percentAllocations = new uint32[](2);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipients[0] = recipient1;
-        recipients[1] = recipient2;
+        recipientIds[0] = 0;
+        recipientIds[1] = 1;
         percentAllocations[0] = splitPercentage;
         percentAllocations[1] = 1e6 - splitPercentage;
         tokenIds[0] = tokenId;
 
         // Step 4: Cast votes
         vm.prank(voter);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // Step 5: Verify vote allocations
         Flow.VoteAllocation[] memory voteAllocations = flow.getVotesForTokenId(tokenId);
@@ -140,12 +140,12 @@ contract VotingFlowTest is FlowTest {
         assertEq(voteAllocations.length, 2);
         
         // Check first allocation
-        assertEq(voteAllocations[0].recipient, recipient1);
+        assertEq(voteAllocations[0].recipientId, 0);
         assertEq(voteAllocations[0].bps, splitPercentage);
         assertGt(voteAllocations[0].memberUnits, 0);
 
         // Check second allocation
-        assertEq(voteAllocations[1].recipient, recipient2);
+        assertEq(voteAllocations[1].recipientId, 1);
         assertEq(voteAllocations[1].bps, 1e6 - splitPercentage);
         assertGt(voteAllocations[1].memberUnits, 0);
 
@@ -171,21 +171,21 @@ contract VotingFlowTest is FlowTest {
 
         address recipient1 = address(3);
         address recipient2 = address(4);
-        flow.addApprovedRecipient(recipient1);
-        flow.addApprovedRecipient(recipient2);
+        flow.addRecipient(recipient1);
+        flow.addRecipient(recipient2);
 
-        address[] memory recipients = new address[](2);
+        uint256[] memory recipientIds = new uint256[](2);
         uint32[] memory percentAllocations = new uint32[](2);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipients[0] = recipient1;
-        recipients[1] = recipient2;
+        recipientIds[0] = 0;
+        recipientIds[1] = 1;
         percentAllocations[0] = 5e5; // 50%
         percentAllocations[1] = 5e5; // 50%
         tokenIds[0] = tokenId;
 
         vm.prank(voter);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         uint128 recipient1OriginalUnits = flow.pool().getUnits(recipient1);
         uint128 recipient2OriginalUnits = flow.pool().getUnits(recipient2);
@@ -194,13 +194,13 @@ contract VotingFlowTest is FlowTest {
         assertGt(recipient2OriginalUnits, 0);
 
         // Change vote to only recipient1
-        recipients = new address[](1);
+        recipientIds = new uint256[](1);
         percentAllocations = new uint32[](1);
-        recipients[0] = recipient1;
+        recipientIds[0] = 0;
         percentAllocations[0] = 1e6; // 100%
 
         vm.prank(voter);
-        flow.castVotes(tokenIds, recipients, percentAllocations);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         uint128 recipient1NewUnits = flow.pool().getUnits(recipient1);
         uint128 recipient2NewUnits = flow.pool().getUnits(recipient2);
@@ -211,7 +211,7 @@ contract VotingFlowTest is FlowTest {
         // Verify that the votes for the tokenId have been updated
         Flow.VoteAllocation[] memory voteAllocations = flow.getVotesForTokenId(tokenId);
         assertEq(voteAllocations.length, 1);
-        assertEq(voteAllocations[0].recipient, recipient1);
+        assertEq(voteAllocations[0].recipientId, 0);
         assertEq(voteAllocations[0].bps, 1e6);
     }
 
