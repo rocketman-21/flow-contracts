@@ -30,8 +30,8 @@ interface IFlowEvents {
     /// @notice Emitted when a new flow implementation is set
     event FlowImplementationSet(address indexed flowImpl);
 
-    /// @notice Emitted when a recipient is approved
-    event RecipientApproved(address indexed recipient, uint256 indexed recipientId);
+    /// @notice Emitted when a recipient is removed
+    event RecipientRemoved(address indexed recipient, uint256 indexed recipientId);
 }
 
 /**

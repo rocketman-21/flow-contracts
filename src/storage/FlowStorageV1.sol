@@ -65,8 +65,8 @@ contract FlowStorageV1 {
     struct FlowRecipient {
         // the account to stream funds to
         address recipient;
-        // whether or not the grant is currently approved
-        bool approved;
+        // whether or not the recipient has been removed
+        bool removed;
         // the type of recipient, either account or flow contract
         RecipientType recipientType;
     }

@@ -23,9 +23,6 @@ contract VotingValidationTest is FlowTest {
         address recipient = address(3);
         flow.addRecipient(recipient);
 
-        vm.prank(flow.owner());
-        flow.approveRecipient(0);
-
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](0);
         uint256[] memory tokenIds = new uint256[](1);
@@ -47,14 +44,9 @@ contract VotingValidationTest is FlowTest {
         // add new recipient
         flow.addRecipient(address(23));
 
-        vm.prank(flow.owner());
-        flow.approveRecipient(1);
-
         uint256[] memory recipientIdsTwo =  new uint256[](2);
         recipientIdsTwo[0] = 0;
         recipientIdsTwo[1] = 1;
-
-    
 
         vm.expectRevert(IFlow.ALLOCATION_MUST_BE_POSITIVE.selector);
         vm.prank(voter1);
@@ -89,6 +81,9 @@ contract VotingValidationTest is FlowTest {
 
         address recipient2 = address(4);
         flow.addRecipient(recipient2);
+
+        vm.prank(flow.owner());
+        flow.removeRecipient(1);
 
         uint256[] memory recipientIds2 =  new uint256[](1);
         recipientIds2[0] = 1;

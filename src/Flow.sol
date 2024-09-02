@@ -174,7 +174,7 @@ contract Flow is
         for (uint256 i = 0; i < recipientIds.length; i++) {
             uint256 recipientId = recipientIds[i];
             if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
-            if (recipients[recipientId].approved == false) revert NOT_APPROVED_RECIPIENT();
+            if (recipients[recipientId].removed == true) revert NOT_APPROVED_RECIPIENT();
             if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
         }
 
@@ -224,13 +224,14 @@ contract Flow is
     /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
+          // TODO update to only work for the TCR admin! not owner
      */
     function addRecipient(address recipient) public {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
 
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.ExternalAccount,
-            approved: false,
+            removed: false,
             recipient: recipient
         });
 
@@ -240,19 +241,19 @@ contract Flow is
     }
 
     /**
-     * @notice Approves a recipient for receiving funds
+     * @notice Removes a recipient for receiving funds
      * @param recipientId The ID of the recipient to be approved
      * @dev Only callable by the owner of the contract
      * @dev Emits a RecipientApproved event if the recipient is successfully approved
      // TODO update to only work for the TCR admin!
      */
-    function approveRecipient(uint256 recipientId) public onlyOwner {
+    function removeRecipient(uint256 recipientId) public onlyOwner {
         if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
-        if (recipients[recipientId].approved) revert RECIPIENT_ALREADY_APPROVED();
+        if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_APPROVED();
 
-        recipients[recipientId].approved = true;
+        recipients[recipientId].removed = true;
 
-        emit RecipientApproved(recipients[recipientId].recipient, recipientId);
+        emit RecipientRemoved(recipients[recipientId].recipient, recipientId);
     }
 
     /**

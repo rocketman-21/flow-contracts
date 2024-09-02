@@ -25,11 +25,6 @@ contract VotingFlowTest is FlowTest {
         flow.addRecipient(recipient);
         flow.addRecipient(recipient2);
 
-        vm.prank(flow.owner());
-        flow.approveRecipient(0);
-        vm.prank(flow.owner());
-        flow.approveRecipient(1);
-
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
@@ -71,11 +66,6 @@ contract VotingFlowTest is FlowTest {
         address recipient2 = address(4);
         flow.addRecipient(recipient);
         flow.addRecipient(recipient2);
-
-        vm.prank(flow.owner());
-        flow.approveRecipient(0);
-        vm.prank(flow.owner());
-        flow.approveRecipient(1);
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -127,11 +117,6 @@ contract VotingFlowTest is FlowTest {
         address recipient2 = address(4);
         flow.addRecipient(recipient1);
         flow.addRecipient(recipient2);
-
-        vm.prank(flow.owner());
-        flow.approveRecipient(0);
-        vm.prank(flow.owner());
-        flow.approveRecipient(1);
 
         // Step 3: Prepare vote data
         uint256[] memory recipientIds = new uint256[](2);
@@ -188,11 +173,6 @@ contract VotingFlowTest is FlowTest {
         address recipient2 = address(4);
         flow.addRecipient(recipient1);
         flow.addRecipient(recipient2);
-
-        vm.prank(flow.owner());
-        flow.approveRecipient(0);
-        vm.prank(flow.owner());
-        flow.approveRecipient(1);
 
         uint256[] memory recipientIds = new uint256[](2);
         uint32[] memory percentAllocations = new uint32[](2);
