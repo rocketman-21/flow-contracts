@@ -173,7 +173,7 @@ contract Flow is
         // ensure recipients are not 0 address and allocations are > 0
         for (uint256 i = 0; i < recipientIds.length; i++) {
             uint256 recipientId = recipientIds[i];
-            if (recipientId > recipientCount) revert INVALID_RECIPIENT_ID();
+            if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
             if (recipients[recipientId].approved == false) revert NOT_APPROVED_RECIPIENT();
             if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
         }
@@ -247,7 +247,7 @@ contract Flow is
      // TODO update to only work for the TCR admin!
      */
     function approveRecipient(uint256 recipientId) public onlyOwner {
-        if (recipientId > recipientCount) revert INVALID_RECIPIENT_ID();
+        if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
         if (recipients[recipientId].approved) revert RECIPIENT_ALREADY_APPROVED();
 
         recipients[recipientId].approved = true;
