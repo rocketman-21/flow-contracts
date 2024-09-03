@@ -268,11 +268,12 @@ contract Flow is
      */
     function removeRecipient(uint256 recipientId) public onlyManager {
         if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
-        if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_APPROVED();
+        if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
         recipients[recipientId].removed = true;
 
-        // todo update member units
+        // set member units to 0
+        updateMemberUnits(recipients[recipientId].recipient, 0);
 
         emit RecipientRemoved(recipients[recipientId].recipient, recipientId);
     }

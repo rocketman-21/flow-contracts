@@ -7,7 +7,7 @@ import {Flow} from "../src/Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
 
-contract RecipientsTest is FlowTest {
+contract AddRecipientsTest is FlowTest {
 
     function setUp() override public {
         super.setUp();

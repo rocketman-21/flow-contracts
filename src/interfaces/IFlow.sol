@@ -94,7 +94,7 @@ interface IFlow is IFlowEvents {
     error SENDER_NOT_MANAGER();
 
     /// @dev Reverts if recipient is already approved
-    error RECIPIENT_ALREADY_APPROVED();
+    error RECIPIENT_ALREADY_REMOVED();
 
     /// @dev Reverts if msg.sender is not owner of tokenId when voting
     error NOT_TOKEN_OWNER();
