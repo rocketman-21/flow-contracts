@@ -17,7 +17,10 @@ contract FlowStorageV1 {
     uint256 public constant PERCENTAGE_SCALE = 1e6;
 
     /// The member units to assign to each recipient of the baseline salary pool
-    uint256 public constant BASELINE_MEMBER_UNITS = 1e5;
+    uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
+
+    /// The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
+    uint256 public baselinePoolFlowRatePercent;
 
     /// The flow implementation
     address public flowImpl;

@@ -6,6 +6,7 @@ import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
 import {Flow} from "../src/Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
+import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 
 contract BasicFlowTest is FlowTest {
 
@@ -19,7 +20,8 @@ contract BasicFlowTest is FlowTest {
         assertEq(flow.tokenVoteWeight(), 1e18 * 1000);
 
         // Check if the total member units is set to 1 if it was initially 0
-        assertEq(flow.getTotalUnits(), 1);
+        assertEq(ISuperfluidPool(flow.baselinePool()).getTotalUnits(), 1);
+        assertEq(ISuperfluidPool(flow.bonusPool()).getTotalUnits(), 1);
     }
 
     function testInitializeContractState() public view {

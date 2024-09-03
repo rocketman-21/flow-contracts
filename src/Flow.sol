@@ -66,6 +66,7 @@ contract Flow is
         // Set the voting power info
         erc721Votes = IERC721Checkpointable(_nounsToken);
         tokenVoteWeight = _flowParams.tokenVoteWeight;
+        baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
         flowImpl = _flowImpl;
         manager = _manager;
         parent = _parent;
@@ -83,7 +84,7 @@ contract Flow is
             _updateBonusMemberUnits(address(this), 1);
         }
         if (baselinePool.getTotalUnits() == 0) {
-            superToken.updateMemberUnits(baselinePool, address(this), 1);
+            _updateBaselineMemberUnits(address(this), 1);
         }
 
         emit FlowInitialized(msg.sender, _superToken, _flowImpl);
@@ -346,7 +347,8 @@ contract Flow is
             manager: flowManager,
             parent: address(this),
             flowParams: FlowParams({
-                tokenVoteWeight: tokenVoteWeight
+                tokenVoteWeight: tokenVoteWeight,
+                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
             }),
             metadata: metadata
         });
@@ -439,12 +441,22 @@ contract Flow is
     /**
      * @notice Updates the member units for the baseline Superfluid pool
      * @param member The address of the member whose units are being updated
+     * @param units The new number of units to be assigned to the member
+     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
+     */
+    function _updateBaselineMemberUnits(address member, uint128 units) internal {
+        bool success = superToken.updateMemberUnits(baselinePool, member, units);
+
+        if (!success) revert UNITS_UPDATE_FAILED();
+    }
+
+    /**
+     * @notice Updates the member units for the baseline Superfluid pool
+     * @param member The address of the member whose units are being updated
      * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
      */
     function _initializeBaselineMemberUnits(address member) internal {
-        bool success = superToken.updateMemberUnits(baselinePool, member, BASELINE_MEMBER_UNITS);
-
-        if (!success) revert UNITS_UPDATE_FAILED();
+        _updateBaselineMemberUnits(member, BASELINE_MEMBER_UNITS);
     }
 
     /**
@@ -453,9 +465,7 @@ contract Flow is
      * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
      */
     function _removeBaselineMemberUnits(address member) internal {
-        bool success = superToken.updateMemberUnits(baselinePool, member, 0);
-
-        if (!success) revert UNITS_UPDATE_FAILED();
+        _updateBaselineMemberUnits(member, 0);
     }
 
     /**

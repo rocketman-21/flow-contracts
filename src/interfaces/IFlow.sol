@@ -133,9 +133,11 @@ interface IFlow is IFlowEvents {
     /**
      * @notice Structure to hold the parameters for initializing a Flow contract.
      * @param tokenVoteWeight The voting weight of the individual ERC721 tokens.
+     * @param baselinePoolFlowRatePercent The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
      */
     struct FlowParams {
         uint256 tokenVoteWeight;
+        uint256 baselinePoolFlowRatePercent;
     }
 
     /**
