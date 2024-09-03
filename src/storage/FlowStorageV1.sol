@@ -26,7 +26,7 @@ contract FlowStorageV1 {
     uint256 public recipientCount;
 
     // Public field for the flow contract metadata
-    FlowMetadata public metadata;
+    RecipientMetadata public metadata;
 
     /// The mapping of recipients
     /// [recipientCount++] = new FlowRecipient()
@@ -67,6 +67,13 @@ contract FlowStorageV1 {
         FlowContract
     }
 
+    // Struct to hold metadata for the flow contract itself
+    struct RecipientMetadata {
+        string title;
+        string image;
+        string description;
+    }
+
     // Struct to handle potential recipients
     struct FlowRecipient {
         // the account to stream funds to
@@ -76,13 +83,6 @@ contract FlowStorageV1 {
         // the type of recipient, either account or flow contract
         RecipientType recipientType;
         // the ipfs hash of the recipient's metadata
-        string metadata;
-    }
-
-    // Struct to hold metadata for the flow contract itself
-    struct FlowMetadata {
-        string title;
-        string image;
-        string description;
+        RecipientMetadata metadata;
     }
 }

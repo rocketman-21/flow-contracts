@@ -22,7 +22,7 @@ contract VotingValidationTest is FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient, recipientMetadata);
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](0);
@@ -44,7 +44,7 @@ contract VotingValidationTest is FlowTest {
 
         // add new recipient
         vm.prank(manager);
-        flow.addRecipient(address(23), "metadata2");
+        flow.addRecipient(address(23), recipientMetadata);
 
         uint256[] memory recipientIdsTwo =  new uint256[](2);
         recipientIdsTwo[0] = 0;
@@ -69,7 +69,7 @@ contract VotingValidationTest is FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient, recipientMetadata);
 
         uint256[] memory recipientIds =  new uint256[](0);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -84,7 +84,7 @@ contract VotingValidationTest is FlowTest {
 
         address recipient2 = address(4);
         vm.prank(manager);
-        flow.addRecipient(recipient2, "metadata3");
+        flow.addRecipient(recipient2, recipientMetadata);
 
         vm.prank(flow.owner());
         flow.removeRecipient(1);
@@ -105,7 +105,7 @@ contract VotingValidationTest is FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient, recipientMetadata);
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);

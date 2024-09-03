@@ -44,10 +44,16 @@ contract Flow is
         address _flowImpl,
         address _manager,
         FlowParams memory _flowParams,
-        FlowMetadata memory _metadata
+        RecipientMetadata memory _metadata
     ) public initializer {
         if (_nounsToken == address(0)) revert ADDRESS_ZERO();
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
+        if (_manager == address(0)) revert ADDRESS_ZERO();
+        if (_superToken == address(0)) revert ADDRESS_ZERO();
+        if (_flowParams.tokenVoteWeight == 0) revert INVALID_VOTE_WEIGHT();
+        if (bytes(_metadata.title).length == 0) revert INVALID_METADATA();
+        if (bytes(_metadata.description).length == 0) revert INVALID_METADATA();
+        if (bytes(_metadata.image).length == 0) revert INVALID_METADATA();
 
         // Initialize EIP-712 support
         __EIP712_init("Flow", "1");
@@ -79,7 +85,7 @@ contract Flow is
      * @notice Sets the address of the grants implementation contract
      * @param _flowImpl The new address of the grants implementation contract
      */
-    function setFlowImpl(address _flowImpl) public onlyOwner {
+    function setFlowImpl(address _flowImpl) public onlyOwner nonReentrant {
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
         
         flowImpl = _flowImpl;
@@ -246,13 +252,23 @@ contract Flow is
     }
 
     /**
+     * @notice Modifier to validate the metadata for a recipient
+     * @param metadata The metadata to validate
+     */
+    modifier validMetadata(RecipientMetadata memory metadata) {
+        if (bytes(metadata.title).length == 0) revert INVALID_METADATA();
+        if (bytes(metadata.description).length == 0) revert INVALID_METADATA();
+        if (bytes(metadata.image).length == 0) revert INVALID_METADATA();
+        _;
+    }
+
+    /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
      * @param metadata The ipfs hash of the recipient's metadata
      */
-    function addRecipient(address recipient, string calldata metadata) public onlyManager {
+    function addRecipient(address recipient, RecipientMetadata memory metadata) public onlyManager nonReentrant validMetadata(metadata) {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
-        if (bytes(metadata).length == 0) revert INVALID_METADATA();
 
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.ExternalAccount,
@@ -267,12 +283,51 @@ contract Flow is
     }
 
     /**
+     * @notice Adds a new Flow contract as a recipient
+     * @dev This function creates a new Flow contract and adds it as a recipient
+     * @param metadata The IPFS hash of the recipient's metadata
+     * @return address The address of the newly created Flow contract
+     * @dev Only callable by the manager of the contract
+     * @dev Emits a RecipientCreated event if the recipient is successfully added
+     //todo who should own this new contract?
+     */
+    function addFlowRecipient(RecipientMetadata memory metadata) public onlyManager validMetadata(metadata) returns (address) {
+        address recipient = address(new ERC1967Proxy(flowImpl, ""));
+        if (recipient == address(0)) revert ADDRESS_ZERO();
+
+        IFlow(recipient).initialize({
+            nounsToken: address(erc721Votes),
+            superToken: address(superToken),
+            flowImpl: flowImpl,
+            manager: manager,
+            flowParams: FlowParams({
+                tokenVoteWeight: tokenVoteWeight
+            }),
+            metadata: metadata
+        });
+
+        recipients[recipientCount] = FlowRecipient({
+            recipientType: RecipientType.FlowContract,
+            removed: false,
+            recipient: recipient,
+            metadata: metadata
+        });
+
+        recipientCount++;
+
+        emit RecipientCreated(recipient, msg.sender);
+        emit FlowCreated(address(this), recipient);
+
+        return recipient;
+    }
+
+    /**
      * @notice Removes a recipient for receiving funds
      * @param recipientId The ID of the recipient to be approved
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
-    function removeRecipient(uint256 recipientId) public onlyManager {
+    function removeRecipient(uint256 recipientId) public onlyManager nonReentrant {
         if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
@@ -304,7 +359,7 @@ contract Flow is
      * @dev Only callable by the owner of the contract
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
-    function setFlowRate(int96 _flowRate) public onlyOwner {
+    function setFlowRate(int96 _flowRate) public onlyOwner nonReentrant {
         emit FlowRateUpdated(pool.getTotalFlowRate(), _flowRate);
 
         superToken.distributeFlow(address(this), pool, _flowRate);
@@ -354,14 +409,6 @@ contract Flow is
      */
     function getPoolMemberUnits(address member) public view returns (uint128 units) {
         return pool.getUnits(member);
-    }
-
-    /**
-     * @notice Helper function to claim all tokens for a member from the pool
-     * @param member The address of the member
-     */
-    function claimAllFromPool(address member) public {
-        pool.claimAll(member);
     }
 
     /**
