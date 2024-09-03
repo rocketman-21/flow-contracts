@@ -266,7 +266,7 @@ contract Flow is
      * @notice Modifier to restrict access to only the owner or the parent
      */
     modifier onlyOwnerOrParent() {
-        if (msg.sender != owner() && msg.sender != parent) revert SENDER_NOT_MANAGER();
+        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
         _;
     }
 

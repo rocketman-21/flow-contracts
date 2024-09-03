@@ -35,13 +35,9 @@ contract OwnerFlowTest is FlowTest {
 
     function testSetFlowRate() public {
         int96 newFlowRate = 10;
-        vm.prank(address(0)); // Non-owner address
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.prank(address(1)); // Non-owner address
+        vm.expectRevert(IFlow.NOT_OWNER_OR_PARENT.selector);
         Flow(flow).setFlowRate(newFlowRate);
-
-        // Log the balance of Flow contract before setting the flow rate
-        uint256 balanceBefore = TestToken(testUSDC).balanceOf(address(flow));
-        console.log("Flow contract balance before setting flow rate:", balanceBefore);
 
         vm.prank(manager); // Owner address
         Flow(flow).setFlowRate(newFlowRate);

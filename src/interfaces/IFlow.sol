@@ -60,6 +60,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if the voter's weight is below the minimum required vote weight.
     error WEIGHT_TOO_LOW();
 
+    /// @dev Reverts if the caller is not the owner or the parent
+    error NOT_OWNER_OR_PARENT();
+
     /// @dev Reverts if invalid recipientId is passed
     error INVALID_RECIPIENT_ID();
 
