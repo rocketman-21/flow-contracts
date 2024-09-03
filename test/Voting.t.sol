@@ -223,5 +223,101 @@ contract VotingFlowTest is FlowTest {
         assertEq(voteAllocations[0].bps, 1e6);
     }
 
+    function test__FlowRecipientFlowRateChanges() public {
+        address voter = address(1);
+        uint256 tokenId = 0;
+
+        nounsToken.mint(voter, tokenId);
+
+        address recipient1 = address(3);
+        address flowRecipient = address(0);
+        vm.startPrank(manager);
+        flow.addRecipient(recipient1, recipientMetadata);
+        flowRecipient = flow.addFlowRecipient(recipientMetadata, manager);
+        vm.stopPrank();
+
+        uint256[] memory recipientIds = new uint256[](1);
+        uint32[] memory percentAllocations = new uint32[](1);
+        uint256[] memory tokenIds = new uint256[](1);
+
+        recipientIds[0] = 1; // Flow recipient
+        percentAllocations[0] = 1e6; // 100%
+        tokenIds[0] = tokenId;
+
+        // // ensure small balance - need to be able to set flow rate
+        _transferTestTokenToFlow(flowRecipient, 56 * 10**18);
+
+        vm.prank(voter);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+
+        // Check that the flow rate for the flow recipient has changed
+        int96 flowRecipientFlowRate = Flow(flowRecipient).getNetFlowRate();
+        assertEq(flowRecipientFlowRate, 0);
+
+        int96 flowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
+        assertGt(flowRecipientTotalFlowRate, 0);
+
+        // Change vote to recipient1
+        recipientIds[0] = 0;
+        percentAllocations[0] = 1e6; // 100%
+
+        vm.prank(voter);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+
+        // Check that the flow rate for the flow recipient is now 0
+        int96 newFlowRecipientFlowRate = IFlow(flowRecipient).getNetFlowRate();
+        assertEq(newFlowRecipientFlowRate, 0);
+
+        // Check that total flow rate is 0
+        int96 newFlowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
+        assertEq(newFlowRecipientTotalFlowRate, 0);
+
+        // Check that recipient1 now has units
+        uint128 recipient1Units = flow.pool().getUnits(recipient1);
+        assertGt(recipient1Units, 0);
+    }
+
+    function test__FlowRecipientFlowRateBufferAmount() public {
+        address voter = address(1);
+        uint256 tokenId = 0;
+
+        nounsToken.mint(voter, tokenId);
+
+        address recipient1 = address(3);
+        address flowRecipient = address(0);
+        vm.startPrank(manager);
+        flow.addRecipient(recipient1, recipientMetadata);
+        flowRecipient = flow.addFlowRecipient(recipientMetadata, manager);
+        vm.stopPrank();
+
+        uint256[] memory recipientIds = new uint256[](1);
+        uint32[] memory percentAllocations = new uint32[](1);
+        uint256[] memory tokenIds = new uint256[](1);
+
+        recipientIds[0] = 1; // Flow recipient
+        percentAllocations[0] = 1e6; // 100%
+        tokenIds[0] = tokenId;
+
+        vm.prank(voter);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+
+        // Check that the flow rate for the flow recipient has changed
+        int96 flowRecipientFlowRate = Flow(flowRecipient).getNetFlowRate();
+        assertGt(flowRecipientFlowRate, 0);
+
+        // the total flow rate should be 0 because the recipient does not have the buffer amount yet
+        int96 flowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
+        assertEq(flowRecipientTotalFlowRate, 0);
+
+        // transfer tokens to flow recipient
+        _transferTestTokenToFlow(flowRecipient, 100 * 10**18);
+
+        // vote again check total flow rate is now gt 0
+        vm.prank(voter);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+
+        int96 newFlowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
+        assertGt(newFlowRecipientTotalFlowRate, 0);
+    }
 
 }

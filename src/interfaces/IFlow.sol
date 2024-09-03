@@ -60,6 +60,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if the voter's weight is below the minimum required vote weight.
     error WEIGHT_TOO_LOW();
 
+    /// @dev Reverts if the caller is not the owner or the parent
+    error NOT_OWNER_OR_PARENT();
+
     /// @dev Reverts if invalid recipientId is passed
     error INVALID_RECIPIENT_ID();
 
@@ -113,6 +116,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if voting allocation is not positive
     error ALLOCATION_MUST_BE_POSITIVE();
 
+    /// @dev Reverts if pool connection fails
+    error POOL_CONNECTION_FAILED();
+
 
     ///                                                          ///
     ///                         STRUCTS                          ///
@@ -133,13 +139,28 @@ interface IFlow is IFlowEvents {
     }
 
     /**
+     * @notice Retrieves the net flow rate for this Flow contract
+     * @return netFlowRate The net flow rate for the contract
+     */
+    function getNetFlowRate() external view returns (int96 netFlowRate);
+
+    /**
+     * @notice Sets the flow rate for the Superfluid pool
+     * @param _flowRate The new flow rate to be set
+     * @dev Only callable by the owner or parent of the contract
+     * @dev Should emit a FlowRateUpdated event with the old and new flow rates
+     */
+    function setFlowRate(int96 _flowRate) external;
+
+    /**
      * @notice Initializes a token's metadata descriptor
      * @param nounsToken The address of the ERC721Checkpointable contract
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
      * @param manager The address of the flow manager
+     * @param parent The address of the parent flow contract (optional)
      * @param flowParams The parameters for the flow contract
      */
-    function initialize(address nounsToken, address superToken, address flowImpl, address manager, FlowParams memory flowParams, FlowStorageV1.RecipientMetadata memory metadata)
+    function initialize(address nounsToken, address superToken, address flowImpl, address manager, address parent, FlowParams memory flowParams, FlowStorageV1.RecipientMetadata memory metadata)
         external;
 }

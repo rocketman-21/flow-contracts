@@ -61,6 +61,7 @@ contract BasicFlowTest is FlowTest {
             superToken: address(superToken),
             flowImpl: flowImpl,
             manager: manager, // Add this line
+            parent: address(0),
             flowParams: flowParams,
             metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
         });
@@ -75,6 +76,7 @@ contract BasicFlowTest is FlowTest {
             superToken: address(superToken),
             flowImpl: address(0),
             manager: manager, // Add this line
+            parent: address(0),
             flowParams: flowParams,
             metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
         });
@@ -86,6 +88,7 @@ contract BasicFlowTest is FlowTest {
             address(superToken),
             address(flowImpl),
             manager, // Add this line
+            address(0),
             flowParams,
             FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
         );
@@ -97,8 +100,87 @@ contract BasicFlowTest is FlowTest {
             address(superToken),
             address(flowImpl),
             manager, // Add this line
+            address(0),
             flowParams,
             FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
         );
+    }
+
+    function testGetNetFlowRate() public {
+        // Setup: Create a flow to establish a non-zero net flow rate
+        int96 initialFlowRate = 1000000000; // 1 token per second
+        vm.prank(manager);
+        flow.setFlowRate(initialFlowRate);
+
+        // Get the net flow rate
+        int96 netFlowRate = flow.getNetFlowRate();
+
+        // Assert that the net flow rate matches the initial flow rate
+        assertEq(netFlowRate, initialFlowRate * -1, "Net flow rate should match the initial flow rate");
+
+        // Change the flow rate
+        int96 newFlowRate = 2000000000; // 2 tokens per second
+        vm.prank(manager);
+        flow.setFlowRate(newFlowRate);
+
+        // Get the updated net flow rate
+        int96 updatedNetFlowRate = flow.getNetFlowRate();
+
+        // Assert that the updated net flow rate matches the new flow rate
+        assertEq(updatedNetFlowRate, newFlowRate * -1, "Updated net flow rate should match the new flow rate");
+
+        // Test with zero flow rate
+        vm.prank(manager);
+        flow.setFlowRate(0);
+
+        // Get the net flow rate after setting to zero
+        int96 zeroNetFlowRate = flow.getNetFlowRate();
+
+        // Assert that the net flow rate is zero
+        assertEq(zeroNetFlowRate, 0, "Net flow rate should be zero after setting flow rate to zero");
+    }
+
+    function testAddFlowRecipient() public {
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
+            title: "Test Flow Recipient",
+            description: "A test flow recipient",
+            image: "ipfs://testimage"
+        });
+        address flowManager = address(0x123);
+
+        vm.prank(manager);
+        address newFlowRecipient = flow.addFlowRecipient(metadata, flowManager);
+
+        assertNotEq(newFlowRecipient, address(0));
+
+        address parent = address(flow);
+
+        // Check if the new flow recipient is properly initialized
+        Flow newFlow = Flow(newFlowRecipient);
+        assertEq(address(newFlow.erc721Votes()), address(nounsToken));
+        assertEq(address(newFlow.superToken()), address(superToken));
+        assertEq(newFlow.flowImpl(), flowImpl);
+        assertEq(newFlow.manager(), flowManager);
+        assertEq(newFlow.parent(), parent);
+        assertEq(newFlow.tokenVoteWeight(), flow.tokenVoteWeight());
+
+        // Check if the recipient is added to the main flow contract
+        (address recipient, bool removed, FlowStorageV1.RecipientType recipientType, FlowStorageV1.RecipientMetadata memory storedMetadata) = flow.recipients(flow.recipientCount() - 1);
+        assertEq(uint(recipientType), uint(FlowStorageV1.RecipientType.FlowContract));
+        assertEq(removed, false);
+        assertEq(recipient, newFlowRecipient);
+        assertEq(storedMetadata.title, metadata.title);
+        assertEq(storedMetadata.description, metadata.description);
+        assertEq(storedMetadata.image, metadata.image);
+
+        // Test adding with zero address flowManager (should revert)
+        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
+        vm.prank(manager);
+        flow.addFlowRecipient(metadata, address(0));
+
+        // Test adding with non-manager address (should revert)
+        vm.prank(address(0xdead));
+        vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
+        flow.addFlowRecipient(metadata, flowManager);
     }
 }

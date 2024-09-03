@@ -47,17 +47,21 @@ contract FlowTest is Test {
             superToken: superTokenAddress,
             flowImpl: flowImpl,
             manager: manager, // Add this line
+            parent: address(0),
             flowParams: flowParams,
             metadata: flowMetadata
         });
 
-        _transferTestTokenToFlow(flowProxy);
+        _transferTestTokenToFlow(flowProxy, 10_000 * 10**18); //10k usdc a month to start
+
+        // set small flow rate 
+        vm.prank(manager);
+        IFlow(flowProxy).setFlowRate(385 * 10**13); // 0.00385 tokens per second
 
         return Flow(flowProxy);
     }
 
-    function _transferTestTokenToFlow(address flowAddress) internal {
-        uint256 amount = 1e6 * 10**18; 
+    function _transferTestTokenToFlow(address flowAddress, uint256 amount) internal {
         vm.startPrank(manager);
         
         // Mint underlying tokens

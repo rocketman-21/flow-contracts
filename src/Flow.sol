@@ -12,6 +12,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
 contract Flow is
@@ -35,6 +36,7 @@ contract Flow is
      * @param _superToken The address of the SuperToken to be used for the pool
      * @param _flowImpl The address of the flow implementation contract
      * @param _manager The address of the flow manager
+     * @param _parent The address of the parent flow contract (optional)
      * @param _flowParams The parameters for the flow contract
      * @param _metadata The metadata for the flow contract
      */
@@ -43,6 +45,7 @@ contract Flow is
         address _superToken,
         address _flowImpl,
         address _manager,
+        address _parent,
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
     ) public initializer {
@@ -65,6 +68,7 @@ contract Flow is
         tokenVoteWeight = _flowParams.tokenVoteWeight;
         flowImpl = _flowImpl;
         manager = _manager;
+        parent = _parent;
 
         superToken = ISuperToken(_superToken);
         pool = superToken.createPool(address(this), poolConfig);
@@ -127,8 +131,10 @@ contract Flow is
         // calculate new member units for recipient
         // make sure to add the current units to the new units
         // todo check this
-        address recipient = recipients[recipientId].recipient;
-        uint128 currentUnits = pool.getUnits(recipient);
+        FlowRecipient memory recipient = recipients[recipientId];
+        RecipientType recipientType = recipient.recipientType;
+        address recipientAddress = recipient.recipient;
+        uint128 currentUnits = pool.getUnits(recipientAddress);
 
         // double check for overflow before casting
         // and scale back by 1e15 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
@@ -143,7 +149,12 @@ contract Flow is
         votes[tokenId].push(VoteAllocation({recipientId: recipientId, bps: bps, memberUnits: newUnits}));
 
         // update member units
-        updateMemberUnits(recipient, memberUnits);
+        updateMemberUnits(recipientAddress, memberUnits);
+
+        // if recipient is a flow contract, set the flow rate for the child contract
+        if (recipientType == RecipientType.FlowContract) {
+            _setChildFlowRate(recipientAddress);
+        }
 
         emit VoteCast(recipientId, tokenId, memberUnits, bps);
     }
@@ -166,10 +177,17 @@ contract Flow is
             address recipientAddress = recipient.recipient;
             uint128 currentUnits = pool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
+            RecipientType recipientType = recipient.recipientType;
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
             updateMemberUnits(recipientAddress, currentUnits - unitsDelta);
+
+            // after updating member units, set the flow rate for the child contract
+            // if recipient is a flow contract, set the flow rate for the child contract
+            if (recipientType == RecipientType.FlowContract) {
+                _setChildFlowRate(recipientAddress);
+            }
         }
 
         // Clear out the votes for the tokenId
@@ -252,6 +270,14 @@ contract Flow is
     }
 
     /**
+     * @notice Modifier to restrict access to only the owner or the parent
+     */
+    modifier onlyOwnerOrParent() {
+        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
+        _;
+    }
+
+    /**
      * @notice Modifier to validate the metadata for a recipient
      * @param metadata The metadata to validate
      */
@@ -302,6 +328,7 @@ contract Flow is
             flowImpl: flowImpl,
             // so that a new TCR contract can control this new flow contract
             manager: flowManager,
+            parent: address(this),
             flowParams: FlowParams({
                 tokenVoteWeight: tokenVoteWeight
             }),
@@ -309,6 +336,9 @@ contract Flow is
         });
 
         Ownable2StepUpgradeable(recipient).transferOwnership(owner());
+
+        // connect the new child contract to the pool!
+        Flow(recipient).connectPool(pool);
 
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
@@ -346,6 +376,35 @@ contract Flow is
     }
 
     /**
+     * @notice Sets the flow rate for a child Flow contract
+     * @param childAddress The address of the child Flow contract
+     */
+    function _setChildFlowRate(address childAddress) internal {
+        if (childAddress == address(0)) revert ADDRESS_ZERO();
+
+        int96 memberFlowRate = getMemberFlowRate(childAddress);
+
+        // Call setFlowRate on the child contract
+        // only set if buffer required is less than balance of contract
+        if(superToken.getBufferAmountByFlowRate(memberFlowRate) < superToken.balanceOf(childAddress)) {
+            IFlow(childAddress).setFlowRate(memberFlowRate);
+        }
+    }
+
+    /**
+     * @notice Connects this contract to a Superfluid pool
+     * @param poolAddress The address of the Superfluid pool to connect to
+     * @dev Only callable by the owner or parent of the contract
+     * @dev Emits a PoolConnected event upon successful connection
+     */
+    function connectPool(ISuperfluidPool poolAddress) external onlyOwnerOrParent nonReentrant {
+        if (address(poolAddress) == address(0)) revert ADDRESS_ZERO();
+
+        bool success = superToken.connectPool(poolAddress);
+        if (!success) revert POOL_CONNECTION_FAILED();
+    }
+
+    /**
      * @notice Updates the member units in the Superfluid pool
      * @param member The address of the member whose units are being updated
      * @param units The new number of units to be assigned to the member
@@ -360,10 +419,10 @@ contract Flow is
     /**
      * @notice Sets the flow rate for the Superfluid pool
      * @param _flowRate The new flow rate to be set
-     * @dev Only callable by the owner of the contract
+     * @dev Only callable by the owner or parent of the contract
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
-    function setFlowRate(int96 _flowRate) public onlyOwner nonReentrant {
+    function setFlowRate(int96 _flowRate) public onlyOwnerOrParent nonReentrant {
         emit FlowRateUpdated(pool.getTotalFlowRate(), _flowRate);
 
         superToken.distributeFlow(address(this), pool, _flowRate);
@@ -413,6 +472,14 @@ contract Flow is
      */
     function getPoolMemberUnits(address member) public view returns (uint128 units) {
         return pool.getUnits(member);
+    }
+
+    /**
+     * @notice Retrieves the net flow rate for a specific account
+     * @return netFlowRate The net flow rate for the account
+     */
+    function getNetFlowRate() public view returns (int96 netFlowRate) {
+        return superToken.getNetFlowRate(address(this));
     }
 
     /**

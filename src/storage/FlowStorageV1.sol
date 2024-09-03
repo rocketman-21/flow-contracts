@@ -19,6 +19,9 @@ contract FlowStorageV1 {
     /// The flow implementation
     address public flowImpl;
 
+    /// The parent flow contract (optional)
+    address public parent;
+
     /// The flow manager
     address public manager;
 
