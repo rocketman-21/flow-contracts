@@ -71,7 +71,7 @@ contract Flow is
         parent = _parent;
 
         superToken = ISuperToken(_superToken);
-        pool = superToken.createPool(address(this), poolConfig);
+        bonusPool = superToken.createPool(address(this), poolConfig);
 
         // Set the metadata
         metadata = _metadata;
@@ -79,7 +79,7 @@ contract Flow is
         // if total member units is 0, set 1 member unit to address(this)
         // do this to prevent distribution pool from resetting flow rate to 0
         if (getTotalUnits() == 0) {
-            updateMemberUnits(address(this), 1);
+            _updateMemberUnits(address(this), 1);
         }
 
         emit FlowInitialized(msg.sender, _superToken, _flowImpl);
@@ -134,7 +134,7 @@ contract Flow is
         FlowRecipient memory recipient = recipients[recipientId];
         RecipientType recipientType = recipient.recipientType;
         address recipientAddress = recipient.recipient;
-        uint128 currentUnits = pool.getUnits(recipientAddress);
+        uint128 currentUnits = bonusPool.getUnits(recipientAddress);
 
         // double check for overflow before casting
         // and scale back by 1e15 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
@@ -149,7 +149,7 @@ contract Flow is
         votes[tokenId].push(VoteAllocation({recipientId: recipientId, bps: bps, memberUnits: newUnits}));
 
         // update member units
-        updateMemberUnits(recipientAddress, memberUnits);
+        _updateMemberUnits(recipientAddress, memberUnits);
 
         // if recipient is a flow contract, set the flow rate for the child contract
         if (recipientType == RecipientType.FlowContract) {
@@ -175,13 +175,13 @@ contract Flow is
             if (recipient.removed) continue;
 
             address recipientAddress = recipient.recipient;
-            uint128 currentUnits = pool.getUnits(recipientAddress);
+            uint128 currentUnits = bonusPool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
             RecipientType recipientType = recipient.recipientType;
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
-            updateMemberUnits(recipientAddress, currentUnits - unitsDelta);
+            _updateMemberUnits(recipientAddress, currentUnits - unitsDelta);
 
             // after updating member units, set the flow rate for the child contract
             // if recipient is a flow contract, set the flow rate for the child contract
@@ -348,7 +348,7 @@ contract Flow is
         Ownable2StepUpgradeable(recipient).transferOwnership(owner());
 
         // connect the new child contract to the pool!
-        Flow(recipient).connectPool(pool);
+        Flow(recipient).connectPool(bonusPool);
 
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
@@ -378,7 +378,7 @@ contract Flow is
         address recipientAddress = recipients[recipientId].recipient;
 
         // set member units to 0
-        updateMemberUnits(recipientAddress, 0);
+        _updateMemberUnits(recipientAddress, 0);
 
         emit RecipientRemoved(recipientAddress, recipientId);
 
@@ -421,8 +421,8 @@ contract Flow is
      * @param units The new number of units to be assigned to the member
      * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
      */
-    function updateMemberUnits(address member, uint128 units) internal {
-        bool success = superToken.updateMemberUnits(pool, member, units);
+    function _updateMemberUnits(address member, uint128 units) internal {
+        bool success = superToken.updateMemberUnits(bonusPool, member, units);
 
         if (!success) revert UNITS_UPDATE_FAILED();
     }
@@ -434,9 +434,9 @@ contract Flow is
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) public onlyOwnerOrParent nonReentrant {
-        emit FlowRateUpdated(pool.getTotalFlowRate(), _flowRate);
+        emit FlowRateUpdated(bonusPool.getTotalFlowRate(), _flowRate);
 
-        superToken.distributeFlow(address(this), pool, _flowRate);
+        superToken.distributeFlow(address(this), bonusPool, _flowRate);
     }
 
     /**
@@ -482,7 +482,7 @@ contract Flow is
      * @return units The total units of the member
      */
     function getPoolMemberUnits(address member) public view returns (uint128 units) {
-        return pool.getUnits(member);
+        return bonusPool.getUnits(member);
     }
 
     /**
@@ -499,7 +499,7 @@ contract Flow is
      * @return claimableBalance The claimable balance for the member
      */
     function getClaimableBalanceNow(address member) public view returns (int256 claimableBalance) {
-        (claimableBalance,) = pool.getClaimableNow(member);
+        (claimableBalance,) = bonusPool.getClaimableNow(member);
     }
 
     /**
@@ -508,7 +508,7 @@ contract Flow is
      * @return flowRate The flow rate for the member
      */
     function getMemberFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        flowRate = pool.getMemberFlowRate(memberAddr);
+        flowRate = bonusPool.getMemberFlowRate(memberAddr);
     }
 
     /**
@@ -517,7 +517,7 @@ contract Flow is
      * @return totalAmountReceived The total amount received by the member
      */
     function getTotalAmountReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
-        totalAmountReceived = pool.getTotalAmountReceivedByMember(memberAddr);
+        totalAmountReceived = bonusPool.getTotalAmountReceivedByMember(memberAddr);
     }
 
     /**
@@ -525,7 +525,7 @@ contract Flow is
      * @return totalUnits The total units of the pool
      */
     function getTotalUnits() public view returns (uint128 totalUnits) {
-        totalUnits = pool.getTotalUnits();
+        totalUnits = bonusPool.getTotalUnits();
     }
 
     /**
@@ -533,7 +533,7 @@ contract Flow is
      * @return totalFlowRate The total flow rate of the pool
      */
     function getTotalFlowRate() public view returns (int96 totalFlowRate) {
-        totalFlowRate = pool.getTotalFlowRate();
+        totalFlowRate = bonusPool.getTotalFlowRate();
     }
 
     /**

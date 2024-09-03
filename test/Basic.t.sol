@@ -27,7 +27,7 @@ contract BasicFlowTest is FlowTest {
         assertEq(address(flow.superToken()), address(superToken));
 
         // Check if the pool is created and set correctly
-        assertNotEq(address(flow.pool()), address(0));
+        assertNotEq(address(flow.bonusPool()), address(0));
 
         // Check if the flowImpl is set correctly
         assertEq(flow.flowImpl(), address(flowImpl));

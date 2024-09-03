@@ -41,8 +41,11 @@ contract FlowStorageV1 {
     /// The SuperToken used to pay out the grantees
     ISuperToken public superToken;
 
-    /// The Superfluid pool used to distribute the SuperToken
-    ISuperfluidPool public pool;
+    /// The Superfluid pool used to distribute the bonus salary in the SuperToken
+    ISuperfluidPool public bonusPool;
+
+    // The Superfluid pool used to distribute the baseline salary in the SuperToken
+    ISuperfluidPool public baselinePool;
 
     /// The mapping of a tokenId to the member units assigned to each recipient they voted for
     mapping(uint256 => mapping(address => uint256)) public tokenIdToRecipientMemberUnits;

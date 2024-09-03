@@ -39,7 +39,7 @@ contract VotingFlowTest is FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // get current member units of the pool
-        uint128 currentUnits = flow.pool().getUnits(recipient);
+        uint128 currentUnits = flow.bonusPool().getUnits(recipient);
 
         assertGt(currentUnits, 0);
 
@@ -48,11 +48,11 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter1);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 recipient2Units = flow.pool().getUnits(recipient2);
+        uint128 recipient2Units = flow.bonusPool().getUnits(recipient2);
 
         assertGt(recipient2Units, 0);
 
-        assertEq(flow.pool().getUnits(recipient), 0);
+        assertEq(flow.bonusPool().getUnits(recipient), 0);
     }
 
     function test__RecipientVotesCleared_MultiToken() public {
@@ -85,14 +85,14 @@ contract VotingFlowTest is FlowTest {
         flow.castVotes(tokenIds2, recipientIds, percentAllocations);
 
         // get current member units of the pool
-        uint128 originalUnits = flow.pool().getUnits(recipient);
+        uint128 originalUnits = flow.bonusPool().getUnits(recipient);
 
         assertGt(originalUnits, 0);
 
         vm.prank(voter1);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 secondVoteUnits = flow.pool().getUnits(recipient);
+        uint128 secondVoteUnits = flow.bonusPool().getUnits(recipient);
 
         assertGt(secondVoteUnits, originalUnits);
 
@@ -102,10 +102,10 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter1);
         flow.castVotes(tokenIds, newRecipientIds, percentAllocations);
 
-        uint128 recipient2Units = flow.pool().getUnits(recipient2);
+        uint128 recipient2Units = flow.bonusPool().getUnits(recipient2);
         assertGt(recipient2Units, 0);
 
-        assertEq(flow.pool().getUnits(recipient), originalUnits);
+        assertEq(flow.bonusPool().getUnits(recipient), originalUnits);
     }
 
     function test__VoteAllocationStructForMultipleRecipients(uint32 splitPercentage) public {
@@ -195,8 +195,8 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 recipient1OriginalUnits = flow.pool().getUnits(recipient1);
-        uint128 recipient2OriginalUnits = flow.pool().getUnits(recipient2);
+        uint128 recipient1OriginalUnits = flow.bonusPool().getUnits(recipient1);
+        uint128 recipient2OriginalUnits = flow.bonusPool().getUnits(recipient2);
 
         assertGt(recipient1OriginalUnits, 0);
         assertGt(recipient2OriginalUnits, 0);
@@ -210,8 +210,8 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 recipient1NewUnits = flow.pool().getUnits(recipient1);
-        uint128 recipient2NewUnits = flow.pool().getUnits(recipient2);
+        uint128 recipient1NewUnits = flow.bonusPool().getUnits(recipient1);
+        uint128 recipient2NewUnits = flow.bonusPool().getUnits(recipient2);
 
         assertGt(recipient1NewUnits, recipient1OriginalUnits);
         assertEq(recipient2NewUnits, 0);
@@ -273,7 +273,7 @@ contract VotingFlowTest is FlowTest {
         assertEq(newFlowRecipientTotalFlowRate, 0);
 
         // Check that recipient1 now has units
-        uint128 recipient1Units = flow.pool().getUnits(recipient1);
+        uint128 recipient1Units = flow.bonusPool().getUnits(recipient1);
         assertGt(recipient1Units, 0);
     }
 
