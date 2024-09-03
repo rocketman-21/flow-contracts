@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.26;
 
+import {FlowStorageV1} from "../storage/FlowStorageV1.sol";
+
 /**
  * @title IFlowEvents
  * @dev This interface defines the events for the Flow contract.
@@ -85,6 +87,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if bps is greater than 10000
     error INVALID_BPS();
 
+    /// @dev Reverts if metadata is invalid
+    error INVALID_METADATA();
+
     /// @dev Reverts if sender is not manager
     error SENDER_NOT_MANAGER();
 
@@ -131,6 +136,6 @@ interface IFlow is IFlowEvents {
      * @param flowImpl The address of the flow implementation contract
      * @param flowParams The parameters for the flow contract
      */
-    function initialize(address nounsToken, address superToken, address flowImpl, FlowParams memory flowParams)
+    function initialize(address nounsToken, address superToken, address flowImpl, FlowParams memory flowParams, FlowStorageV1.FlowMetadata memory metadata)
         external;
 }

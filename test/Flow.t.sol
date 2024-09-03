@@ -19,6 +19,7 @@ import {SuperfluidFrameworkDeployer} from
     "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
 import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import {SuperToken} from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
+import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
 
 contract FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
@@ -42,7 +43,8 @@ contract FlowTest is Test {
             nounsToken: erc721,
             superToken: superTokenAddress,
             flowImpl: flowImpl,
-            flowParams: flowParams
+            flowParams: flowParams,
+            metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
         });
 
         _transferTestTokenToFlow(flowProxy);

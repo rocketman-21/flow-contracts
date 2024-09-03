@@ -22,8 +22,8 @@ contract VotingFlowTest is FlowTest {
 
         address recipient = address(3);
         address recipient2 = address(4);
-        flow.addRecipient(recipient);
-        flow.addRecipient(recipient2);
+        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient2, "metadata2");
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -64,8 +64,8 @@ contract VotingFlowTest is FlowTest {
 
         address recipient = address(3);
         address recipient2 = address(4);
-        flow.addRecipient(recipient);
-        flow.addRecipient(recipient2);
+        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient2, "metadata2");
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -115,8 +115,8 @@ contract VotingFlowTest is FlowTest {
 
         address recipient1 = address(3);
         address recipient2 = address(4);
-        flow.addRecipient(recipient1);
-        flow.addRecipient(recipient2);
+        flow.addRecipient(recipient1, "metadata");
+        flow.addRecipient(recipient2, "metadata2");
 
         // Step 3: Prepare vote data
         uint256[] memory recipientIds = new uint256[](2);
@@ -171,8 +171,8 @@ contract VotingFlowTest is FlowTest {
 
         address recipient1 = address(3);
         address recipient2 = address(4);
-        flow.addRecipient(recipient1);
-        flow.addRecipient(recipient2);
+        flow.addRecipient(recipient1, "metadata");
+        flow.addRecipient(recipient2, "metadata2");
 
         uint256[] memory recipientIds = new uint256[](2);
         uint32[] memory percentAllocations = new uint32[](2);
