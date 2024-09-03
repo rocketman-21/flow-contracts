@@ -136,6 +136,20 @@ interface IFlow is IFlowEvents {
     }
 
     /**
+     * @notice Retrieves the net flow rate for this Flow contract
+     * @return netFlowRate The net flow rate for the contract
+     */
+    function getNetFlowRate() external view returns (int96 netFlowRate);
+
+    /**
+     * @notice Sets the flow rate for the Superfluid pool
+     * @param _flowRate The new flow rate to be set
+     * @dev Only callable by the owner or parent of the contract
+     * @dev Should emit a FlowRateUpdated event with the old and new flow rates
+     */
+    function setFlowRate(int96 _flowRate) external;
+
+    /**
      * @notice Initializes a token's metadata descriptor
      * @param nounsToken The address of the ERC721Checkpointable contract
      * @param superToken The address of the SuperToken to be used for the pool

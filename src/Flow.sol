@@ -96,14 +96,6 @@ contract Flow is
     }
 
     /**
-     * @notice Retrieves the net flow rate for a specific account
-     * @return netFlowRate The net flow rate for the account
-     */
-    function getNetFlowRate() public view returns (int96 netFlowRate) {
-        return superToken.getNetFlowRate(address(this));
-    }
-
-    /**
      * @notice Retrieves all vote allocations for a given ERC721 tokenId
      * @param tokenId The tokenId of the account to retrieve votes for
      * @return allocations An array of VoteAllocation structs representing each vote made by the token
@@ -138,8 +130,10 @@ contract Flow is
         // calculate new member units for recipient
         // make sure to add the current units to the new units
         // todo check this
-        address recipient = recipients[recipientId].recipient;
-        uint128 currentUnits = pool.getUnits(recipient);
+        FlowRecipient memory recipient = recipients[recipientId];
+        RecipientType recipientType = recipient.recipientType;
+        address recipientAddress = recipient.recipient;
+        uint128 currentUnits = pool.getUnits(recipientAddress);
 
         // double check for overflow before casting
         // and scale back by 1e15 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
@@ -154,7 +148,12 @@ contract Flow is
         votes[tokenId].push(VoteAllocation({recipientId: recipientId, bps: bps, memberUnits: newUnits}));
 
         // update member units
-        updateMemberUnits(recipient, memberUnits);
+        updateMemberUnits(recipientAddress, memberUnits);
+
+        // if recipient is a flow contract, set the flow rate for the child contract
+        if (recipientType == RecipientType.FlowContract) {
+            _setChildFlowRate(recipientAddress);
+        }
 
         emit VoteCast(recipientId, tokenId, memberUnits, bps);
     }
@@ -177,10 +176,17 @@ contract Flow is
             address recipientAddress = recipient.recipient;
             uint128 currentUnits = pool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
+            RecipientType recipientType = recipient.recipientType;
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
             updateMemberUnits(recipientAddress, currentUnits - unitsDelta);
+
+            // after updating member units, set the flow rate for the child contract
+            // if recipient is a flow contract, set the flow rate for the child contract
+            if (recipientType == RecipientType.FlowContract) {
+                _setChildFlowRate(recipientAddress);
+            }
         }
 
         // Clear out the votes for the tokenId
@@ -366,6 +372,20 @@ contract Flow is
     }
 
     /**
+     * @notice Sets the flow rate for a child Flow contract
+     * @param childAddress The address of the child Flow contract
+     */
+    function _setChildFlowRate(address childAddress) internal {
+        if (childAddress == address(0)) revert ADDRESS_ZERO();
+
+        // Get the net flow rate from the child contract
+        int96 netFlowRate = IFlow(childAddress).getNetFlowRate();
+
+        // Call setFlowRate on the child contract
+        IFlow(childAddress).setFlowRate(netFlowRate);
+    }
+
+    /**
      * @notice Updates the member units in the Superfluid pool
      * @param member The address of the member whose units are being updated
      * @param units The new number of units to be assigned to the member
@@ -433,6 +453,14 @@ contract Flow is
      */
     function getPoolMemberUnits(address member) public view returns (uint128 units) {
         return pool.getUnits(member);
+    }
+
+    /**
+     * @notice Retrieves the net flow rate for a specific account
+     * @return netFlowRate The net flow rate for the account
+     */
+    function getNetFlowRate() public view returns (int96 netFlowRate) {
+        return superToken.getNetFlowRate(address(this));
     }
 
     /**

@@ -15,7 +15,7 @@ contract RemoveRecipientsTest is FlowTest {
 
     function testRemoveRecipient() public {
         address recipient = address(0x123);
-        string memory metadata = "ipfs://metadata";
+        
 
         // Add a recipient first
         vm.prank(flow.owner());
@@ -38,7 +38,7 @@ contract RemoveRecipientsTest is FlowTest {
 
     function testRemoveRecipientInvalidId() public {
         address recipient = address(0x123);
-        string memory metadata = "ipfs://metadata";
+        
 
         // Add a recipient first
         vm.prank(flow.owner());
@@ -57,7 +57,7 @@ contract RemoveRecipientsTest is FlowTest {
 
     function testRemoveRecipientAlreadyRemoved() public {
         address recipient = address(0x123);
-        string memory metadata = "ipfs://metadata";
+        
 
         // Add a recipient
         vm.prank(flow.owner());
@@ -75,7 +75,7 @@ contract RemoveRecipientsTest is FlowTest {
 
     function testRemoveRecipientNonManager() public {
         address recipient = address(0x123);
-        string memory metadata = "ipfs://metadata";
+        
 
         // Add a recipient
         vm.prank(flow.owner());
@@ -119,7 +119,7 @@ contract RemoveRecipientsTest is FlowTest {
 
     function testRemoveRecipientUpdateMemberUnits() public {
         address recipient = address(0x123);
-        string memory metadata = "ipfs://metadata";
+        
 
         // Add a recipient
         vm.prank(flow.owner());
@@ -155,7 +155,7 @@ contract RemoveRecipientsTest is FlowTest {
 
     function testRemoveRecipientAndVoteAgain() public {
         address recipient = address(0x123);
-        string memory metadata = "ipfs://metadata";
+        
 
         // Add a recipient
         vm.prank(flow.owner());
@@ -192,7 +192,7 @@ contract RemoveRecipientsTest is FlowTest {
     function testVoteAfterRemovingRecipient() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        string memory metadata = "ipfs://metadata";
+        
 
         // Add two recipients
         vm.startPrank(flow.owner());
