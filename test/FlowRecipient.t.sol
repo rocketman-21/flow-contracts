@@ -33,7 +33,7 @@ contract FlowRecipientTest is FlowTest {
         newFlow.setFlowRate(newFlowRate);
 
         // Verify the flow rate was updated
-        assertEq(newFlow.bonusPool().getTotalFlowRate(), newFlowRate, "Flow rate should be updated by parent");
+        assertEq(newFlow.getTotalFlowRate(), newFlowRate, "Flow rate should be updated by parent");
     }
 
     function testAddFlowRecipient() public {

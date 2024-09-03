@@ -24,7 +24,7 @@ interface IFlowEvents {
     event RecipientCreated(address indexed recipient, address indexed approvedBy);
 
     /// @notice Emitted when the flow rate is updated
-    event FlowRateUpdated(int96 oldFlowRate, int96 newFlowRate);
+    event FlowRateUpdated(int96 oldTotalFlowRate, int96 newTotalFlowRate, int96 baselinePoolFlowRate, int96 bonusPoolFlowRate);
 
     /// @notice Emitted when a new child flow contract is created
     event FlowCreated(address indexed parent, address indexed flow);
@@ -50,6 +50,15 @@ interface IFlow is IFlowEvents {
 
     /// @dev Reverts if unit updates fail
     error UNITS_UPDATE_FAILED();
+
+    /// @dev Reverts if the baseline pool flow rate percent is invalid
+    error INVALID_RATE_PERCENT();
+
+    /// @dev Reverts if the flow rate is negative
+    error FLOW_RATE_NEGATIVE();
+
+    /// @dev Reverts if the flow rate is too high
+    error FLOW_RATE_TOO_HIGH();
 
     /// @dev Reverts if the recipient is not approved.
     error NOT_APPROVED_RECIPIENT();

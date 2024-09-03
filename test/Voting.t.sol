@@ -268,9 +268,21 @@ contract VotingFlowTest is FlowTest {
         int96 newFlowRecipientFlowRate = IFlow(flowRecipient).getNetFlowRate();
         assertEq(newFlowRecipientFlowRate, 0);
 
-        // Check that total flow rate is 0
-        int96 newFlowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
+        // Check that total bonus salary flow rate to the flow recipient is 0
+        int96 newFlowRecipientTotalFlowRate = flow.bonusPool().getMemberFlowRate(flowRecipient);
         assertEq(newFlowRecipientTotalFlowRate, 0);
+
+        // Check that the member units on the bonus pool for the flow recipient are 0
+        uint128 flowRecipientBonusUnits = flow.bonusPool().getUnits(flowRecipient);
+        assertEq(flowRecipientBonusUnits, 0);
+
+        // Check that the baseline pool units for the flow recipient are unchanged
+        uint128 flowRecipientBaselineUnits = flow.baselinePool().getUnits(flowRecipient);
+        assertEq(flowRecipientBaselineUnits, flow.BASELINE_MEMBER_UNITS());
+
+        // Check that the baseline pool units for recipient1 are unchanged
+        uint128 recipient1BaselineUnits = flow.baselinePool().getUnits(recipient1);
+        assertEq(recipient1BaselineUnits, flow.BASELINE_MEMBER_UNITS());
 
         // Check that recipient1 now has units
         uint128 recipient1Units = flow.bonusPool().getUnits(recipient1);

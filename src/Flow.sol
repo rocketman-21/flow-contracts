@@ -57,6 +57,7 @@ contract Flow is
         if (bytes(_metadata.title).length == 0) revert INVALID_METADATA();
         if (bytes(_metadata.description).length == 0) revert INVALID_METADATA();
         if (bytes(_metadata.image).length == 0) revert INVALID_METADATA();
+        if (_flowParams.baselinePoolFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_RATE_PERCENT();
 
         // Initialize EIP-712 support
         __EIP712_init("Flow", "1");
@@ -357,6 +358,7 @@ contract Flow is
 
         // connect the new child contract to the pool!
         Flow(recipient).connectPool(bonusPool);
+        Flow(recipient).connectPool(baselinePool);
 
         _initializeBaselineMemberUnits(recipient);
 
@@ -475,9 +477,19 @@ contract Flow is
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) public onlyOwnerOrParent nonReentrant {
-        emit FlowRateUpdated(bonusPool.getTotalFlowRate(), _flowRate);
+        if(_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
-        superToken.distributeFlow(address(this), bonusPool, _flowRate);
+        int256 baselineFlowRate256 = int256(_scaleAmountByPercentage(uint96(_flowRate), baselinePoolFlowRatePercent));
+
+        if (baselineFlowRate256 > type(int96).max) revert FLOW_RATE_TOO_HIGH();
+
+        int96 baselineFlowRate = int96(baselineFlowRate256);
+        int96 bonusFlowRate = _flowRate - baselineFlowRate;
+
+        emit FlowRateUpdated(getTotalFlowRate(), _flowRate, baselineFlowRate, bonusFlowRate);
+
+        superToken.distributeFlow(address(this), bonusPool, bonusFlowRate);
+        superToken.distributeFlow(address(this), baselinePool, baselineFlowRate);
     }
 
     /**
