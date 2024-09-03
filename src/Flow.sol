@@ -276,12 +276,14 @@ contract Flow is
         if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
-        recipients[recipientId].removed = true;
+        address recipientAddress = recipients[recipientId].recipient;
 
         // set member units to 0
-        updateMemberUnits(recipients[recipientId].recipient, 0);
+        updateMemberUnits(recipientAddress, 0);
 
-        emit RecipientRemoved(recipients[recipientId].recipient, recipientId);
+        emit RecipientRemoved(recipientAddress, recipientId);
+
+        recipients[recipientId].removed = true;
     }
 
     /**
