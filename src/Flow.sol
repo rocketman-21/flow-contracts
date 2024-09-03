@@ -72,6 +72,7 @@ contract Flow is
 
         superToken = ISuperToken(_superToken);
         bonusPool = superToken.createPool(address(this), poolConfig);
+        baselinePool = superToken.createPool(address(this), poolConfig);
 
         // Set the metadata
         metadata = _metadata;
