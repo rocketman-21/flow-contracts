@@ -189,6 +189,9 @@ contract Flow is
             // Update the member units in the pool
             _updateBonusMemberUnits(recipientAddress, currentUnits - unitsDelta);
 
+            /// @notice - Does not update member units for baseline pool
+            /// voting is only for the bonus pool, to ensure all approved recipients get a baseline salary
+
             // after updating member units, set the flow rate for the child contract
             // if recipient is a flow contract, set the flow rate for the child contract
             if (recipientType == RecipientType.FlowContract) {
