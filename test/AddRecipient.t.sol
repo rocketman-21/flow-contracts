@@ -84,4 +84,32 @@ contract AddRecipientsTest is FlowTest {
         assertEq(storedMetadata1.title, metadata1.title);
         assertEq(storedMetadata2.title, metadata2.title);
     }
+
+    function testBaselineMemberUnitsAfterAddingRecipients() public {
+        address externalRecipient = address(0x123);
+        FlowStorageV1.RecipientMetadata memory externalMetadata = FlowStorageV1.RecipientMetadata("External Recipient", "Description", "ipfs://image1");
+
+        // Add external recipient
+        vm.prank(flow.owner());
+        flow.addRecipient(externalRecipient, externalMetadata);
+
+        // Add flow recipient
+        vm.prank(flow.owner());
+        address flowRecipient = flow.addFlowRecipient(
+            FlowStorageV1.RecipientMetadata("Flow Recipient", "Description", "ipfs://image2"),
+            address(0x456) // flowManager address
+        );
+
+        // Check baseline member units for external recipient
+        uint128 externalRecipientUnits = flow.baselinePool().getUnits(externalRecipient);
+        assertEq(externalRecipientUnits, flow.BASELINE_MEMBER_UNITS(), "External recipient should have baseline member units");
+
+        // Check baseline member units for flow recipient
+        uint128 flowRecipientUnits = flow.baselinePool().getUnits(flowRecipient);
+        assertEq(flowRecipientUnits, flow.BASELINE_MEMBER_UNITS(), "Flow recipient should have baseline member units");
+
+        // Verify total units in baseline pool
+        uint128 totalUnits = flow.baselinePool().getTotalUnits();
+        assertEq(totalUnits, flow.BASELINE_MEMBER_UNITS() * 2 + 1, "Total units should be 2 * BASELINE_MEMBER_UNITS + 1 (for address(this))");
+    }
 }

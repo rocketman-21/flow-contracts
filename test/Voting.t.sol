@@ -39,7 +39,7 @@ contract VotingFlowTest is FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // get current member units of the pool
-        uint128 currentUnits = flow.pool().getUnits(recipient);
+        uint128 currentUnits = flow.bonusPool().getUnits(recipient);
 
         assertGt(currentUnits, 0);
 
@@ -48,11 +48,11 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter1);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 recipient2Units = flow.pool().getUnits(recipient2);
+        uint128 recipient2Units = flow.bonusPool().getUnits(recipient2);
 
         assertGt(recipient2Units, 0);
 
-        assertEq(flow.pool().getUnits(recipient), 0);
+        assertEq(flow.bonusPool().getUnits(recipient), 0);
     }
 
     function test__RecipientVotesCleared_MultiToken() public {
@@ -85,14 +85,14 @@ contract VotingFlowTest is FlowTest {
         flow.castVotes(tokenIds2, recipientIds, percentAllocations);
 
         // get current member units of the pool
-        uint128 originalUnits = flow.pool().getUnits(recipient);
+        uint128 originalUnits = flow.bonusPool().getUnits(recipient);
 
         assertGt(originalUnits, 0);
 
         vm.prank(voter1);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 secondVoteUnits = flow.pool().getUnits(recipient);
+        uint128 secondVoteUnits = flow.bonusPool().getUnits(recipient);
 
         assertGt(secondVoteUnits, originalUnits);
 
@@ -102,10 +102,10 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter1);
         flow.castVotes(tokenIds, newRecipientIds, percentAllocations);
 
-        uint128 recipient2Units = flow.pool().getUnits(recipient2);
+        uint128 recipient2Units = flow.bonusPool().getUnits(recipient2);
         assertGt(recipient2Units, 0);
 
-        assertEq(flow.pool().getUnits(recipient), originalUnits);
+        assertEq(flow.bonusPool().getUnits(recipient), originalUnits);
     }
 
     function test__VoteAllocationStructForMultipleRecipients(uint32 splitPercentage) public {
@@ -195,8 +195,8 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 recipient1OriginalUnits = flow.pool().getUnits(recipient1);
-        uint128 recipient2OriginalUnits = flow.pool().getUnits(recipient2);
+        uint128 recipient1OriginalUnits = flow.bonusPool().getUnits(recipient1);
+        uint128 recipient2OriginalUnits = flow.bonusPool().getUnits(recipient2);
 
         assertGt(recipient1OriginalUnits, 0);
         assertGt(recipient2OriginalUnits, 0);
@@ -210,8 +210,8 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 recipient1NewUnits = flow.pool().getUnits(recipient1);
-        uint128 recipient2NewUnits = flow.pool().getUnits(recipient2);
+        uint128 recipient1NewUnits = flow.bonusPool().getUnits(recipient1);
+        uint128 recipient2NewUnits = flow.bonusPool().getUnits(recipient2);
 
         assertGt(recipient1NewUnits, recipient1OriginalUnits);
         assertEq(recipient2NewUnits, 0);
@@ -264,16 +264,24 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        // Check that the flow rate for the flow recipient is now 0
-        int96 newFlowRecipientFlowRate = IFlow(flowRecipient).getNetFlowRate();
-        assertEq(newFlowRecipientFlowRate, 0);
-
-        // Check that total flow rate is 0
-        int96 newFlowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
+        // Check that total bonus salary flow rate to the flow recipient is 0
+        int96 newFlowRecipientTotalFlowRate = flow.bonusPool().getMemberFlowRate(flowRecipient);
         assertEq(newFlowRecipientTotalFlowRate, 0);
 
+        // Check that the member units on the bonus pool for the flow recipient are 0
+        uint128 flowRecipientBonusUnits = flow.bonusPool().getUnits(flowRecipient);
+        assertEq(flowRecipientBonusUnits, 0);
+
+        // Check that the baseline pool units for the flow recipient are unchanged
+        uint128 flowRecipientBaselineUnits = flow.baselinePool().getUnits(flowRecipient);
+        assertEq(flowRecipientBaselineUnits, flow.BASELINE_MEMBER_UNITS());
+
+        // Check that the baseline pool units for recipient1 are unchanged
+        uint128 recipient1BaselineUnits = flow.baselinePool().getUnits(recipient1);
+        assertEq(recipient1BaselineUnits, flow.BASELINE_MEMBER_UNITS());
+
         // Check that recipient1 now has units
-        uint128 recipient1Units = flow.pool().getUnits(recipient1);
+        uint128 recipient1Units = flow.bonusPool().getUnits(recipient1);
         assertGt(recipient1Units, 0);
     }
 

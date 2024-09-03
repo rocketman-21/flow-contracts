@@ -14,7 +14,13 @@ import {PoolConfig} from "@superfluid-finance/ethereum-contracts/contracts/apps/
 /// @notice The Flow storage contract
 contract FlowStorageV1 {
     /// @notice constant to scale uints into percentages (1e6 == 100%)
-    uint256 public constant PERCENTAGE_SCALE = 1e6;
+    uint32 public constant PERCENTAGE_SCALE = 1e6;
+
+    /// The member units to assign to each recipient of the baseline salary pool
+    uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
+
+    /// The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
+    uint32 public baselinePoolFlowRatePercent;
 
     /// The flow implementation
     address public flowImpl;
@@ -25,8 +31,11 @@ contract FlowStorageV1 {
     /// The flow manager
     address public manager;
 
-    /// Counter for recipients added
+    /// Counter for total recipients added
     uint256 public recipientCount;
+
+    /// Counter for active recipients (not removed)
+    uint256 public activeRecipientCount;
 
     // Public field for the flow contract metadata
     RecipientMetadata public metadata;
@@ -38,8 +47,11 @@ contract FlowStorageV1 {
     /// The SuperToken used to pay out the grantees
     ISuperToken public superToken;
 
-    /// The Superfluid pool used to distribute the SuperToken
-    ISuperfluidPool public pool;
+    /// The Superfluid pool used to distribute the bonus salary in the SuperToken
+    ISuperfluidPool public bonusPool;
+
+    // The Superfluid pool used to distribute the baseline salary in the SuperToken
+    ISuperfluidPool public baselinePool;
 
     /// The mapping of a tokenId to the member units assigned to each recipient they voted for
     mapping(uint256 => mapping(address => uint256)) public tokenIdToRecipientMemberUnits;

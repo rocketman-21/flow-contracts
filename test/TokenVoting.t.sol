@@ -40,7 +40,7 @@ contract TokenVotingFlowTest is FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // get current member units of the pool
-        uint128 currentUnits = flow.pool().getUnits(recipient);
+        uint128 currentUnits = flow.bonusPool().getUnits(recipient);
 
         assertGt(currentUnits, 0);
 
@@ -50,7 +50,7 @@ contract TokenVotingFlowTest is FlowTest {
         vm.prank(voter2);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        uint128 newUnits = flow.pool().getUnits(recipient);
+        uint128 newUnits = flow.bonusPool().getUnits(recipient);
 
         assertEq(newUnits, currentUnits);
     }
@@ -77,7 +77,7 @@ contract TokenVotingFlowTest is FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // get current member units of the pool
-        uint128 currentUnits = flow.pool().getUnits(recipient);
+        uint128 currentUnits = flow.bonusPool().getUnits(recipient);
 
         assertGt(currentUnits, 0);
 
@@ -88,7 +88,7 @@ contract TokenVotingFlowTest is FlowTest {
         vm.prank(voter1);
         flow.castVotes(twoTokenIds, recipientIds, percentAllocations);
 
-        uint128 newUnits = flow.pool().getUnits(recipient);
+        uint128 newUnits = flow.bonusPool().getUnits(recipient);
 
         assertEq(newUnits, currentUnits);
     }

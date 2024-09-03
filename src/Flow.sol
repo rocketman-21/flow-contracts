@@ -57,6 +57,7 @@ contract Flow is
         if (bytes(_metadata.title).length == 0) revert INVALID_METADATA();
         if (bytes(_metadata.description).length == 0) revert INVALID_METADATA();
         if (bytes(_metadata.image).length == 0) revert INVALID_METADATA();
+        if (_flowParams.baselinePoolFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_RATE_PERCENT();
 
         // Initialize EIP-712 support
         __EIP712_init("Flow", "1");
@@ -66,20 +67,25 @@ contract Flow is
         // Set the voting power info
         erc721Votes = IERC721Checkpointable(_nounsToken);
         tokenVoteWeight = _flowParams.tokenVoteWeight;
+        baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
         flowImpl = _flowImpl;
         manager = _manager;
         parent = _parent;
 
         superToken = ISuperToken(_superToken);
-        pool = superToken.createPool(address(this), poolConfig);
+        bonusPool = superToken.createPool(address(this), poolConfig);
+        baselinePool = superToken.createPool(address(this), poolConfig);
 
         // Set the metadata
         metadata = _metadata;
 
         // if total member units is 0, set 1 member unit to address(this)
         // do this to prevent distribution pool from resetting flow rate to 0
-        if (getTotalUnits() == 0) {
-            updateMemberUnits(address(this), 1);
+        if (bonusPool.getTotalUnits() == 0) {
+            _updateBonusMemberUnits(address(this), 1);
+        }
+        if (baselinePool.getTotalUnits() == 0) {
+            _updateBaselineMemberUnits(address(this), 1);
         }
 
         emit FlowInitialized(msg.sender, _superToken, _flowImpl);
@@ -134,7 +140,7 @@ contract Flow is
         FlowRecipient memory recipient = recipients[recipientId];
         RecipientType recipientType = recipient.recipientType;
         address recipientAddress = recipient.recipient;
-        uint128 currentUnits = pool.getUnits(recipientAddress);
+        uint128 currentUnits = bonusPool.getUnits(recipientAddress);
 
         // double check for overflow before casting
         // and scale back by 1e15 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
@@ -149,7 +155,7 @@ contract Flow is
         votes[tokenId].push(VoteAllocation({recipientId: recipientId, bps: bps, memberUnits: newUnits}));
 
         // update member units
-        updateMemberUnits(recipientAddress, memberUnits);
+        _updateBonusMemberUnits(recipientAddress, memberUnits);
 
         // if recipient is a flow contract, set the flow rate for the child contract
         if (recipientType == RecipientType.FlowContract) {
@@ -175,13 +181,16 @@ contract Flow is
             if (recipient.removed) continue;
 
             address recipientAddress = recipient.recipient;
-            uint128 currentUnits = pool.getUnits(recipientAddress);
+            uint128 currentUnits = bonusPool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
             RecipientType recipientType = recipient.recipientType;
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
-            updateMemberUnits(recipientAddress, currentUnits - unitsDelta);
+            _updateBonusMemberUnits(recipientAddress, currentUnits - unitsDelta);
+
+            /// @notice - Does not update member units for baseline pool
+            /// voting is only for the bonus pool, to ensure all approved recipients get a baseline salary
 
             // after updating member units, set the flow rate for the child contract
             // if recipient is a flow contract, set the flow rate for the child contract
@@ -278,6 +287,14 @@ contract Flow is
     }
 
     /**
+     * @notice Modifier to restrict access to only the owner or the manager
+     */
+    modifier onlyOwnerOrManager() {
+        if (msg.sender != owner() && msg.sender != manager) revert NOT_OWNER_OR_MANAGER();
+        _;
+    }
+
+    /**
      * @notice Modifier to validate the metadata for a recipient
      * @param metadata The metadata to validate
      */
@@ -286,6 +303,16 @@ contract Flow is
         if (bytes(metadata.description).length == 0) revert INVALID_METADATA();
         if (bytes(metadata.image).length == 0) revert INVALID_METADATA();
         _;
+    }
+
+    /**
+     * @notice Increments the recipient counts
+     * @dev This function increments both the total recipient count and the active recipient count
+     * @dev This should be called whenever a new recipient is added
+     */
+    function _incrementRecipientCounts() internal {
+        recipientCount++;
+        activeRecipientCount++;
     }
 
     /**
@@ -303,7 +330,9 @@ contract Flow is
             metadata: metadata
         });
 
-        recipientCount++;
+        _incrementRecipientCounts();
+
+        _initializeBaselineMemberUnits(recipient);
 
         emit RecipientCreated(recipient, msg.sender);
     }
@@ -330,7 +359,8 @@ contract Flow is
             manager: flowManager,
             parent: address(this),
             flowParams: FlowParams({
-                tokenVoteWeight: tokenVoteWeight
+                tokenVoteWeight: tokenVoteWeight,
+                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
             }),
             metadata: metadata
         });
@@ -338,7 +368,10 @@ contract Flow is
         Ownable2StepUpgradeable(recipient).transferOwnership(owner());
 
         // connect the new child contract to the pool!
-        Flow(recipient).connectPool(pool);
+        Flow(recipient).connectPool(bonusPool);
+        Flow(recipient).connectPool(baselinePool);
+
+        _initializeBaselineMemberUnits(recipient);
 
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
@@ -347,7 +380,7 @@ contract Flow is
             metadata: metadata
         });
 
-        recipientCount++;
+        _incrementRecipientCounts();
 
         emit RecipientCreated(recipient, msg.sender);
         emit FlowCreated(address(this), recipient);
@@ -368,11 +401,13 @@ contract Flow is
         address recipientAddress = recipients[recipientId].recipient;
 
         // set member units to 0
-        updateMemberUnits(recipientAddress, 0);
+        _updateBonusMemberUnits(recipientAddress, 0);
+        _removeBaselineMemberUnits(recipientAddress);
 
         emit RecipientRemoved(recipientAddress, recipientId);
 
         recipients[recipientId].removed = true;
+        activeRecipientCount--;
     }
 
     /**
@@ -382,7 +417,7 @@ contract Flow is
     function _setChildFlowRate(address childAddress) internal {
         if (childAddress == address(0)) revert ADDRESS_ZERO();
 
-        int96 memberFlowRate = getMemberFlowRate(childAddress);
+        int96 memberFlowRate = getMemberTotalFlowRate(childAddress);
 
         // Call setFlowRate on the child contract
         // only set if buffer required is less than balance of contract
@@ -410,10 +445,40 @@ contract Flow is
      * @param units The new number of units to be assigned to the member
      * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
      */
-    function updateMemberUnits(address member, uint128 units) internal {
-        bool success = superToken.updateMemberUnits(pool, member, units);
+    function _updateBonusMemberUnits(address member, uint128 units) internal {
+        bool success = superToken.updateMemberUnits(bonusPool, member, units);
 
         if (!success) revert UNITS_UPDATE_FAILED();
+    }
+
+    /**
+     * @notice Updates the member units for the baseline Superfluid pool
+     * @param member The address of the member whose units are being updated
+     * @param units The new number of units to be assigned to the member
+     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
+     */
+    function _updateBaselineMemberUnits(address member, uint128 units) internal {
+        bool success = superToken.updateMemberUnits(baselinePool, member, units);
+
+        if (!success) revert UNITS_UPDATE_FAILED();
+    }
+
+    /**
+     * @notice Updates the member units for the baseline Superfluid pool
+     * @param member The address of the member whose units are being updated
+     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
+     */
+    function _initializeBaselineMemberUnits(address member) internal {
+        _updateBaselineMemberUnits(member, BASELINE_MEMBER_UNITS);
+    }
+
+    /**
+     * @notice Removes the baseline member units for a given member
+     * @param member The address of the member whose baseline units are to be removed
+     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
+     */
+    function _removeBaselineMemberUnits(address member) internal {
+        _updateBaselineMemberUnits(member, 0);
     }
 
     /**
@@ -422,10 +487,47 @@ contract Flow is
      * @dev Only callable by the owner or parent of the contract
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
-    function setFlowRate(int96 _flowRate) public onlyOwnerOrParent nonReentrant {
-        emit FlowRateUpdated(pool.getTotalFlowRate(), _flowRate);
+    function setFlowRate(int96 _flowRate) external onlyOwnerOrParent nonReentrant {
+        _setFlowRate(_flowRate);
+    }
 
-        superToken.distributeFlow(address(this), pool, _flowRate);
+    /**
+     * @notice Internal function to set the flow rate for the Superfluid pool
+     * @param _flowRate The new flow rate to be set
+     * @dev Emits a FlowRateUpdated event with the old and new flow rates
+     */
+    function _setFlowRate(int96 _flowRate) internal {
+        if(_flowRate < 0) revert FLOW_RATE_NEGATIVE();
+
+        int256 baselineFlowRate256 = int256(_scaleAmountByPercentage(uint96(_flowRate), baselinePoolFlowRatePercent));
+
+        if (baselineFlowRate256 > type(int96).max) revert FLOW_RATE_TOO_HIGH();
+
+        int96 baselineFlowRate = int96(baselineFlowRate256);
+        // cannot be negative because _flowRate will always be greater than baselineFlowRate
+        int96 bonusFlowRate = _flowRate - baselineFlowRate;
+
+        emit FlowRateUpdated(getTotalFlowRate(), _flowRate, baselineFlowRate, bonusFlowRate);
+
+        superToken.distributeFlow(address(this), bonusPool, bonusFlowRate);
+        superToken.distributeFlow(address(this), baselinePool, baselineFlowRate);
+    }
+
+    /**
+     * @notice Sets the baseline flow rate percentage
+     * @param _baselineFlowRatePercent The new baseline flow rate percentage
+     * @dev Only callable by the owner or manager of the contract
+     * @dev Emits a BaselineFlowRatePercentUpdated event with the old and new percentages
+     */
+    function setBaselineFlowRatePercent(uint32 _baselineFlowRatePercent) external onlyOwnerOrManager nonReentrant {
+        if (_baselineFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_PERCENTAGE();
+        
+        emit BaselineFlowRatePercentUpdated(baselinePoolFlowRatePercent, _baselineFlowRatePercent);
+
+        baselinePoolFlowRatePercent = _baselineFlowRatePercent;
+        
+        // Update flow rates to reflect the new percentage
+        _setFlowRate(getTotalFlowRate());
     }
 
     /**
@@ -466,15 +568,6 @@ contract Flow is
     }
 
     /**
-     * @notice Helper function to get the total units of a member in the pool
-     * @param member The address of the member
-     * @return units The total units of the member
-     */
-    function getPoolMemberUnits(address member) public view returns (uint128 units) {
-        return pool.getUnits(member);
-    }
-
-    /**
      * @notice Retrieves the net flow rate for a specific account
      * @return netFlowRate The net flow rate for the account
      */
@@ -483,21 +576,30 @@ contract Flow is
     }
 
     /**
-     * @notice Helper function to get the claimable balance for a member at the current time
-     * @param member The address of the member
-     * @return claimableBalance The claimable balance for the member
-     */
-    function getClaimableBalanceNow(address member) public view returns (int256 claimableBalance) {
-        (claimableBalance,) = pool.getClaimableNow(member);
-    }
-
-    /**
      * @notice Retrieves the flow rate for a specific member in the pool
      * @param memberAddr The address of the member
      * @return flowRate The flow rate for the member
      */
-    function getMemberFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        flowRate = pool.getMemberFlowRate(memberAddr);
+    function getMemberTotalFlowRate(address memberAddr) public view returns (int96 flowRate) {
+        flowRate = bonusPool.getMemberFlowRate(memberAddr) + baselinePool.getMemberFlowRate(memberAddr);
+    }
+
+    /**
+     * @notice Retrieves the flow rate for a specific member in the bonus pool
+     * @param memberAddr The address of the member
+     * @return flowRate The flow rate for the member in the bonus pool
+     */
+    function getMemberBonusFlowRate(address memberAddr) public view returns (int96 flowRate) {
+        return bonusPool.getMemberFlowRate(memberAddr);
+    }
+
+    /**
+     * @notice Retrieves the flow rate for a specific member in the baseline pool
+     * @param memberAddr The address of the member
+     * @return flowRate The flow rate for the member in the baseline pool
+     */
+    function getMemberBaselineFlowRate(address memberAddr) public view returns (int96 flowRate) {
+        return baselinePool.getMemberFlowRate(memberAddr);
     }
 
     /**
@@ -505,33 +607,15 @@ contract Flow is
      * @param memberAddr The address of the member
      * @return totalAmountReceived The total amount received by the member
      */
-    function getTotalAmountReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
-        totalAmountReceived = pool.getTotalAmountReceivedByMember(memberAddr);
+    function getTotalReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
+        totalAmountReceived = bonusPool.getTotalAmountReceivedByMember(memberAddr) + baselinePool.getTotalAmountReceivedByMember(memberAddr);
     }
 
     /**
-     * @notice Retrieves the total units of the pool
-     * @return totalUnits The total units of the pool
-     */
-    function getTotalUnits() public view returns (uint128 totalUnits) {
-        totalUnits = pool.getTotalUnits();
-    }
-
-    /**
-     * @notice Retrieves the total flow rate of the pool
-     * @return totalFlowRate The total flow rate of the pool
+     * @return totalFlowRate The total flow rate of the pools
      */
     function getTotalFlowRate() public view returns (int96 totalFlowRate) {
-        totalFlowRate = pool.getTotalFlowRate();
-    }
-
-    /**
-     * @notice Get the pool config
-     * @return transferabilityForUnitsOwner The transferability for units owner
-     * @return distributionFromAnyAddress The distribution from any address
-     */
-    function getPoolConfig() public view returns (bool transferabilityForUnitsOwner, bool distributionFromAnyAddress) {
-        return (poolConfig.transferabilityForUnitsOwner, poolConfig.distributionFromAnyAddress);
+        totalFlowRate = bonusPool.getTotalFlowRate() + baselinePool.getTotalFlowRate();
     }
 
     /**

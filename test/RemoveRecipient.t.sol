@@ -141,7 +141,7 @@ contract RemoveRecipientsTest is FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // Check initial member units
-        uint128 initialUnits = flow.getPoolMemberUnits(recipient);
+        uint128 initialUnits = flow.bonusPool().getUnits(recipient);
         assertGt(initialUnits, 0);
 
         // Remove the recipient
@@ -149,7 +149,7 @@ contract RemoveRecipientsTest is FlowTest {
         flow.removeRecipient(0);
 
         // Check that member units have been updated (should be 0)
-        uint128 finalUnits = flow.getPoolMemberUnits(recipient);
+        uint128 finalUnits = flow.bonusPool().getUnits(recipient);
         assertEq(finalUnits, 0);
     }
 
@@ -185,7 +185,7 @@ contract RemoveRecipientsTest is FlowTest {
         assertEq(votes.length, 0);
 
         // Verify that member units remain at 0
-        uint128 finalUnits = flow.getPoolMemberUnits(recipient);
+        uint128 finalUnits = flow.bonusPool().getUnits(recipient);
         assertEq(finalUnits, 0);
     }
 
@@ -236,10 +236,122 @@ contract RemoveRecipientsTest is FlowTest {
         assertEq(votes[0].bps, 1e6);
 
         // Verify member units
-        uint128 units1 = flow.getPoolMemberUnits(recipient1);
-        uint128 units2 = flow.getPoolMemberUnits(recipient2);
+        uint128 units1 = flow.bonusPool().getUnits(recipient1);
+        uint128 units2 = flow.bonusPool().getUnits(recipient2);
         assertEq(units1, 0);
         assertGt(units2, 0);
+    }
+
+       function testRemoveRecipientBaselineMemberUnits() public {
+        address recipient1 = address(0x123);
+        address recipient2 = address(0x456);
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Recipient 1", "Description 1", "ipfs://image1");
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Recipient 2", "Description 2", "ipfs://image2");
+
+        // Add recipients
+        vm.prank(flow.owner());
+        flow.addRecipient(recipient1, metadata1);
+        vm.prank(flow.owner());
+        flow.addRecipient(recipient2, metadata2);
+
+        // Check initial state
+        uint128 initialTotalUnits = flow.baselinePool().getTotalUnits();
+        assertEq(initialTotalUnits, flow.BASELINE_MEMBER_UNITS() * 2 + 1, "Initial total units incorrect");
+
+        // Remove first recipient
+        vm.prank(flow.owner());
+        flow.removeRecipient(0);
+
+        // Check units after removing first recipient
+        uint128 unitsAfterRemove1 = flow.baselinePool().getTotalUnits();
+        assertEq(unitsAfterRemove1, flow.BASELINE_MEMBER_UNITS() + 1, "Total units incorrect after removing first recipient");
+        assertEq(flow.baselinePool().getUnits(recipient1), 0, "Removed recipient should have 0 units");
+        assertEq(flow.baselinePool().getUnits(recipient2), flow.BASELINE_MEMBER_UNITS(), "Remaining recipient should keep units");
+
+        // Try to remove the same recipient again (should not change anything)
+        vm.prank(flow.owner());
+        vm.expectRevert(IFlow.RECIPIENT_ALREADY_REMOVED.selector);
+        flow.removeRecipient(0);
+        assertEq(flow.baselinePool().getTotalUnits(), unitsAfterRemove1, "Total units should not change when removing already removed recipient");
+
+        // Remove second recipient
+        vm.prank(flow.owner());
+        flow.removeRecipient(1);
+
+        // Check final state
+        uint128 finalTotalUnits = flow.baselinePool().getTotalUnits();
+        assertEq(finalTotalUnits, 1, "Final total units should be 1 (for address(this))");
+        assertEq(flow.baselinePool().getUnits(recipient2), 0, "Second removed recipient should have 0 units");
+
+        // Try to remove non-existent recipient (should revert)
+        vm.prank(flow.owner());
+        vm.expectRevert();
+        flow.removeRecipient(2);
+
+        // Add a new recipient and verify units are assigned correctly
+        address recipient3 = address(0x789);
+        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata("Recipient 3", "Description 3", "ipfs://image3");
+        vm.prank(flow.owner());
+        flow.addRecipient(recipient3, metadata3);
+
+        assertEq(flow.baselinePool().getTotalUnits(), flow.BASELINE_MEMBER_UNITS() + 1, "Total units incorrect after adding new recipient");
+        assertEq(flow.baselinePool().getUnits(recipient3), flow.BASELINE_MEMBER_UNITS(), "New recipient should have baseline member units");
+    }
+
+    function testRemoveFlowRecipient() public {
+        address flowManager1 = address(0x123);
+        address flowManager2 = address(0x456);
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Flow Recipient 1", "Description 1", "ipfs://image1");
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Flow Recipient 2", "Description 2", "ipfs://image2");
+
+        // Add flow recipients
+        vm.startPrank(flow.owner());
+        address flowRecipient1 = flow.addFlowRecipient(metadata1, flowManager1);
+        address flowRecipient2 = flow.addFlowRecipient(metadata2, flowManager2);
+        vm.stopPrank();
+
+        // Check initial state
+        uint128 initialTotalUnits = flow.baselinePool().getTotalUnits();
+        assertEq(initialTotalUnits, flow.BASELINE_MEMBER_UNITS() * 2 + 1, "Initial total units incorrect");
+
+        // Remove first flow recipient
+        vm.prank(flow.owner());
+        flow.removeRecipient(0);
+
+        // Check units after removing first recipient
+        uint128 unitsAfterRemove1 = flow.baselinePool().getTotalUnits();
+        assertEq(unitsAfterRemove1, flow.BASELINE_MEMBER_UNITS() + 1, "Total units incorrect after removing first recipient");
+        assertEq(flow.baselinePool().getUnits(flowRecipient1), 0, "Removed recipient should have 0 units");
+        assertEq(flow.baselinePool().getUnits(flowRecipient2), flow.BASELINE_MEMBER_UNITS(), "Remaining recipient should keep units");
+
+        // Try to remove the same recipient again (should not change anything)
+        vm.prank(flow.owner());
+        vm.expectRevert(IFlow.RECIPIENT_ALREADY_REMOVED.selector);
+        flow.removeRecipient(0);
+        assertEq(flow.baselinePool().getTotalUnits(), unitsAfterRemove1, "Total units should not change when removing already removed recipient");
+
+        // Remove second flow recipient
+        vm.prank(flow.owner());
+        flow.removeRecipient(1);
+
+        // Check final state
+        uint128 finalTotalUnits = flow.baselinePool().getTotalUnits();
+        assertEq(finalTotalUnits, 1, "Final total units should be 1 (for address(this))");
+        assertEq(flow.baselinePool().getUnits(flowRecipient2), 0, "Second removed recipient should have 0 units");
+
+        // Try to remove non-existent recipient (should revert)
+        vm.prank(flow.owner());
+        vm.expectRevert();
+        flow.removeRecipient(2);
+
+        // Add a new flow recipient and verify units are assigned correctly
+        address flowManager3 = address(0x789);
+        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata("Flow Recipient 3", "Description 3", "ipfs://image3");
+        vm.prank(flow.owner());
+        address flowRecipient3 = flow.addFlowRecipient(metadata3, flowManager3);
+
+        assertEq(flow.baselinePool().getTotalUnits(), flow.BASELINE_MEMBER_UNITS() + 1, "Total units incorrect after adding new recipient");
+        assertEq(flow.baselinePool().getUnits(flowRecipient3), flow.BASELINE_MEMBER_UNITS(), "New recipient should have baseline member units");
     }
 
 }

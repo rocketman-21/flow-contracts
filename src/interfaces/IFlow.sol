@@ -24,7 +24,7 @@ interface IFlowEvents {
     event RecipientCreated(address indexed recipient, address indexed approvedBy);
 
     /// @notice Emitted when the flow rate is updated
-    event FlowRateUpdated(int96 oldFlowRate, int96 newFlowRate);
+    event FlowRateUpdated(int96 oldTotalFlowRate, int96 newTotalFlowRate, int96 baselinePoolFlowRate, int96 bonusPoolFlowRate);
 
     /// @notice Emitted when a new child flow contract is created
     event FlowCreated(address indexed parent, address indexed flow);
@@ -34,6 +34,9 @@ interface IFlowEvents {
 
     /// @notice Emitted when a recipient is removed
     event RecipientRemoved(address indexed recipient, uint256 indexed recipientId);
+
+    /// @notice Emitted when the baseline flow rate percentage is updated
+    event BaselineFlowRatePercentUpdated(uint32 oldBaselineFlowRatePercent, uint32 newBaselineFlowRatePercent);
 }
 
 /**
@@ -51,6 +54,15 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if unit updates fail
     error UNITS_UPDATE_FAILED();
 
+    /// @dev Reverts if the baseline pool flow rate percent is invalid
+    error INVALID_RATE_PERCENT();
+
+    /// @dev Reverts if the flow rate is negative
+    error FLOW_RATE_NEGATIVE();
+
+    /// @dev Reverts if the flow rate is too high
+    error FLOW_RATE_TOO_HIGH();
+
     /// @dev Reverts if the recipient is not approved.
     error NOT_APPROVED_RECIPIENT();
 
@@ -62,6 +74,9 @@ interface IFlow is IFlowEvents {
 
     /// @dev Reverts if the caller is not the owner or the parent
     error NOT_OWNER_OR_PARENT();
+
+    /// @dev Reverts if the baseline flow rate percentage is invalid
+    error INVALID_PERCENTAGE();
 
     /// @dev Reverts if invalid recipientId is passed
     error INVALID_RECIPIENT_ID();
@@ -95,6 +110,9 @@ interface IFlow is IFlowEvents {
 
     /// @dev Reverts if metadata is invalid
     error INVALID_METADATA();
+
+    /// @dev Reverts if sender is not owner or manager
+    error NOT_OWNER_OR_MANAGER();
 
     /// @dev Reverts if sender is not manager
     error SENDER_NOT_MANAGER();
@@ -133,9 +151,11 @@ interface IFlow is IFlowEvents {
     /**
      * @notice Structure to hold the parameters for initializing a Flow contract.
      * @param tokenVoteWeight The voting weight of the individual ERC721 tokens.
+     * @param baselinePoolFlowRatePercent The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
      */
     struct FlowParams {
         uint256 tokenVoteWeight;
+        uint32 baselinePoolFlowRatePercent;
     }
 
     /**
