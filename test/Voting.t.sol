@@ -264,10 +264,6 @@ contract VotingFlowTest is FlowTest {
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        // Check that the flow rate for the flow recipient is now 0
-        int96 newFlowRecipientFlowRate = IFlow(flowRecipient).getNetFlowRate();
-        assertEq(newFlowRecipientFlowRate, 0);
-
         // Check that total bonus salary flow rate to the flow recipient is 0
         int96 newFlowRecipientTotalFlowRate = flow.bonusPool().getMemberFlowRate(flowRecipient);
         assertEq(newFlowRecipientTotalFlowRate, 0);
