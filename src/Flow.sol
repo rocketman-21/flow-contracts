@@ -78,8 +78,11 @@ contract Flow is
 
         // if total member units is 0, set 1 member unit to address(this)
         // do this to prevent distribution pool from resetting flow rate to 0
-        if (getTotalUnits() == 0) {
-            _updateMemberUnits(address(this), 1);
+        if (bonusPool.getTotalUnits() == 0) {
+            _updateBonusMemberUnits(address(this), 1);
+        }
+        if (baselinePool.getTotalUnits() == 0) {
+            superToken.updateMemberUnits(baselinePool, address(this), 1);
         }
 
         emit FlowInitialized(msg.sender, _superToken, _flowImpl);
@@ -149,7 +152,7 @@ contract Flow is
         votes[tokenId].push(VoteAllocation({recipientId: recipientId, bps: bps, memberUnits: newUnits}));
 
         // update member units
-        _updateMemberUnits(recipientAddress, memberUnits);
+        _updateBonusMemberUnits(recipientAddress, memberUnits);
 
         // if recipient is a flow contract, set the flow rate for the child contract
         if (recipientType == RecipientType.FlowContract) {
@@ -181,7 +184,7 @@ contract Flow is
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
-            _updateMemberUnits(recipientAddress, currentUnits - unitsDelta);
+            _updateBonusMemberUnits(recipientAddress, currentUnits - unitsDelta);
 
             // after updating member units, set the flow rate for the child contract
             // if recipient is a flow contract, set the flow rate for the child contract
@@ -315,6 +318,8 @@ contract Flow is
 
         _incrementRecipientCounts();
 
+        _initializeBaselineMemberUnits(recipient);
+
         emit RecipientCreated(recipient, msg.sender);
     }
 
@@ -350,6 +355,8 @@ contract Flow is
         // connect the new child contract to the pool!
         Flow(recipient).connectPool(bonusPool);
 
+        _initializeBaselineMemberUnits(recipient);
+
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
             removed: false,
@@ -378,7 +385,8 @@ contract Flow is
         address recipientAddress = recipients[recipientId].recipient;
 
         // set member units to 0
-        _updateMemberUnits(recipientAddress, 0);
+        _updateBonusMemberUnits(recipientAddress, 0);
+        _removeBaselineMemberUnits(recipientAddress);
 
         emit RecipientRemoved(recipientAddress, recipientId);
 
@@ -421,8 +429,30 @@ contract Flow is
      * @param units The new number of units to be assigned to the member
      * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
      */
-    function _updateMemberUnits(address member, uint128 units) internal {
+    function _updateBonusMemberUnits(address member, uint128 units) internal {
         bool success = superToken.updateMemberUnits(bonusPool, member, units);
+
+        if (!success) revert UNITS_UPDATE_FAILED();
+    }
+
+    /**
+     * @notice Updates the member units for the baseline Superfluid pool
+     * @param member The address of the member whose units are being updated
+     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
+     */
+    function _initializeBaselineMemberUnits(address member) internal {
+        bool success = superToken.updateMemberUnits(baselinePool, member, BASELINE_MEMBER_UNITS);
+
+        if (!success) revert UNITS_UPDATE_FAILED();
+    }
+
+    /**
+     * @notice Removes the baseline member units for a given member
+     * @param member The address of the member whose baseline units are to be removed
+     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
+     */
+    function _removeBaselineMemberUnits(address member) internal {
+        bool success = superToken.updateMemberUnits(baselinePool, member, 0);
 
         if (!success) revert UNITS_UPDATE_FAILED();
     }
@@ -518,14 +548,6 @@ contract Flow is
      */
     function getTotalAmountReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
         totalAmountReceived = bonusPool.getTotalAmountReceivedByMember(memberAddr);
-    }
-
-    /**
-     * @notice Retrieves the total units of the pool
-     * @return totalUnits The total units of the pool
-     */
-    function getTotalUnits() public view returns (uint128 totalUnits) {
-        totalUnits = bonusPool.getTotalUnits();
     }
 
     /**

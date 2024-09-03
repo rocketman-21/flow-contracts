@@ -16,6 +16,9 @@ contract FlowStorageV1 {
     /// @notice constant to scale uints into percentages (1e6 == 100%)
     uint256 public constant PERCENTAGE_SCALE = 1e6;
 
+    /// The member units to assign to each recipient of the baseline salary pool
+    uint256 public constant BASELINE_MEMBER_UNITS = 1e5;
+
     /// The flow implementation
     address public flowImpl;
 
