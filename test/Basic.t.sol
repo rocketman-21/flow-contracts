@@ -38,12 +38,7 @@ contract BasicFlowTest is FlowTest {
         assertEq(flow.owner(), manager);
     }
 
-    function testInitializePoolConfig() public {
-        // Check if poolConfig is set correctly
-        (bool transferabilityForUnitsOwner, bool distributionFromAnyAddress) = flow.getPoolConfig();
-        assertEq(transferabilityForUnitsOwner, false);
-        assertEq(distributionFromAnyAddress, false);
-
+    function testInitializeEventEmission() public {
         // Check for event emission
         vm.expectEmit(true, true, true, true);
         emit IFlowEvents.FlowInitialized(manager, address(superToken), flowImpl);

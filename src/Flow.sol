@@ -404,7 +404,7 @@ contract Flow is
     function _setChildFlowRate(address childAddress) internal {
         if (childAddress == address(0)) revert ADDRESS_ZERO();
 
-        int96 memberFlowRate = getMemberFlowRate(childAddress);
+        int96 memberFlowRate = getMemberTotalFlowRate(childAddress);
 
         // Call setFlowRate on the child contract
         // only set if buffer required is less than balance of contract
@@ -526,21 +526,12 @@ contract Flow is
     }
 
     /**
-     * @notice Helper function to get the claimable balance for a member at the current time
-     * @param member The address of the member
-     * @return claimableBalance The claimable balance for the member
-     */
-    function getClaimableBalanceNow(address member) public view returns (int256 claimableBalance) {
-        (claimableBalance,) = bonusPool.getClaimableNow(member);
-    }
-
-    /**
      * @notice Retrieves the flow rate for a specific member in the pool
      * @param memberAddr The address of the member
      * @return flowRate The flow rate for the member
      */
-    function getMemberFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        flowRate = bonusPool.getMemberFlowRate(memberAddr);
+    function getMemberTotalFlowRate(address memberAddr) public view returns (int96 flowRate) {
+        flowRate = bonusPool.getMemberFlowRate(memberAddr) + baselinePool.getMemberFlowRate(memberAddr);
     }
 
     /**
@@ -548,25 +539,15 @@ contract Flow is
      * @param memberAddr The address of the member
      * @return totalAmountReceived The total amount received by the member
      */
-    function getTotalAmountReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
-        totalAmountReceived = bonusPool.getTotalAmountReceivedByMember(memberAddr);
+    function getTotalReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
+        totalAmountReceived = bonusPool.getTotalAmountReceivedByMember(memberAddr) + baselinePool.getTotalAmountReceivedByMember(memberAddr);
     }
 
     /**
-     * @notice Retrieves the total flow rate of the pool
-     * @return totalFlowRate The total flow rate of the pool
+     * @return totalFlowRate The total flow rate of the pools
      */
     function getTotalFlowRate() public view returns (int96 totalFlowRate) {
-        totalFlowRate = bonusPool.getTotalFlowRate();
-    }
-
-    /**
-     * @notice Get the pool config
-     * @return transferabilityForUnitsOwner The transferability for units owner
-     * @return distributionFromAnyAddress The distribution from any address
-     */
-    function getPoolConfig() public view returns (bool transferabilityForUnitsOwner, bool distributionFromAnyAddress) {
-        return (poolConfig.transferabilityForUnitsOwner, poolConfig.distributionFromAnyAddress);
+        totalFlowRate = bonusPool.getTotalFlowRate() + baselinePool.getTotalFlowRate();
     }
 
     /**
