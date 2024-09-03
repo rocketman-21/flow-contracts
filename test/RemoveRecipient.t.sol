@@ -154,4 +154,93 @@ contract RemoveRecipientsTest is FlowTest {
         assertEq(finalUnits, 0);
     }
 
+    function testRemoveRecipientAndVoteAgain() public {
+        address recipient = address(0x123);
+        string memory metadata = "ipfs://metadata";
+
+        // Add a recipient
+        vm.prank(flow.owner());
+        flow.addRecipient(recipient, metadata);
+
+        // Remove the recipient
+        vm.prank(flow.owner());
+        flow.removeRecipient(0);
+
+        // Attempt to vote for the removed recipient
+        uint256 tokenId = 0;
+        uint256[] memory recipientIds = new uint256[](1);
+        recipientIds[0] = 0;
+        uint32[] memory percentAllocations = new uint32[](1);
+        percentAllocations[0] = 1e6; // 100%
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = tokenId;
+
+        vm.prank(address(this));
+        nounsToken.mint(address(this), tokenId);
+
+        vm.expectRevert(IFlow.NOT_APPROVED_RECIPIENT.selector);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+
+        // Verify that no votes were cast
+        FlowStorageV1.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
+        assertEq(votes.length, 0);
+
+        // Verify that member units remain at 0
+        uint128 finalUnits = flow.getPoolMemberUnits(recipient);
+        assertEq(finalUnits, 0);
+    }
+
+    function testVoteAfterRemovingRecipient() public {
+        address recipient1 = address(0x123);
+        address recipient2 = address(0x456);
+        string memory metadata = "ipfs://metadata";
+
+        // Add two recipients
+        vm.startPrank(flow.owner());
+        flow.addRecipient(recipient1, metadata);
+        flow.addRecipient(recipient2, metadata);
+        vm.stopPrank();
+
+        // Mint a token for voting
+        uint256 tokenId = 0;
+        vm.prank(address(this));
+        nounsToken.mint(address(this), tokenId);
+
+        // Vote for the first recipient
+        uint256[] memory recipientIds = new uint256[](1);
+        recipientIds[0] = 0;
+        uint32[] memory percentAllocations = new uint32[](1);
+        percentAllocations[0] = 1e6; // 100%
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = tokenId;
+
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+
+        // Verify the vote was cast
+        FlowStorageV1.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
+        assertEq(votes.length, 1);
+        assertEq(votes[0].recipientId, 0);
+        assertEq(votes[0].bps, 1e6);
+
+        // Remove the first recipient
+        vm.prank(flow.owner());
+        flow.removeRecipient(0);
+
+        // Vote for the second recipient
+        recipientIds[0] = 1;
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+
+        // Verify the new vote was cast
+        votes = flow.getVotesForTokenId(tokenId);
+        assertEq(votes.length, 1);
+        assertEq(votes[0].recipientId, 1);
+        assertEq(votes[0].bps, 1e6);
+
+        // Verify member units
+        uint128 units1 = flow.getPoolMemberUnits(recipient1);
+        uint128 units2 = flow.getPoolMemberUnits(recipient2);
+        assertEq(units1, 0);
+        assertGt(units2, 0);
+    }
+
 }

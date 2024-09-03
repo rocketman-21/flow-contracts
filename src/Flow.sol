@@ -151,13 +151,19 @@ contract Flow is
     function _clearPreviousVotes(uint256 tokenId) internal {
         VoteAllocation[] memory allocations = votes[tokenId];
         for (uint256 i = 0; i < allocations.length; i++) {
-            address recipient = recipients[allocations[i].recipientId].recipient;
-            uint128 currentUnits = pool.getUnits(recipient);
+            FlowRecipient memory recipient = recipients[allocations[i].recipientId];
+
+            // if recipient is removed, skip - don't want to update member units because they have been wiped to 0
+            // fine because this vote will be deleted in the next step
+            if (recipient.removed) continue;
+
+            address recipientAddress = recipient.recipient;
+            uint128 currentUnits = pool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
-            updateMemberUnits(recipient, currentUnits - unitsDelta);
+            updateMemberUnits(recipientAddress, currentUnits - unitsDelta);
         }
 
         // Clear out the votes for the tokenId
