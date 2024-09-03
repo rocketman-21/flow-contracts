@@ -116,6 +116,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if voting allocation is not positive
     error ALLOCATION_MUST_BE_POSITIVE();
 
+    /// @dev Reverts if pool connection fails
+    error POOL_CONNECTION_FAILED();
+
 
     ///                                                          ///
     ///                         STRUCTS                          ///

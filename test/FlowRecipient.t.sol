@@ -22,7 +22,7 @@ contract FlowRecipientTest is FlowTest {
         Flow newFlow = Flow(newFlowAddress);
 
         // Transfer test tokens to the new Flow contract
-        _transferTestTokenToFlow(newFlowAddress);
+        _transferTestTokenToFlow(newFlowAddress, 1e6 * 10**18);
 
         // Check that the parent of the new Flow contract is set correctly
         assertEq(newFlow.parent(), address(flow), "Parent of new Flow contract should be the original Flow contract");

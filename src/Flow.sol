@@ -12,6 +12,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
 contract Flow is
@@ -336,6 +337,9 @@ contract Flow is
 
         Ownable2StepUpgradeable(recipient).transferOwnership(owner());
 
+        // connect the new child contract to the pool!
+        Flow(recipient).connectPool(pool);
+
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
             removed: false,
@@ -378,11 +382,26 @@ contract Flow is
     function _setChildFlowRate(address childAddress) internal {
         if (childAddress == address(0)) revert ADDRESS_ZERO();
 
-        // Get the net flow rate from the child contract
-        int96 netFlowRate = IFlow(childAddress).getNetFlowRate();
+        int96 memberFlowRate = getMemberFlowRate(childAddress);
 
         // Call setFlowRate on the child contract
-        IFlow(childAddress).setFlowRate(netFlowRate);
+        // only set if buffer required is less than balance of contract
+        if(superToken.getBufferAmountByFlowRate(memberFlowRate) < superToken.balanceOf(childAddress)) {
+            IFlow(childAddress).setFlowRate(memberFlowRate);
+        }
+    }
+
+    /**
+     * @notice Connects this contract to a Superfluid pool
+     * @param poolAddress The address of the Superfluid pool to connect to
+     * @dev Only callable by the owner or parent of the contract
+     * @dev Emits a PoolConnected event upon successful connection
+     */
+    function connectPool(ISuperfluidPool poolAddress) external onlyOwnerOrParent nonReentrant {
+        if (address(poolAddress) == address(0)) revert ADDRESS_ZERO();
+
+        bool success = superToken.connectPool(poolAddress);
+        if (!success) revert POOL_CONNECTION_FAILED();
     }
 
     /**
