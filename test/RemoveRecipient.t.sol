@@ -19,7 +19,7 @@ contract RemoveRecipientsTest is FlowTest {
 
         // Add a recipient first
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, metadata);
+        flow.addRecipient(recipient, recipientMetadata);
 
         // Test successful removal of a recipient
         vm.startPrank(flow.owner());
@@ -42,7 +42,7 @@ contract RemoveRecipientsTest is FlowTest {
 
         // Add a recipient first
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, metadata);
+        flow.addRecipient(recipient, recipientMetadata);
 
         // Test removing a recipient with an invalid ID (should revert)
         vm.prank(flow.owner());
@@ -61,7 +61,7 @@ contract RemoveRecipientsTest is FlowTest {
 
         // Add a recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, metadata);
+        flow.addRecipient(recipient, recipientMetadata);
 
         // Remove the recipient
         vm.prank(flow.owner());
@@ -79,19 +79,18 @@ contract RemoveRecipientsTest is FlowTest {
 
         // Add a recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, metadata);
+        flow.addRecipient(recipient, recipientMetadata);
 
         // Test removing a recipient from a non-manager address (should revert)
         vm.prank(address(0xABC));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
         flow.removeRecipient(0);
     }
-
     function testRemoveMultipleRecipients() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        string memory metadata1 = "ipfs://metadata1";
-        string memory metadata2 = "ipfs://metadata2";
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Recipient 1", "Description 1", "ipfs://image1");
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Recipient 2", "Description 2", "ipfs://image2");
 
         // Add recipients
         vm.startPrank(flow.owner());
@@ -124,7 +123,7 @@ contract RemoveRecipientsTest is FlowTest {
 
         // Add a recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, metadata);
+        flow.addRecipient(recipient, recipientMetadata);
 
         // Cast a vote to give the recipient some member units
         uint256 tokenId = 0;
@@ -160,7 +159,7 @@ contract RemoveRecipientsTest is FlowTest {
 
         // Add a recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, metadata);
+        flow.addRecipient(recipient, recipientMetadata);
 
         // Remove the recipient
         vm.prank(flow.owner());
@@ -197,8 +196,8 @@ contract RemoveRecipientsTest is FlowTest {
 
         // Add two recipients
         vm.startPrank(flow.owner());
-        flow.addRecipient(recipient1, metadata);
-        flow.addRecipient(recipient2, metadata);
+        flow.addRecipient(recipient1, recipientMetadata);
+        flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         // Mint a token for voting

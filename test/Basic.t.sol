@@ -62,7 +62,7 @@ contract BasicFlowTest is FlowTest {
             flowImpl: flowImpl,
             manager: manager, // Add this line
             flowParams: flowParams,
-            metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
+            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
         });
 
         // Test initialization with zero address for _flowImpl
@@ -76,7 +76,7 @@ contract BasicFlowTest is FlowTest {
             flowImpl: address(0),
             manager: manager, // Add this line
             flowParams: flowParams,
-            metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
+            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
         });
         flowImpl = originalFlowImpl;
 
@@ -87,7 +87,7 @@ contract BasicFlowTest is FlowTest {
             address(flowImpl),
             manager, // Add this line
             flowParams,
-            FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
+            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
         );
 
         // Test double initialization (should revert)
@@ -98,7 +98,7 @@ contract BasicFlowTest is FlowTest {
             address(flowImpl),
             manager, // Add this line
             flowParams,
-            FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
+            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
         );
     }
 }

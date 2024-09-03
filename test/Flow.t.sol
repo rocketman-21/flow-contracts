@@ -35,6 +35,9 @@ contract FlowTest is Test {
 
     address manager = address(0x1998);
 
+    FlowStorageV1.RecipientMetadata flowMetadata;
+    FlowStorageV1.RecipientMetadata recipientMetadata;
+
     function deployFlow(address erc721, address superTokenAddress) internal returns (Flow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
 
@@ -45,7 +48,7 @@ contract FlowTest is Test {
             flowImpl: flowImpl,
             manager: manager, // Add this line
             flowParams: flowParams,
-            metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
+            metadata: flowMetadata
         });
 
         _transferTestTokenToFlow(flowProxy);
@@ -77,6 +80,18 @@ contract FlowTest is Test {
     }
 
     function setUp() public virtual {
+        flowMetadata = FlowStorageV1.RecipientMetadata({
+            title: "Test Flow",
+            description: "A test flow",
+            image: "ipfs://image"
+        });
+
+        recipientMetadata = FlowStorageV1.RecipientMetadata({
+            title: "Test Recipient",
+            description: "A test recipient",
+            image: "ipfs://image"
+        });
+
         nounsToken = deployMock721("Nouns", "NOUN");
         flowImpl = address(new Flow());
 

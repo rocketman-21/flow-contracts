@@ -54,6 +54,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if the recipient is not approved.
     error NOT_APPROVED_RECIPIENT();
 
+    /// @dev Reverts if the token vote weight is invalid (i.e., 0).
+    error INVALID_VOTE_WEIGHT();
+
     /// @dev Reverts if the voter's weight is below the minimum required vote weight.
     error WEIGHT_TOO_LOW();
 
@@ -137,6 +140,6 @@ interface IFlow is IFlowEvents {
      * @param manager The address of the flow manager
      * @param flowParams The parameters for the flow contract
      */
-    function initialize(address nounsToken, address superToken, address flowImpl, address manager, FlowParams memory flowParams, FlowStorageV1.FlowMetadata memory metadata)
+    function initialize(address nounsToken, address superToken, address flowImpl, address manager, FlowParams memory flowParams, FlowStorageV1.RecipientMetadata memory metadata)
         external;
 }

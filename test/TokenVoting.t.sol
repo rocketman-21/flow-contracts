@@ -26,7 +26,7 @@ contract TokenVotingFlowTest is FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient, recipientMetadata);
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -63,7 +63,7 @@ contract TokenVotingFlowTest is FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient, recipientMetadata);
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -102,7 +102,7 @@ contract TokenVotingFlowTest is FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient, recipientMetadata);
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -133,7 +133,7 @@ contract TokenVotingFlowTest is FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, "metadata");
+        flow.addRecipient(recipient, recipientMetadata);
 
         uint256[] memory recipientIds =  new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);

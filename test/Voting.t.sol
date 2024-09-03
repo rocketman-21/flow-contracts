@@ -23,8 +23,8 @@ contract VotingFlowTest is FlowTest {
         address recipient = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient, "metadata");
-        flow.addRecipient(recipient2, "metadata2");
+        flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         uint256[] memory recipientIds =  new uint256[](1);
@@ -67,8 +67,8 @@ contract VotingFlowTest is FlowTest {
         address recipient = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient, "metadata");
-        flow.addRecipient(recipient2, "metadata2");
+        flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         uint256[] memory recipientIds =  new uint256[](1);
@@ -120,8 +120,8 @@ contract VotingFlowTest is FlowTest {
         address recipient1 = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient1, "metadata");
-        flow.addRecipient(recipient2, "metadata2");
+        flow.addRecipient(recipient1, recipientMetadata);
+        flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         // Step 3: Prepare vote data
@@ -178,8 +178,8 @@ contract VotingFlowTest is FlowTest {
         address recipient1 = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient1, "metadata");
-        flow.addRecipient(recipient2, "metadata2");
+        flow.addRecipient(recipient1, recipientMetadata);
+        flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         uint256[] memory recipientIds = new uint256[](2);
