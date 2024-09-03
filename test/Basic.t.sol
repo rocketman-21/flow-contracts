@@ -60,6 +60,7 @@ contract BasicFlowTest is FlowTest {
             nounsToken: address(0),
             superToken: address(superToken),
             flowImpl: flowImpl,
+            manager: manager, // Add this line
             flowParams: flowParams,
             metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
         });
@@ -73,6 +74,7 @@ contract BasicFlowTest is FlowTest {
             nounsToken: address(0x1),
             superToken: address(superToken),
             flowImpl: address(0),
+            manager: manager, // Add this line
             flowParams: flowParams,
             metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
         });
@@ -83,6 +85,7 @@ contract BasicFlowTest is FlowTest {
             address(0x1),
             address(superToken),
             address(flowImpl),
+            manager, // Add this line
             flowParams,
             FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
         );
@@ -93,6 +96,7 @@ contract BasicFlowTest is FlowTest {
             address(0x1),
             address(superToken),
             address(flowImpl),
+            manager, // Add this line
             flowParams,
             FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
         );

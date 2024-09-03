@@ -21,6 +21,7 @@ contract VotingValidationTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        vm.prank(manager);
         flow.addRecipient(recipient, "metadata");
 
         uint256[] memory recipientIds =  new uint256[](1);
@@ -42,6 +43,7 @@ contract VotingValidationTest is FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocationsTwo);
 
         // add new recipient
+        vm.prank(manager);
         flow.addRecipient(address(23), "metadata2");
 
         uint256[] memory recipientIdsTwo =  new uint256[](2);
@@ -66,6 +68,7 @@ contract VotingValidationTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        vm.prank(manager);
         flow.addRecipient(recipient, "metadata");
 
         uint256[] memory recipientIds =  new uint256[](0);
@@ -80,6 +83,7 @@ contract VotingValidationTest is FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         address recipient2 = address(4);
+        vm.prank(manager);
         flow.addRecipient(recipient2, "metadata3");
 
         vm.prank(flow.owner());
@@ -100,6 +104,7 @@ contract VotingValidationTest is FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        vm.prank(manager);
         flow.addRecipient(recipient, "metadata");
 
         uint256[] memory recipientIds =  new uint256[](1);
