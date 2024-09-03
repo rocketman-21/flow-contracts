@@ -518,15 +518,6 @@ contract Flow is
     }
 
     /**
-     * @notice Helper function to get the total units of a member in the pool
-     * @param member The address of the member
-     * @return units The total units of the member
-     */
-    function getPoolMemberUnits(address member) public view returns (uint128 units) {
-        return bonusPool.getUnits(member);
-    }
-
-    /**
      * @notice Retrieves the net flow rate for a specific account
      * @return netFlowRate The net flow rate for the account
      */

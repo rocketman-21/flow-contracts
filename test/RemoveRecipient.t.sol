@@ -141,7 +141,7 @@ contract RemoveRecipientsTest is FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // Check initial member units
-        uint128 initialUnits = flow.getPoolMemberUnits(recipient);
+        uint128 initialUnits = flow.bonusPool().getUnits(recipient);
         assertGt(initialUnits, 0);
 
         // Remove the recipient
@@ -149,7 +149,7 @@ contract RemoveRecipientsTest is FlowTest {
         flow.removeRecipient(0);
 
         // Check that member units have been updated (should be 0)
-        uint128 finalUnits = flow.getPoolMemberUnits(recipient);
+        uint128 finalUnits = flow.bonusPool().getUnits(recipient);
         assertEq(finalUnits, 0);
     }
 
@@ -185,7 +185,7 @@ contract RemoveRecipientsTest is FlowTest {
         assertEq(votes.length, 0);
 
         // Verify that member units remain at 0
-        uint128 finalUnits = flow.getPoolMemberUnits(recipient);
+        uint128 finalUnits = flow.bonusPool().getUnits(recipient);
         assertEq(finalUnits, 0);
     }
 
@@ -236,8 +236,8 @@ contract RemoveRecipientsTest is FlowTest {
         assertEq(votes[0].bps, 1e6);
 
         // Verify member units
-        uint128 units1 = flow.getPoolMemberUnits(recipient1);
-        uint128 units2 = flow.getPoolMemberUnits(recipient2);
+        uint128 units1 = flow.bonusPool().getUnits(recipient1);
+        uint128 units2 = flow.bonusPool().getUnits(recipient2);
         assertEq(units1, 0);
         assertGt(units2, 0);
     }
