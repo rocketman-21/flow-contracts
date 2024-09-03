@@ -37,10 +37,22 @@ contract RemoveRecipientsTest is FlowTest {
     }
 
     function testRemoveRecipientInvalidId() public {
+        address recipient = address(0x123);
+        string memory metadata = "ipfs://metadata";
+
+        // Add a recipient first
+        vm.prank(flow.owner());
+        flow.addRecipient(recipient, metadata);
+
         // Test removing a recipient with an invalid ID (should revert)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.INVALID_RECIPIENT_ID.selector);
-        flow.removeRecipient(0);
+        flow.removeRecipient(1); // Using ID 1, which is invalid as we only added one recipient (ID 0)
+
+        // Verify that the valid recipient (ID 0) still exists and is not removed
+        (address storedRecipient, bool removed, , ) = flow.recipients(0);
+        assertEq(storedRecipient, recipient);
+        assertEq(removed, false);
     }
 
     function testRemoveRecipientAlreadyRemoved() public {
