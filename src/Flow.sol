@@ -487,6 +487,7 @@ contract Flow is
         if (baselineFlowRate256 > type(int96).max) revert FLOW_RATE_TOO_HIGH();
 
         int96 baselineFlowRate = int96(baselineFlowRate256);
+        // cannot be negative because _flowRate will always be greater than baselineFlowRate
         int96 bonusFlowRate = _flowRate - baselineFlowRate;
 
         emit FlowRateUpdated(getTotalFlowRate(), _flowRate, baselineFlowRate, bonusFlowRate);
