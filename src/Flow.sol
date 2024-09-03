@@ -551,6 +551,24 @@ contract Flow is
     }
 
     /**
+     * @notice Retrieves the flow rate for a specific member in the bonus pool
+     * @param memberAddr The address of the member
+     * @return flowRate The flow rate for the member in the bonus pool
+     */
+    function getMemberBonusFlowRate(address memberAddr) public view returns (int96 flowRate) {
+        return bonusPool.getMemberFlowRate(memberAddr);
+    }
+
+    /**
+     * @notice Retrieves the flow rate for a specific member in the baseline pool
+     * @param memberAddr The address of the member
+     * @return flowRate The flow rate for the member in the baseline pool
+     */
+    function getMemberBaselineFlowRate(address memberAddr) public view returns (int96 flowRate) {
+        return baselinePool.getMemberFlowRate(memberAddr);
+    }
+
+    /**
      * @notice Retrieves the total amount received by a specific member in the pool
      * @param memberAddr The address of the member
      * @return totalAmountReceived The total amount received by the member
