@@ -134,8 +134,9 @@ interface IFlow is IFlowEvents {
      * @param nounsToken The address of the ERC721Checkpointable contract
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
+     * @param manager The address of the flow manager
      * @param flowParams The parameters for the flow contract
      */
-    function initialize(address nounsToken, address superToken, address flowImpl, FlowParams memory flowParams, FlowStorageV1.FlowMetadata memory metadata)
+    function initialize(address nounsToken, address superToken, address flowImpl, address manager, FlowParams memory flowParams, FlowStorageV1.FlowMetadata memory metadata)
         external;
 }

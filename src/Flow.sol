@@ -34,6 +34,7 @@ contract Flow is
      * @param _nounsToken The address of the Nouns token contract
      * @param _superToken The address of the SuperToken to be used for the pool
      * @param _flowImpl The address of the flow implementation contract
+     * @param _manager The address of the flow manager
      * @param _flowParams The parameters for the flow contract
      * @param _metadata The metadata for the flow contract
      */
@@ -41,6 +42,7 @@ contract Flow is
         address _nounsToken,
         address _superToken,
         address _flowImpl,
+        address _manager,
         FlowParams memory _flowParams,
         FlowMetadata memory _metadata
     ) public initializer {
@@ -56,6 +58,7 @@ contract Flow is
         erc721Votes = IERC721Checkpointable(_nounsToken);
         tokenVoteWeight = _flowParams.tokenVoteWeight;
         flowImpl = _flowImpl;
+        manager = _manager;
 
         superToken = ISuperToken(_superToken);
         pool = superToken.createPool(address(this), poolConfig);
@@ -229,12 +232,19 @@ contract Flow is
     }
 
     /**
+     * @notice Modifier to restrict access to only the manager
+     */
+    modifier onlyManager() {
+        if (msg.sender != manager) revert SENDER_NOT_MANAGER();
+        _;
+    }
+
+    /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
      * @param metadata The ipfs hash of the recipient's metadata
-          // TODO update to only work for the TCR admin! not owner
      */
-    function addRecipient(address recipient, string calldata metadata) public {
+    function addRecipient(address recipient, string calldata metadata) public onlyManager {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
         if (bytes(metadata).length == 0) revert INVALID_METADATA();
 
@@ -253,15 +263,16 @@ contract Flow is
     /**
      * @notice Removes a recipient for receiving funds
      * @param recipientId The ID of the recipient to be approved
-     * @dev Only callable by the owner of the contract
-     * @dev Emits a RecipientApproved event if the recipient is successfully approved
-     // TODO update to only work for the TCR admin!
+     * @dev Only callable by the manager of the contract
+     * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
-    function removeRecipient(uint256 recipientId) public onlyOwner {
+    function removeRecipient(uint256 recipientId) public onlyManager {
         if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_APPROVED();
 
         recipients[recipientId].removed = true;
+
+        // todo update member units
 
         emit RecipientRemoved(recipients[recipientId].recipient, recipientId);
     }

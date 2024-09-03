@@ -19,6 +19,9 @@ contract FlowStorageV1 {
     /// The flow implementation
     address public flowImpl;
 
+    /// The flow manager
+    address public manager;
+
     /// Counter for recipients added
     uint256 public recipientCount;
 

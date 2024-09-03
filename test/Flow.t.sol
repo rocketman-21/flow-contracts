@@ -43,6 +43,7 @@ contract FlowTest is Test {
             nounsToken: erc721,
             superToken: superTokenAddress,
             flowImpl: flowImpl,
+            manager: manager, // Add this line
             flowParams: flowParams,
             metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
         });
