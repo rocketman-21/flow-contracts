@@ -183,4 +183,23 @@ contract BasicFlowTest is FlowTest {
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
         flow.addFlowRecipient(metadata, flowManager);
     }
+
+    function testSetFlowRateAccessControl() public {
+        int96 newFlowRate = 1000;
+
+        // Test that owner can call setFlowRate
+        vm.prank(flow.owner());
+        flow.setFlowRate(newFlowRate);
+        assertEq(flow.getTotalFlowRate(), newFlowRate, "Owner should be able to set flow rate");
+
+        // Test that parent can call setFlowRate
+        vm.prank(flow.parent());
+        flow.setFlowRate(newFlowRate * 2);
+        assertEq(flow.getTotalFlowRate(), newFlowRate * 2, "Parent should be able to set flow rate");
+
+        // Test that random address cannot call setFlowRate
+        vm.prank(address(0xdead));
+        vm.expectRevert(abi.encodeWithSelector(IFlow.NOT_OWNER_OR_PARENT.selector));
+        flow.setFlowRate(newFlowRate * 4);
+    }
 }
