@@ -34,6 +34,9 @@ interface IFlowEvents {
 
     /// @notice Emitted when a recipient is removed
     event RecipientRemoved(address indexed recipient, uint256 indexed recipientId);
+
+    /// @notice Emitted when the baseline flow rate percentage is updated
+    event BaselineFlowRatePercentUpdated(uint32 oldBaselineFlowRatePercent, uint32 newBaselineFlowRatePercent);
 }
 
 /**
@@ -72,6 +75,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if the caller is not the owner or the parent
     error NOT_OWNER_OR_PARENT();
 
+    /// @dev Reverts if the baseline flow rate percentage is invalid
+    error INVALID_PERCENTAGE();
+
     /// @dev Reverts if invalid recipientId is passed
     error INVALID_RECIPIENT_ID();
 
@@ -104,6 +110,9 @@ interface IFlow is IFlowEvents {
 
     /// @dev Reverts if metadata is invalid
     error INVALID_METADATA();
+
+    /// @dev Reverts if sender is not owner or manager
+    error NOT_OWNER_OR_MANAGER();
 
     /// @dev Reverts if sender is not manager
     error SENDER_NOT_MANAGER();
@@ -146,7 +155,7 @@ interface IFlow is IFlowEvents {
      */
     struct FlowParams {
         uint256 tokenVoteWeight;
-        uint256 baselinePoolFlowRatePercent;
+        uint32 baselinePoolFlowRatePercent;
     }
 
     /**

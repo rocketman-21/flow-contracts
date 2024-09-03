@@ -244,4 +244,65 @@ contract BasicFlowTest is FlowTest {
         // Verify total recipient count
         assertEq(flow.recipientCount(), 3, "Total recipient count should be 3");
     }
+
+    function testSetBaselineFlowRatePercent() public {
+        // Initial setup
+        int96 initialFlowRate = 1000000000; // 1 token per second
+        vm.prank(manager);
+        flow.setFlowRate(initialFlowRate);
+
+        uint32 initialBaselinePercent = flow.baselinePoolFlowRatePercent();
+        
+        // Test setting a valid percentage
+        uint32 newPercent = 500000; // 50%
+        vm.prank(flow.owner());
+        vm.expectEmit(true, true, false, true);
+        emit IFlowEvents.BaselineFlowRatePercentUpdated(initialBaselinePercent, newPercent);
+        flow.setBaselineFlowRatePercent(newPercent);
+        
+        assertEq(flow.baselinePoolFlowRatePercent(), newPercent, "Baseline percentage should be updated");
+        
+        // Verify flow rates are updated
+        int96 totalFlowRate = flow.getTotalFlowRate();
+        int96 baselineFlowRate = flow.getMemberBaselineFlowRate(address(flow));
+        int96 bonusFlowRate = flow.getMemberBonusFlowRate(address(flow));
+        
+        assertEq(totalFlowRate, initialFlowRate, "Total flow rate should remain unchanged");
+        assertEq(baselineFlowRate, int96((int256(initialFlowRate) * int256(uint256(newPercent))) / int256(uint256(flow.PERCENTAGE_SCALE()))), "Baseline flow rate should be updated");
+        assertEq(bonusFlowRate, initialFlowRate - baselineFlowRate, "Bonus flow rate should be the remainder");
+
+        // Test setting percentage to 100%
+        uint32 percent = flow.PERCENTAGE_SCALE();
+        vm.prank(flow.owner());
+        flow.setBaselineFlowRatePercent(percent);
+        assertEq(flow.baselinePoolFlowRatePercent(), percent, "Baseline percentage should be 100%");
+        
+        // Test setting percentage to 0%
+        vm.prank(flow.owner());
+        flow.setBaselineFlowRatePercent(0);
+        assertEq(flow.baselinePoolFlowRatePercent(), 0, "Baseline percentage should be 0%");
+        
+        // Test setting percentage above 100%
+        uint32 invalidPercent = flow.PERCENTAGE_SCALE() + 1;
+        vm.prank(flow.owner());
+        vm.expectRevert(abi.encodeWithSelector(IFlow.INVALID_PERCENTAGE.selector));
+        flow.setBaselineFlowRatePercent(invalidPercent);
+        
+        // Test calling from non-owner/non-parent address
+        vm.prank(address(0xdead));
+        vm.expectRevert(abi.encodeWithSelector(IFlow.NOT_OWNER_OR_MANAGER.selector));
+        flow.setBaselineFlowRatePercent(500000);
+
+        // Test calling from parent address
+        address parentAddress = flow.parent();
+        vm.prank(parentAddress);
+        vm.expectRevert(abi.encodeWithSelector(IFlow.NOT_OWNER_OR_MANAGER.selector));
+        flow.setBaselineFlowRatePercent(300000); // 30%
+    
+        // Test calling from manager address
+        address managerAddress = flow.manager();
+        vm.prank(managerAddress);
+        flow.setBaselineFlowRatePercent(250000); // 25%
+        assertEq(flow.baselinePoolFlowRatePercent(), 250000, "Baseline percentage should be updated by parent");
+    }
 }

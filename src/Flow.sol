@@ -287,6 +287,14 @@ contract Flow is
     }
 
     /**
+     * @notice Modifier to restrict access to only the owner or the manager
+     */
+    modifier onlyOwnerOrManager() {
+        if (msg.sender != owner() && msg.sender != manager) revert NOT_OWNER_OR_MANAGER();
+        _;
+    }
+
+    /**
      * @notice Modifier to validate the metadata for a recipient
      * @param metadata The metadata to validate
      */
@@ -479,7 +487,16 @@ contract Flow is
      * @dev Only callable by the owner or parent of the contract
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
-    function setFlowRate(int96 _flowRate) public onlyOwnerOrParent nonReentrant {
+    function setFlowRate(int96 _flowRate) external onlyOwnerOrParent nonReentrant {
+        _setFlowRate(_flowRate);
+    }
+
+    /**
+     * @notice Internal function to set the flow rate for the Superfluid pool
+     * @param _flowRate The new flow rate to be set
+     * @dev Emits a FlowRateUpdated event with the old and new flow rates
+     */
+    function _setFlowRate(int96 _flowRate) internal {
         if(_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
         int256 baselineFlowRate256 = int256(_scaleAmountByPercentage(uint96(_flowRate), baselinePoolFlowRatePercent));
@@ -494,6 +511,23 @@ contract Flow is
 
         superToken.distributeFlow(address(this), bonusPool, bonusFlowRate);
         superToken.distributeFlow(address(this), baselinePool, baselineFlowRate);
+    }
+
+    /**
+     * @notice Sets the baseline flow rate percentage
+     * @param _baselineFlowRatePercent The new baseline flow rate percentage
+     * @dev Only callable by the owner or manager of the contract
+     * @dev Emits a BaselineFlowRatePercentUpdated event with the old and new percentages
+     */
+    function setBaselineFlowRatePercent(uint32 _baselineFlowRatePercent) external onlyOwnerOrManager nonReentrant {
+        if (_baselineFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_PERCENTAGE();
+        
+        emit BaselineFlowRatePercentUpdated(baselinePoolFlowRatePercent, _baselineFlowRatePercent);
+
+        baselinePoolFlowRatePercent = _baselineFlowRatePercent;
+        
+        // Update flow rates to reflect the new percentage
+        _setFlowRate(getTotalFlowRate());
     }
 
     /**

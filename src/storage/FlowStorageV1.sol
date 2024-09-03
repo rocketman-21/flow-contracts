@@ -14,13 +14,13 @@ import {PoolConfig} from "@superfluid-finance/ethereum-contracts/contracts/apps/
 /// @notice The Flow storage contract
 contract FlowStorageV1 {
     /// @notice constant to scale uints into percentages (1e6 == 100%)
-    uint256 public constant PERCENTAGE_SCALE = 1e6;
+    uint32 public constant PERCENTAGE_SCALE = 1e6;
 
     /// The member units to assign to each recipient of the baseline salary pool
     uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
 
     /// The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
-    uint256 public baselinePoolFlowRatePercent;
+    uint32 public baselinePoolFlowRatePercent;
 
     /// The flow implementation
     address public flowImpl;
