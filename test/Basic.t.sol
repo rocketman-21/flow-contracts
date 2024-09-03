@@ -5,6 +5,7 @@ import {FlowTest} from "./Flow.t.sol";
 import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
 import {Flow} from "../src/Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
 
 contract BasicFlowTest is FlowTest {
 
@@ -59,7 +60,8 @@ contract BasicFlowTest is FlowTest {
             nounsToken: address(0),
             superToken: address(superToken),
             flowImpl: flowImpl,
-            flowParams: flowParams
+            flowParams: flowParams,
+            metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
         });
 
         // Test initialization with zero address for _flowImpl
@@ -71,15 +73,28 @@ contract BasicFlowTest is FlowTest {
             nounsToken: address(0x1),
             superToken: address(superToken),
             flowImpl: address(0),
-            flowParams: flowParams
+            flowParams: flowParams,
+            metadata: FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
         });
         flowImpl = originalFlowImpl;
 
         // Test double initialization (should revert)
-        Flow(payable(flowProxy)).initialize(address(0x1), address(superToken), address(flowImpl), flowParams);
+        Flow(payable(flowProxy)).initialize(
+            address(0x1),
+            address(superToken),
+            address(flowImpl),
+            flowParams,
+            FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
+        );
 
         // Test double initialization (should revert)
         vm.expectRevert("Initializable: contract is already initialized");
-        Flow(payable(flowProxy)).initialize(address(0x1), address(superToken), address(flowImpl), flowParams);
+        Flow(payable(flowProxy)).initialize(
+            address(0x1),
+            address(superToken),
+            address(flowImpl),
+            flowParams,
+            FlowStorageV1.FlowMetadata("Test Flow", "ipfs://test", "Test Description")
+        );
     }
 }

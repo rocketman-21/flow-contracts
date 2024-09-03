@@ -35,11 +35,15 @@ contract Flow is
      * @param _superToken The address of the SuperToken to be used for the pool
      * @param _flowImpl The address of the flow implementation contract
      * @param _flowParams The parameters for the flow contract
+     * @param _metadata The metadata for the flow contract
      */
-    function initialize(address _nounsToken, address _superToken, address _flowImpl, FlowParams memory _flowParams)
-        public
-        initializer
-    {
+    function initialize(
+        address _nounsToken,
+        address _superToken,
+        address _flowImpl,
+        FlowParams memory _flowParams,
+        FlowMetadata memory _metadata
+    ) public initializer {
         if (_nounsToken == address(0)) revert ADDRESS_ZERO();
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
 
@@ -55,6 +59,9 @@ contract Flow is
 
         superToken = ISuperToken(_superToken);
         pool = superToken.createPool(address(this), poolConfig);
+
+        // Set the metadata
+        metadata = _metadata;
 
         // if total member units is 0, set 1 member unit to address(this)
         // do this to prevent distribution pool from resetting flow rate to 0

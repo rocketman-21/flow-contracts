@@ -22,6 +22,9 @@ contract FlowStorageV1 {
     /// Counter for recipients added
     uint256 public recipientCount;
 
+    // Public field for the flow contract metadata
+    FlowMetadata public metadata;
+
     /// The mapping of recipients
     /// [recipientCount++] = new FlowRecipient()
     mapping(uint256 => FlowRecipient) public recipients;
@@ -71,5 +74,12 @@ contract FlowStorageV1 {
         RecipientType recipientType;
         // the ipfs hash of the recipient's metadata
         string metadata;
+    }
+
+    // Struct to hold metadata for the flow contract itself
+    struct FlowMetadata {
+        string title;
+        string image;
+        string description;
     }
 }
