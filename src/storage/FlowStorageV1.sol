@@ -69,5 +69,7 @@ contract FlowStorageV1 {
         bool removed;
         // the type of recipient, either account or flow contract
         RecipientType recipientType;
+        // the ipfs hash of the recipient's metadata
+        string metadata;
     }
 }

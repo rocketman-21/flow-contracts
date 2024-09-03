@@ -224,15 +224,18 @@ contract Flow is
     /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
+     * @param metadata The ipfs hash of the recipient's metadata
           // TODO update to only work for the TCR admin! not owner
      */
-    function addRecipient(address recipient) public {
+    function addRecipient(address recipient, string calldata metadata) public {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
+        if (bytes(metadata).length == 0) revert INVALID_METADATA();
 
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.ExternalAccount,
             removed: false,
-            recipient: recipient
+            recipient: recipient,
+            metadata: metadata
         });
 
         recipientCount++;

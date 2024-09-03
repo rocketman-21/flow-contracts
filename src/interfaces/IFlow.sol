@@ -85,6 +85,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if bps is greater than 10000
     error INVALID_BPS();
 
+    /// @dev Reverts if metadata is invalid
+    error INVALID_METADATA();
+
     /// @dev Reverts if sender is not manager
     error SENDER_NOT_MANAGER();
 
