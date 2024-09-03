@@ -70,8 +70,8 @@ contract FlowStorageV1 {
     // Struct to hold metadata for the flow contract itself
     struct RecipientMetadata {
         string title;
-        string image;
         string description;
+        string image;
     }
 
     // Struct to handle potential recipients

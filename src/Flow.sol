@@ -291,7 +291,7 @@ contract Flow is
      * @dev Emits a RecipientCreated event if the recipient is successfully added
      //todo who should own this new contract?
      */
-    function addFlowRecipient(RecipientMetadata memory metadata) public onlyManager validMetadata(metadata) returns (address) {
+    function addFlowRecipient(RecipientMetadata memory metadata, address flowManager) public onlyManager validMetadata(metadata) returns (address) {
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
 
@@ -299,7 +299,8 @@ contract Flow is
             nounsToken: address(erc721Votes),
             superToken: address(superToken),
             flowImpl: flowImpl,
-            manager: manager,
+            // so that a new TCR contract can control this new flow contract
+            manager: flowManager,
             flowParams: FlowParams({
                 tokenVoteWeight: tokenVoteWeight
             }),
