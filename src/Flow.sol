@@ -35,6 +35,7 @@ contract Flow is
      * @param _superToken The address of the SuperToken to be used for the pool
      * @param _flowImpl The address of the flow implementation contract
      * @param _manager The address of the flow manager
+     * @param _parent The address of the parent flow contract (optional)
      * @param _flowParams The parameters for the flow contract
      * @param _metadata The metadata for the flow contract
      */
@@ -43,6 +44,7 @@ contract Flow is
         address _superToken,
         address _flowImpl,
         address _manager,
+        address _parent,
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
     ) public initializer {
@@ -65,6 +67,7 @@ contract Flow is
         tokenVoteWeight = _flowParams.tokenVoteWeight;
         flowImpl = _flowImpl;
         manager = _manager;
+        parent = _parent;
 
         superToken = ISuperToken(_superToken);
         pool = superToken.createPool(address(this), poolConfig);
@@ -302,6 +305,7 @@ contract Flow is
             flowImpl: flowImpl,
             // so that a new TCR contract can control this new flow contract
             manager: flowManager,
+            parent: address(this),
             flowParams: FlowParams({
                 tokenVoteWeight: tokenVoteWeight
             }),

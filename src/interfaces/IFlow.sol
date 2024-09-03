@@ -138,8 +138,9 @@ interface IFlow is IFlowEvents {
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
      * @param manager The address of the flow manager
+     * @param parent The address of the parent flow contract (optional)
      * @param flowParams The parameters for the flow contract
      */
-    function initialize(address nounsToken, address superToken, address flowImpl, address manager, FlowParams memory flowParams, FlowStorageV1.RecipientMetadata memory metadata)
+    function initialize(address nounsToken, address superToken, address flowImpl, address manager, address parent, FlowParams memory flowParams, FlowStorageV1.RecipientMetadata memory metadata)
         external;
 }

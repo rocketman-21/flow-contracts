@@ -47,6 +47,7 @@ contract FlowTest is Test {
             superToken: superTokenAddress,
             flowImpl: flowImpl,
             manager: manager, // Add this line
+            parent: address(0),
             flowParams: flowParams,
             metadata: flowMetadata
         });
