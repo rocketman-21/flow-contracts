@@ -255,6 +255,14 @@ contract Flow is
     }
 
     /**
+     * @notice Modifier to restrict access to only the owner or the parent
+     */
+    modifier onlyOwnerOrParent() {
+        if (msg.sender != owner() && msg.sender != parent) revert SENDER_NOT_MANAGER();
+        _;
+    }
+
+    /**
      * @notice Modifier to validate the metadata for a recipient
      * @param metadata The metadata to validate
      */
@@ -364,10 +372,10 @@ contract Flow is
     /**
      * @notice Sets the flow rate for the Superfluid pool
      * @param _flowRate The new flow rate to be set
-     * @dev Only callable by the owner of the contract
+     * @dev Only callable by the owner or parent of the contract
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
-    function setFlowRate(int96 _flowRate) public onlyOwner nonReentrant {
+    function setFlowRate(int96 _flowRate) public onlyOwnerOrParent nonReentrant {
         emit FlowRateUpdated(pool.getTotalFlowRate(), _flowRate);
 
         superToken.distributeFlow(address(this), pool, _flowRate);

@@ -12,7 +12,6 @@ contract FlowRecipientTest is FlowTest {
     function setUp() override public {
         super.setUp();
     }
-
     function testAddFlowRecipientParent() public {
         FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Flow Recipient", "A new Flow contract", "ipfs://image");
         address flowManager = address(0x123);
@@ -22,8 +21,19 @@ contract FlowRecipientTest is FlowTest {
 
         Flow newFlow = Flow(newFlowAddress);
 
+        // Transfer test tokens to the new Flow contract
+        _transferTestTokenToFlow(newFlowAddress);
+
         // Check that the parent of the new Flow contract is set correctly
         assertEq(newFlow.parent(), address(flow), "Parent of new Flow contract should be the original Flow contract");
+
+        // Test that parent can call setFlowRate
+        int96 newFlowRate = 1000;
+        vm.prank(address(flow));
+        newFlow.setFlowRate(newFlowRate);
+
+        // Verify the flow rate was updated
+        assertEq(newFlow.pool().getTotalFlowRate(), newFlowRate, "Flow rate should be updated by parent");
     }
 
     function testAddFlowRecipient() public {
