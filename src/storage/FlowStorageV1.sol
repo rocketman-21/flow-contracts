@@ -25,8 +25,11 @@ contract FlowStorageV1 {
     /// The flow manager
     address public manager;
 
-    /// Counter for recipients added
+    /// Counter for total recipients added
     uint256 public recipientCount;
+
+    /// Counter for active recipients (not removed)
+    uint256 public activeRecipientCount;
 
     // Public field for the flow contract metadata
     RecipientMetadata public metadata;

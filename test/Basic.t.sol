@@ -202,4 +202,49 @@ contract BasicFlowTest is FlowTest {
         vm.expectRevert(abi.encodeWithSelector(IFlow.NOT_OWNER_OR_PARENT.selector));
         flow.setFlowRate(newFlowRate * 4);
     }
+
+    function testActiveRecipientCount() public {
+        // Initial count should be 0
+        assertEq(flow.activeRecipientCount(), 0, "Initial active recipient count should be 0");
+
+        // Add a recipient
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
+            title: "Test Recipient",
+            description: "A test recipient",
+            image: "ipfs://test"
+        });
+        vm.prank(manager);
+        flow.addRecipient(address(0x123), metadata);
+        assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding");
+
+        // Add another recipient
+        vm.prank(manager);
+        flow.addRecipient(address(0x456), metadata);
+        assertEq(flow.activeRecipientCount(), 2, "Active recipient count should be 2 after adding second recipient");
+
+        // Remove a recipient
+        vm.prank(manager);
+        flow.removeRecipient(0);
+        assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after removing");
+
+        // Try to remove the same recipient again (should not affect the count)
+        vm.prank(manager);
+        vm.expectRevert(abi.encodeWithSelector(IFlow.RECIPIENT_ALREADY_REMOVED.selector));
+        flow.removeRecipient(0);
+        assertEq(flow.activeRecipientCount(), 1, "Active recipient count should still be 1 after trying to remove again");
+
+        // Remove the last recipient
+        vm.prank(manager);
+        flow.removeRecipient(1);
+        assertEq(flow.activeRecipientCount(), 0, "Active recipient count should be 0 after removing all recipients");
+
+        // Add a flow recipient
+        address flowManager = address(0x789);
+        vm.prank(manager);
+        flow.addFlowRecipient(metadata, flowManager);
+        assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding flow recipient");
+
+        // Verify total recipient count
+        assertEq(flow.recipientCount(), 3, "Total recipient count should be 3");
+    }
 }

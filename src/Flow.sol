@@ -289,6 +289,16 @@ contract Flow is
     }
 
     /**
+     * @notice Increments the recipient counts
+     * @dev This function increments both the total recipient count and the active recipient count
+     * @dev This should be called whenever a new recipient is added
+     */
+    function _incrementRecipientCounts() internal {
+        recipientCount++;
+        activeRecipientCount++;
+    }
+
+    /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
      * @param metadata The ipfs hash of the recipient's metadata
@@ -303,7 +313,7 @@ contract Flow is
             metadata: metadata
         });
 
-        recipientCount++;
+        _incrementRecipientCounts();
 
         emit RecipientCreated(recipient, msg.sender);
     }
@@ -347,7 +357,7 @@ contract Flow is
             metadata: metadata
         });
 
-        recipientCount++;
+        _incrementRecipientCounts();
 
         emit RecipientCreated(recipient, msg.sender);
         emit FlowCreated(address(this), recipient);
@@ -373,6 +383,7 @@ contract Flow is
         emit RecipientRemoved(recipientAddress, recipientId);
 
         recipients[recipientId].removed = true;
+        activeRecipientCount--;
     }
 
     /**
