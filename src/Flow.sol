@@ -96,6 +96,14 @@ contract Flow is
     }
 
     /**
+     * @notice Retrieves the net flow rate for a specific account
+     * @return netFlowRate The net flow rate for the account
+     */
+    function getNetFlowRate() public view returns (int96 netFlowRate) {
+        return superToken.getNetFlowRate(address(this));
+    }
+
+    /**
      * @notice Retrieves all vote allocations for a given ERC721 tokenId
      * @param tokenId The tokenId of the account to retrieve votes for
      * @return allocations An array of VoteAllocation structs representing each vote made by the token

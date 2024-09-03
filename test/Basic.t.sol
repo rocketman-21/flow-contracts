@@ -106,6 +106,40 @@ contract BasicFlowTest is FlowTest {
         );
     }
 
+    function testGetNetFlowRate() public {
+        // Setup: Create a flow to establish a non-zero net flow rate
+        int96 initialFlowRate = 1000000000; // 1 token per second
+        vm.prank(manager);
+        flow.setFlowRate(initialFlowRate);
+
+        // Get the net flow rate
+        int96 netFlowRate = flow.getNetFlowRate();
+
+        // Assert that the net flow rate matches the initial flow rate
+        assertEq(netFlowRate, initialFlowRate * -1, "Net flow rate should match the initial flow rate");
+
+        // Change the flow rate
+        int96 newFlowRate = 2000000000; // 2 tokens per second
+        vm.prank(manager);
+        flow.setFlowRate(newFlowRate);
+
+        // Get the updated net flow rate
+        int96 updatedNetFlowRate = flow.getNetFlowRate();
+
+        // Assert that the updated net flow rate matches the new flow rate
+        assertEq(updatedNetFlowRate, newFlowRate * -1, "Updated net flow rate should match the new flow rate");
+
+        // Test with zero flow rate
+        vm.prank(manager);
+        flow.setFlowRate(0);
+
+        // Get the net flow rate after setting to zero
+        int96 zeroNetFlowRate = flow.getNetFlowRate();
+
+        // Assert that the net flow rate is zero
+        assertEq(zeroNetFlowRate, 0, "Net flow rate should be zero after setting flow rate to zero");
+    }
+
     function testAddFlowRecipient() public {
         FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
             title: "Test Flow Recipient",
