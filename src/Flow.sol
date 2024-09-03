@@ -306,6 +306,8 @@ contract Flow is
             metadata: metadata
         });
 
+        Ownable2StepUpgradeable(recipient).transferOwnership(owner());
+
         recipients[recipientCount] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
             removed: false,
