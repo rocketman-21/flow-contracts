@@ -63,6 +63,18 @@ contract FlowRecipientTest is FlowTest {
         vm.stopPrank();
     }
 
+    function testAddFlowRecipientEmptyManager() public {
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Flow Recipient", "A new Flow contract", "ipfs://image");
+        address emptyManager = address(0);
+
+        vm.startPrank(flow.owner());
+
+        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
+        flow.addFlowRecipient(metadata, emptyManager);
+
+        vm.stopPrank();
+    }
+
     function testAddFlowRecipientEmptyMetadata() public {
         FlowStorageV1.RecipientMetadata memory emptyMetadata = FlowStorageV1.RecipientMetadata("", "", "");
         address flowManager = address(0x123);

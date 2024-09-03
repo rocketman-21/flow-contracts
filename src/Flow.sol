@@ -294,6 +294,7 @@ contract Flow is
     function addFlowRecipient(RecipientMetadata memory metadata, address flowManager) public onlyManager validMetadata(metadata) returns (address) {
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
+        if (flowManager == address(0)) revert ADDRESS_ZERO();
 
         IFlow(recipient).initialize({
             nounsToken: address(erc721Votes),
