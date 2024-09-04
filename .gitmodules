@@ -16,3 +16,6 @@
 [submodule "lib/optimism"]
 	path = lib/optimism
 	url = https://github.com/ethereum-optimism/optimism
+[submodule "lib/relic-contracts"]
+	path = lib/relic-contracts
+	url = https://github.com/relic-protocol/relic-contracts
