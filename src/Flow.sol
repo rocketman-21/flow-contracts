@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.23;
 
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
 import {IFlow} from "./interfaces/IFlow.sol";
