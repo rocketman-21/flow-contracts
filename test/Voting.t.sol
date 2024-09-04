@@ -52,7 +52,7 @@ contract VotingFlowTest is FlowTest {
 
         assertGt(recipient2Units, 0);
 
-        assertEq(flow.bonusPool().getUnits(recipient), 0);
+        assertEq(flow.bonusPool().getUnits(recipient), 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
     }
 
     function test__RecipientVotesCleared_MultiToken() public {
@@ -214,7 +214,7 @@ contract VotingFlowTest is FlowTest {
         uint128 recipient2NewUnits = flow.bonusPool().getUnits(recipient2);
 
         assertGt(recipient1NewUnits, recipient1OriginalUnits);
-        assertEq(recipient2NewUnits, 0);
+        assertEq(recipient2NewUnits, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         // Verify that the votes for the tokenId have been updated
         Flow.VoteAllocation[] memory voteAllocations = flow.getVotesForTokenId(tokenId);

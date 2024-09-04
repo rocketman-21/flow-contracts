@@ -337,8 +337,13 @@ contract Flow is
      */
     function addRecipient(address recipient, RecipientMetadata memory metadata) public onlyManager nonReentrant validMetadata(metadata) {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
+        if (recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
 
-        recipients[recipientCount] = FlowRecipient({
+        uint256 recipientId = recipientCount;
+
+        recipientExists[recipient] = true;
+
+        recipients[recipientId] = FlowRecipient({
             recipientType: RecipientType.ExternalAccount,
             removed: false,
             recipient: recipient,
@@ -348,8 +353,9 @@ contract Flow is
         _incrementRecipientCounts();
 
         _initializeBaselineMemberUnits(recipient);
+        _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
-        emit RecipientCreated(recipient, msg.sender);
+        emit RecipientCreated(recipient, msg.sender, recipientId);
     }
 
     /**
@@ -388,7 +394,9 @@ contract Flow is
 
         _initializeBaselineMemberUnits(recipient);
 
-        recipients[recipientCount] = FlowRecipient({
+        uint256 recipientId = recipientCount;
+
+        recipients[recipientId] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
             removed: false,
             recipient: recipient,
@@ -397,8 +405,8 @@ contract Flow is
 
         _incrementRecipientCounts();
 
-        emit RecipientCreated(recipient, msg.sender);
-        emit FlowCreated(address(this), recipient);
+        emit RecipientCreated(recipient, msg.sender, recipientId);
+        emit FlowCreated(address(this), recipient, recipientId);
 
         return recipient;
     }
@@ -414,7 +422,8 @@ contract Flow is
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
         address recipientAddress = recipients[recipientId].recipient;
-
+        recipientExists[recipientAddress] = false;
+        
         // set member units to 0
         _updateBonusMemberUnits(recipientAddress, 0);
         _removeBaselineMemberUnits(recipientAddress);
