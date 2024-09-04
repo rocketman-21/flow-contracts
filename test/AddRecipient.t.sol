@@ -29,6 +29,7 @@ contract AddRecipientsTest is FlowTest {
         assertEq(storedMetadata.title, recipientMetadata.title);
         assertEq(storedMetadata.description, recipientMetadata.description);
         assertEq(storedMetadata.image, recipientMetadata.image);
+        assertEq(flow.recipientExists(recipient), true);
 
         // Verify recipient count increased
         assertEq(flow.recipientCount(), 1);

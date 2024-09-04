@@ -31,6 +31,7 @@ contract RemoveRecipientsTest is FlowTest {
         (address storedRecipient, bool removed, , ) = flow.recipients(0);
         assertEq(storedRecipient, recipient);
         assertEq(removed, true);
+        assertEq(flow.recipientExists(recipient), false);
 
         // Verify recipient count remains the same
         assertEq(flow.recipientCount(), 1);

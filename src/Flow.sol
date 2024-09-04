@@ -422,7 +422,8 @@ contract Flow is
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
         address recipientAddress = recipients[recipientId].recipient;
-
+        recipientExists[recipientAddress] = false;
+        
         // set member units to 0
         _updateBonusMemberUnits(recipientAddress, 0);
         _removeBaselineMemberUnits(recipientAddress);
