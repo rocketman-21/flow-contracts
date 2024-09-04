@@ -342,7 +342,7 @@ contract Flow is
         uint256 recipientId = recipientCount;
 
         recipientExists[recipient] = true;
-        
+
         recipients[recipientId] = FlowRecipient({
             recipientType: RecipientType.ExternalAccount,
             removed: false,
@@ -353,6 +353,7 @@ contract Flow is
         _incrementRecipientCounts();
 
         _initializeBaselineMemberUnits(recipient);
+        _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         emit RecipientCreated(recipient, msg.sender, recipientId);
     }
