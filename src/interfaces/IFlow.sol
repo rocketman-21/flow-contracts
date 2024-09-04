@@ -54,6 +54,9 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if unit updates fail
     error UNITS_UPDATE_FAILED();
 
+    /// @dev Reverts if the recipient already exists
+    error RECIPIENT_ALREADY_EXISTS();
+
     /// @dev Reverts if the baseline pool flow rate percent is invalid
     error INVALID_RATE_PERCENT();
 

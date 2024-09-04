@@ -337,9 +337,12 @@ contract Flow is
      */
     function addRecipient(address recipient, RecipientMetadata memory metadata) public onlyManager nonReentrant validMetadata(metadata) {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
+        if (recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
 
         uint256 recipientId = recipientCount;
 
+        recipientExists[recipient] = true;
+        
         recipients[recipientId] = FlowRecipient({
             recipientType: RecipientType.ExternalAccount,
             removed: false,

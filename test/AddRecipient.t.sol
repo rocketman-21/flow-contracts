@@ -112,4 +112,21 @@ contract AddRecipientsTest is FlowTest {
         uint128 totalUnits = flow.baselinePool().getTotalUnits();
         assertEq(totalUnits, flow.BASELINE_MEMBER_UNITS() * 2 + 1, "Total units should be 2 * BASELINE_MEMBER_UNITS + 1 (for address(this))");
     }
+
+    function testAddDuplicateRecipient() public {
+        address recipient = address(0x123);
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Recipient", "Description", "ipfs://image");
+
+        // Add recipient for the first time
+        vm.prank(flow.owner());
+        flow.addRecipient(recipient, metadata);
+
+        // Attempt to add the same recipient again
+        vm.prank(flow.owner());
+        vm.expectRevert(IFlow.RECIPIENT_ALREADY_EXISTS.selector);
+        flow.addRecipient(recipient, metadata);
+
+        // Verify recipient count hasn't changed
+        assertEq(flow.recipientCount(), 1, "Recipient count should still be 1");
+    }
 }
