@@ -9,7 +9,7 @@ import "forge-std/StdJson.sol";
 import {StateVerifier} from "../src/state-proof/StateVerifier.sol";
 import {L2NounsVerifier} from "../src/state-proof/L2NounsVerifier.sol";
 
-contract L2NounsOwnershipVerifierTest is Test {
+contract L2NounsDelegateVerifier is Test {
     using stdJson for string;
 
     function test() public {
@@ -27,6 +27,7 @@ contract L2NounsOwnershipVerifierTest is Test {
             storageProof: abi.decode(json.parseRaw(".storageProof"), (bytes[])),
             accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
         });
-        assertTrue(verifier.isOwner(256, 0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71, params));
+        // todo
+        assertTrue(verifier.isDelegate(256, 0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71, params));
     }
 }
