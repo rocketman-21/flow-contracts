@@ -44,7 +44,7 @@ contract FlowRecipientTest is FlowTest {
 
         // Test successful addition of a Flow recipient
         vm.expectEmit(false, false, true, true);
-        emit IFlowEvents.RecipientCreated(address(0), manager); // address(0) as we don't know the new address yet
+        emit IFlowEvents.RecipientCreated(address(0), manager, 0); // address(0) as we don't know the new address yet
 
         address newFlowAddress = flow.addFlowRecipient(metadata, flowManager);
 

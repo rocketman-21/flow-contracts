@@ -18,7 +18,7 @@ contract AddRecipientsTest is FlowTest {
         // Test successful addition of a recipient
         vm.startPrank(flow.owner());
         vm.expectEmit(true, true, true, true);
-        emit IFlowEvents.RecipientCreated(recipient, flow.owner());
+        emit IFlowEvents.RecipientCreated(recipient, flow.owner(), 0);
         flow.addRecipient(recipient, recipientMetadata);
 
         // Verify recipient was added correctly

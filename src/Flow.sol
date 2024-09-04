@@ -338,7 +338,9 @@ contract Flow is
     function addRecipient(address recipient, RecipientMetadata memory metadata) public onlyManager nonReentrant validMetadata(metadata) {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
 
-        recipients[recipientCount] = FlowRecipient({
+        uint256 recipientId = recipientCount;
+
+        recipients[recipientId] = FlowRecipient({
             recipientType: RecipientType.ExternalAccount,
             removed: false,
             recipient: recipient,
@@ -349,7 +351,7 @@ contract Flow is
 
         _initializeBaselineMemberUnits(recipient);
 
-        emit RecipientCreated(recipient, msg.sender);
+        emit RecipientCreated(recipient, msg.sender, recipientId);
     }
 
     /**
@@ -388,7 +390,9 @@ contract Flow is
 
         _initializeBaselineMemberUnits(recipient);
 
-        recipients[recipientCount] = FlowRecipient({
+        uint256 recipientId = recipientCount;
+
+        recipients[recipientId] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
             removed: false,
             recipient: recipient,
@@ -397,8 +401,8 @@ contract Flow is
 
         _incrementRecipientCounts();
 
-        emit RecipientCreated(recipient, msg.sender);
-        emit FlowCreated(address(this), recipient);
+        emit RecipientCreated(recipient, msg.sender, recipientId);
+        emit FlowCreated(address(this), recipient, recipientId);
 
         return recipient;
     }
