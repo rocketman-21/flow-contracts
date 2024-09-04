@@ -242,9 +242,24 @@ contract Flow is
         validVotes(recipientIds, percentAllocations)
     {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (erc721Votes.ownerOf(tokenIds[i]) != msg.sender) revert NOT_TOKEN_OWNER();
+            if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
             _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
         }
+    }
+
+    /**
+     * @notice Checks if a given address can vote with a specific token
+     * @param tokenId The ID of the token to check voting rights for
+     * @param voter The address of the potential voter
+     * @return bool True if the voter can vote with the token, false otherwise
+     */
+    function canVoteWithToken(uint256 tokenId, address voter) public view returns (bool) {
+        address tokenOwner = erc721Votes.ownerOf(tokenId);
+        // check if the token owner has delegated their voting power to the voter
+        // erc721checkpointable falls back to the owner 
+        // if the owner hasn't delegated so this will work for the owner as well
+        address delegate = erc721Votes.delegates(tokenOwner);
+        return voter == delegate;
     }
 
     /**

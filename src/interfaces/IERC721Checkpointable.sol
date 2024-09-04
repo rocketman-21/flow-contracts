@@ -7,16 +7,21 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 /// @notice A limited version of the ERC721Checkpointable interface from the nouns-monorepo
 /// @dev This interface is specifically designed for the NounsToken used by the Nouns DAO on Ethereum mainnet.
 interface IERC721Checkpointable is IERC721 {
-    ///                                                          ///
-    ///                           FUNCTIONS                      ///
-    ///                                                          ///
-
-    /// @notice The current number of votes for an account
-    /// @param account The account address
+    /// @notice Get the current number of votes for an account
+    /// @param account The address of the account to check
+    /// @return The number of votes as a uint96
     function getCurrentVotes(address account) external view returns (uint96);
 
-    /// @notice The number of votes for an account at a past timestamp
-    /// @param account The account address
-    /// @param blockNumber The past block number
+    /// @notice Get the number of votes for an account at a specific block number
+    /// @param account The address of the account to check
+    /// @param blockNumber The block number to get the vote count at
+    /// @return The number of votes as a uint96
     function getPriorVotes(address account, uint256 blockNumber) external view returns (uint96);
+
+    /// @notice Get the delegate address for a given delegator
+    /// @dev This function overrides the standard `Comp.sol` delegates mapping to return
+    ///      the delegator's own address if they haven't delegated. This avoids having to delegate to oneself.
+    /// @param delegator The address of the delegator
+    /// @return The address of the delegate
+    function delegates(address delegator) external view returns (address);
 }
