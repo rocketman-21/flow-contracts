@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+/// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
+
 import {Test, console2} from "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
