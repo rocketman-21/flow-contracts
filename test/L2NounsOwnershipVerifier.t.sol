@@ -6,13 +6,12 @@ import "forge-std/StdJson.sol";
 
 import {StateVerifier} from "../src/state-proof/StateVerifier.sol";
 import {L2NounsOwnershipVerifier} from "../src/state-proof/L2NounsOwnershipVerifier.sol";
-import {MerkleTree} from "relic-contracts/lib/MerkleTree.sol";
 
 contract L2NounsOwnershipVerifierTest is Test {
     using stdJson for string;
 
     function test() public {
-        vm.createSelectFork("https://mainnet.base.org", 18997612);
+        vm.createSelectFork("https://mainnet.base.org", 19337534);
         L2NounsOwnershipVerifier verifier = new L2NounsOwnershipVerifier();
         string memory rootPath = vm.projectRoot();
         string memory path = string.concat(rootPath, "/test/data.json");
