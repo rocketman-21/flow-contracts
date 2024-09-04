@@ -18,7 +18,7 @@ contract AddRecipientsTest is FlowTest {
         // Test successful addition of a recipient
         vm.startPrank(flow.owner());
         vm.expectEmit(true, true, true, true);
-        emit IFlowEvents.RecipientCreated(recipient, flow.owner());
+        emit IFlowEvents.RecipientCreated(recipient, flow.owner(), 0);
         flow.addRecipient(recipient, recipientMetadata);
 
         // Verify recipient was added correctly
@@ -29,6 +29,7 @@ contract AddRecipientsTest is FlowTest {
         assertEq(storedMetadata.title, recipientMetadata.title);
         assertEq(storedMetadata.description, recipientMetadata.description);
         assertEq(storedMetadata.image, recipientMetadata.image);
+        assertEq(flow.recipientExists(recipient), true);
 
         // Verify recipient count increased
         assertEq(flow.recipientCount(), 1);
@@ -111,5 +112,22 @@ contract AddRecipientsTest is FlowTest {
         // Verify total units in baseline pool
         uint128 totalUnits = flow.baselinePool().getTotalUnits();
         assertEq(totalUnits, flow.BASELINE_MEMBER_UNITS() * 2 + 1, "Total units should be 2 * BASELINE_MEMBER_UNITS + 1 (for address(this))");
+    }
+
+    function testAddDuplicateRecipient() public {
+        address recipient = address(0x123);
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Recipient", "Description", "ipfs://image");
+
+        // Add recipient for the first time
+        vm.prank(flow.owner());
+        flow.addRecipient(recipient, metadata);
+
+        // Attempt to add the same recipient again
+        vm.prank(flow.owner());
+        vm.expectRevert(IFlow.RECIPIENT_ALREADY_EXISTS.selector);
+        flow.addRecipient(recipient, metadata);
+
+        // Verify recipient count hasn't changed
+        assertEq(flow.recipientCount(), 1, "Recipient count should still be 1");
     }
 }

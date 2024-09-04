@@ -41,8 +41,10 @@ contract FlowStorageV1 {
     RecipientMetadata public metadata;
 
     /// The mapping of recipients
-    /// [recipientCount++] = new FlowRecipient()
     mapping(uint256 => FlowRecipient) public recipients;
+
+    /// The mapping of addresses to whether they are a recipient
+    mapping(address => bool) public recipientExists;
 
     /// The SuperToken used to pay out the grantees
     ISuperToken public superToken;
