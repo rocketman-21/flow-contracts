@@ -7,14 +7,14 @@ import {Test, console2} from "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
 import {StateVerifier} from "../src/state-proof/StateVerifier.sol";
-import {L2NounsOwnershipVerifier} from "../src/state-proof/L2NounsOwnershipVerifier.sol";
+import {L2NounsVerifier} from "../src/state-proof/L2NounsVerifier.sol";
 
-contract L2NounsOwnershipVerifierTest is Test {
+contract L2NounsVerifierTest is Test {
     using stdJson for string;
 
     function test() public {
         vm.createSelectFork("https://mainnet.base.org", 19337534);
-        L2NounsOwnershipVerifier verifier = new L2NounsOwnershipVerifier();
+        L2NounsVerifier verifier = new L2NounsVerifier();
         string memory rootPath = vm.projectRoot();
         string memory path = string.concat(rootPath, "/test/data.json");
         string memory json = vm.readFile(path);
