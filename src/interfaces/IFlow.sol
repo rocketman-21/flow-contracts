@@ -120,8 +120,8 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if recipient is already approved
     error RECIPIENT_ALREADY_REMOVED();
 
-    /// @dev Reverts if msg.sender is not owner of tokenId when voting
-    error NOT_TOKEN_OWNER();
+    /// @dev Reverts if msg.sender is not able to vote with the token
+    error NOT_ABLE_TO_VOTE_WITH_TOKEN();
 
     /// @dev Array lengths of recipients & percentAllocations don't match (`recipientsLength` != `allocationsLength`)
     /// @param recipientsLength Length of recipients array

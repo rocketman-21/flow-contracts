@@ -119,7 +119,7 @@ contract TokenVotingFlowTest is FlowTest {
         nounsToken.transferFrom(voter1, voter2, tokenId);
 
         vm.prank(voter1);
-        vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
+        vm.expectRevert(IFlow.NOT_ABLE_TO_VOTE_WITH_TOKEN.selector);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
     }
 
@@ -145,14 +145,14 @@ contract TokenVotingFlowTest is FlowTest {
         tokenIds[1] = 1;
 
         vm.prank(voter1);
-        vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
+        vm.expectRevert(IFlow.NOT_ABLE_TO_VOTE_WITH_TOKEN.selector);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         vm.prank(voter1);
         nounsToken.transferFrom(voter1, voter2, tokenId);
 
         vm.prank(voter1);
-        vm.expectRevert(IFlow.NOT_TOKEN_OWNER.selector);
+        vm.expectRevert(IFlow.NOT_ABLE_TO_VOTE_WITH_TOKEN.selector);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
     }
 
