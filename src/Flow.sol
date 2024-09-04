@@ -256,7 +256,8 @@ contract Flow is
     function canVoteWithToken(uint256 tokenId, address voter) public view returns (bool) {
         address tokenOwner = erc721Votes.ownerOf(tokenId);
         // check if the token owner has delegated their voting power to the voter
-        // erc721checkpointable falls back to the owner if the owner hasn't delegated so this will work
+        // erc721checkpointable falls back to the owner 
+        // if the owner hasn't delegated so this will work for the owner as well
         address delegate = erc721Votes.delegates(tokenOwner);
         return voter == delegate;
     }
