@@ -239,14 +239,6 @@ abstract contract Flow is
     {}
 
     /**
-     * @notice Checks if a given address can vote with a specific token
-     * @param tokenId The ID of the token to check voting rights for
-     * @param voter The address of the potential voter
-     * @return bool True if the voter can vote with the token, false otherwise
-     */
-    function canVoteWithToken(uint256 tokenId, address voter) public view virtual returns (bool) {}
-
-    /**
      * @notice Cast a vote for a set of grant addresses.
      * @param tokenId The tokenId owned by the voter.
      * @param recipientIds The recipientIds of the grant recipients to vote for.
