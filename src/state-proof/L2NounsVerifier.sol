@@ -25,13 +25,13 @@ contract L2NounsVerifier {
         view
         returns (bool)
     {
-        try this.validateDelegateState(owner, abi.encodePacked(owner), proofParams) returns (bool result) {
+        try this.validateDelegateState(owner, abi.encodePacked(bytes32(0)), proofParams) returns (bool result) {
             if (result) return true;
         } catch {}
 
-        // try this.validateDelegateState(owner, abi.encodePacked(bytes32(0)), proofParams) returns (bool result) {
-        //     if (result) return true;
-        // } catch {}
+        try this.validateDelegateState(owner, abi.encodePacked(owner), proofParams) returns (bool result) {
+            if (result) return true;
+        } catch {}
 
         return false;
     }
