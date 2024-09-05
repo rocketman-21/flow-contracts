@@ -42,4 +42,33 @@ contract NounsFlow is
 
         verifier = IL2NounsVerifier(_verifier);
     }
+
+    /**
+     * @notice Deploys a new Flow contract as a recipient
+     * @dev This function overrides the base _deployFlowRecipient to use NounsFlow-specific initialization
+     * @param metadata The IPFS hash of the recipient's metadata
+     * @param flowManager The address of the flow manager for the new contract
+     * @return address The address of the newly created Flow contract
+     */
+    function _deployFlowRecipient(RecipientMetadata memory metadata, address flowManager) internal override returns (address) {
+        address recipient = address(new ERC1967Proxy(flowImpl, ""));
+        if (recipient == address(0)) revert ADDRESS_ZERO();
+
+        NounsFlow(recipient).initialize({
+            _verifier: address(verifier),
+            _superToken: address(superToken),
+            _flowImpl: flowImpl,
+            _manager: flowManager,
+            _parent: address(this),
+            _flowParams: FlowParams({
+                tokenVoteWeight: tokenVoteWeight,
+                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
+            }),
+            _metadata: metadata
+        });
+
+        Ownable2StepUpgradeable(recipient).transferOwnership(owner());
+
+        return recipient;
+    }
 }
