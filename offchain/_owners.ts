@@ -28,7 +28,7 @@ const block = await getBeaconBlock(beaconInfo.beaconRoot);
 const stateRootInclusion = getExecutionStateRootProof(block);
 
 // Example: Generating a storage proof for a specific token in a contract
-const tokenId = BigInt(256);
+const tokenId = BigInt(40);
 const ownerMappingSlot = BigInt(3);
 const slot = keccak256(encodeAbiParameters([{type: 'uint256'}, {type: 'uint256'}], [tokenId, ownerMappingSlot]))
 
@@ -54,4 +54,4 @@ console.log('Execution Payload State Root:', toHex(block.body.executionPayload.s
 console.log('Proof Execution State Root:', proofObj.executionStateRoot)
 
 // Write the proof object to a JSON file
-await Bun.write("output.json", JSON.stringify(proofObj));
+await Bun.write(`outputs/_owners[${tokenId}].json`, JSON.stringify(proofObj));
