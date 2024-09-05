@@ -15,7 +15,7 @@ import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/inte
 import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
-contract Flow is
+abstract contract Flow is
     IFlow,
     UUPSUpgradeable,
     Ownable2StepUpgradeable,
@@ -28,7 +28,7 @@ contract Flow is
     /**
      * @notice Initializes a token's metadata descriptor
      */
-    constructor() payable initializer {}
+    constructor() payable {}
 
     /**
      * @notice Initializes the Flow contract
@@ -40,7 +40,7 @@ contract Flow is
      * @param _flowParams The parameters for the flow contract
      * @param _metadata The metadata for the flow contract
      */
-    function initialize(
+    function __Flow_init(
         address _nounsToken,
         address _superToken,
         address _flowImpl,
@@ -48,7 +48,7 @@ contract Flow is
         address _parent,
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
-    ) public initializer {
+    ) public {
         if (_nounsToken == address(0)) revert ADDRESS_ZERO();
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
         if (_manager == address(0)) revert ADDRESS_ZERO();

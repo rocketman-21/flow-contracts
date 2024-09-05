@@ -5,10 +5,10 @@ import {Test} from "forge-std/Test.sol";
 
 import {IFlow} from "../src/interfaces/IFlow.sol";
 import {Flow} from "../src/Flow.sol";
+import {ERC721Flow} from "../src/ERC721Flow.sol";
 import {MockERC721} from "./mocks/MockERC721.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
 
 import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
@@ -97,7 +97,7 @@ contract FlowTest is Test {
         });
 
         nounsToken = deployMock721("Nouns", "NOUN");
-        flowImpl = address(new Flow());
+        flowImpl = address(new ERC721Flow());
 
         flowParams = IFlow.FlowParams({
             tokenVoteWeight: 1e18 * 1000, // Example token vote weight

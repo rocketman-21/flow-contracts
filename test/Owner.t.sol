@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {FlowTest} from "./Flow.t.sol";
 import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
 import {Flow} from "../src/Flow.sol";
+import {ERC721Flow} from "../src/ERC721Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import {console} from "forge-std/console.sol";
@@ -45,7 +46,7 @@ contract OwnerFlowTest is FlowTest {
     }
 
     function testUpgrade() public {
-        address newImplementation = address(new Flow());
+        address newImplementation = address(new ERC721Flow());
         vm.prank(address(0)); // Non-owner address
         vm.expectRevert("Ownable: caller is not the owner");
         Flow(flow).upgradeTo(newImplementation);
