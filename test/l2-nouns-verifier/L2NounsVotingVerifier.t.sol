@@ -6,8 +6,8 @@ pragma solidity ^0.8.23;
 import {Test, console2} from "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
-import {StateVerifier} from "../src/state-proof/StateVerifier.sol";
-import {L2NounsVerifier} from "../src/state-proof/L2NounsVerifier.sol";
+import {StateVerifier} from "../../src/state-proof/StateVerifier.sol";
+import {L2NounsVerifier} from "../../src/state-proof/L2NounsVerifier.sol";
 
 contract L2NounsVotingVerifier is Test {
     using stdJson for string;
