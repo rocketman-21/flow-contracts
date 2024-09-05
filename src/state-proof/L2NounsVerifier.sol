@@ -20,15 +20,31 @@ contract L2NounsVerifier {
         });
     }
 
-    function isDelegate(address owner, address delegate, StateVerifier.StateProofParameters calldata proofParams)
+    function isOwnDelegate(address owner, StateVerifier.StateProofParameters calldata proofParams)
         external
         view
         returns (bool)
     {
+        try this.validateDelegateState(owner, abi.encodePacked(owner), proofParams) returns (bool result) {
+            if (result) return true;
+        } catch {}
+
+        // try this.validateDelegateState(owner, abi.encodePacked(bytes32(0)), proofParams) returns (bool result) {
+        //     if (result) return true;
+        // } catch {}
+
+        return false;
+    }
+
+    function validateDelegateState(
+        address owner,
+        bytes memory storageValue,
+        StateVerifier.StateProofParameters calldata proofParams
+    ) external view returns (bool) {
         return StateVerifier.validateState({
             account: 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03, // Nouns Token on mainnet
             storageKey: abi.encodePacked(_getDelegateKey(owner)),
-            storageValue: abi.encodePacked(delegate),
+            storageValue: storageValue,
             proofParams: proofParams
         });
     }
