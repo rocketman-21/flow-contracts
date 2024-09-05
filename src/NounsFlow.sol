@@ -66,15 +66,7 @@ contract NounsFlow is INounsFlow, Flow {
             StateVerifier.StateProofParameters[] memory ownershipProofs = new StateVerifier.StateProofParameters[](tokenIds[i].length);
 
             for (uint256 j = 0; j < tokenIds[i].length; j++) {
-                ownershipProofs[j] = StateVerifier.StateProofParameters({
-                    beaconRoot: baseProofParams.beaconRoot,
-                    beaconOracleTimestamp: baseProofParams.beaconOracleTimestamp,
-                    executionStateRoot: baseProofParams.executionStateRoot,
-                    stateRootProof: baseProofParams.stateRootProof,
-                    accountProof: baseProofParams.accountProof,
-                    // there is one storage proof for each tokenId
-                    storageProof: ownershipStorageProofs[i][j]
-                });
+                ownershipProofs[j] = generateStateProofParams(baseProofParams, ownershipStorageProofs[i][j]);
             }
 
             _castVotesForOwner(
@@ -84,16 +76,29 @@ contract NounsFlow is INounsFlow, Flow {
                 percentAllocations,
                 ownershipProofs,
                 // there is one delegate proof for each owner
-                StateVerifier.StateProofParameters({
-                    beaconRoot: baseProofParams.beaconRoot,
-                    beaconOracleTimestamp: baseProofParams.beaconOracleTimestamp,
-                    executionStateRoot: baseProofParams.executionStateRoot,
-                    stateRootProof: baseProofParams.stateRootProof,
-                    accountProof: baseProofParams.accountProof,
-                    storageProof: delegateStorageProofs[i]
-                })
+                generateStateProofParams(baseProofParams, delegateStorageProofs[i])
             );
         }
+    }
+
+    /**
+     * @notice Generates StateProofParameters from base parameters and a storage proof
+     * @param baseParams The base state proof parameters
+     * @param storageProof The storage proof for the specific state
+     * @return StateVerifier.StateProofParameters The generated state proof parameters
+     */
+    function generateStateProofParams(
+        BaseStateProofParameters memory baseParams,
+        bytes[] memory storageProof
+    ) internal pure returns (StateVerifier.StateProofParameters memory) {
+        return StateVerifier.StateProofParameters({
+            beaconRoot: baseParams.beaconRoot,
+            beaconOracleTimestamp: baseParams.beaconOracleTimestamp,
+            executionStateRoot: baseParams.executionStateRoot,
+            stateRootProof: baseParams.stateRootProof,
+            accountProof: baseParams.accountProof,
+            storageProof: storageProof
+        });
     }
 
     /**
