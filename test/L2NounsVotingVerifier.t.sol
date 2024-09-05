@@ -9,15 +9,14 @@ import "forge-std/StdJson.sol";
 import {StateVerifier} from "../src/state-proof/StateVerifier.sol";
 import {L2NounsVerifier} from "../src/state-proof/L2NounsVerifier.sol";
 
-contract L2NounsDelegateVerifier is Test {
+contract L2NounsVotingVerifier is Test {
     using stdJson for string;
 
-    function test__isOwnDelegateHasDelegatedToSelf() public {
+    function test__isOwnDelegateNoNouns() public {
         address account = 0x77D920b4d1163DbC516E7Ce70596225D17819dC5;
         vm.createSelectFork("https://mainnet.base.org", 19354086);
         L2NounsVerifier verifier = new L2NounsVerifier();
         string memory rootPath = vm.projectRoot();
-
         string memory path = string.concat(rootPath, "/test/proof-data/_delegates/0x77D920b4d1163DbC516E7Ce70596225D17819dC5.json");
         string memory delegateJson = vm.readFile(path);
 
@@ -31,26 +30,19 @@ contract L2NounsDelegateVerifier is Test {
         });
 
         assertTrue(verifier.isDelegate(account, account, delegationParams));
+        
+        // this account owns no nouns - try to vote with wilsons token
+        string memory ownershipJson = vm.readFile(string.concat(rootPath, "/test/proof-data/_owners/256.json"));
+
+        StateVerifier.StateProofParameters memory params = StateVerifier.StateProofParameters({
+            beaconRoot: ownershipJson.readBytes32(".beaconRoot"),
+            beaconOracleTimestamp: uint256(ownershipJson.readBytes32(".beaconOracleTimestamp")),
+            executionStateRoot: ownershipJson.readBytes32(".executionStateRoot"),
+            stateRootProof: abi.decode(ownershipJson.parseRaw(".stateRootProof"), (bytes32[])),
+            storageProof: abi.decode(ownershipJson.parseRaw(".storageProof"), (bytes[])),
+            accountProof: abi.decode(ownershipJson.parseRaw(".accountProof"), (bytes[]))
+        });
+        vm.expectRevert(abi.encodeWithSignature("StorageProofVerificationFailed()"));
+        verifier.canVoteWithToken(256, account, account, params, params);
     }
-
-    // TODO try to fix this 
-    // check that even if they have not explicitly delegated to self, they are still an owner delegate
-    // function test__isOwnDelegateHasNotDelegatedToSelf() public {
-    //     vm.createSelectFork("https://mainnet.base.org", 19355014);
-    //     L2NounsVerifier verifier = new L2NounsVerifier();
-    //     string memory rootPath = vm.projectRoot();
-    //     string memory path = string.concat(rootPath, "/test/delegate-data-2.json");
-    //     string memory json = vm.readFile(path);
-
-    //     StateVerifier.StateProofParameters memory params = StateVerifier.StateProofParameters({
-    //         beaconRoot: json.readBytes32(".beaconRoot"),
-    //         beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
-    //         executionStateRoot: json.readBytes32(".executionStateRoot"),
-    //         stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
-    //         storageProof: abi.decode(json.parseRaw(".storageProof"), (bytes[])),
-    //         accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
-    //     });
-
-    //     assertTrue(verifier.isOwnDelegate(0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71, params));
-    // }
 }
