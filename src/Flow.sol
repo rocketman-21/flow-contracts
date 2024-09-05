@@ -236,12 +236,7 @@ abstract contract Flow is
         virtual
         nonReentrant
         validVotes(recipientIds, percentAllocations)
-    {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
-            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
-        }
-    }
+    {}
 
     /**
      * @notice Checks if a given address can vote with a specific token
