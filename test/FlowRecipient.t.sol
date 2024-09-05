@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.23;
 
-import {FlowTest} from "./Flow.t.sol";
+import {ERC721FlowTest} from "./Flow.t.sol";
 import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
-import {Flow} from "../src/Flow.sol";
+import {ERC721Flow} from "../src/ERC721Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
 
-contract FlowRecipientTest is FlowTest {
+contract FlowRecipientTest is ERC721FlowTest {
 
     function setUp() override public {
         super.setUp();
@@ -19,7 +19,7 @@ contract FlowRecipientTest is FlowTest {
         vm.prank(manager);
         address newFlowAddress = flow.addFlowRecipient(metadata, flowManager);
 
-        Flow newFlow = Flow(newFlowAddress);
+        ERC721Flow newFlow = ERC721Flow(newFlowAddress);
 
         // Transfer test tokens to the new Flow contract
         _transferTestTokenToFlow(newFlowAddress, 1e6 * 10**18);
@@ -64,7 +64,7 @@ contract FlowRecipientTest is FlowTest {
         assertEq(flow.recipientCount(), 1);
 
         // Check the newly created Flow contract fields
-        Flow newFlow = Flow(newFlowAddress);
+        ERC721Flow newFlow = ERC721Flow(newFlowAddress);
         assertEq(address(newFlow.erc721Votes()), address(nounsToken));
         assertEq(address(newFlow.superToken()), address(superToken));
         assertEq(newFlow.flowImpl(), flow.flowImpl());

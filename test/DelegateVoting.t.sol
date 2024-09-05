@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.23;
 
-import {FlowTest} from "./Flow.t.sol";
+import {ERC721FlowTest} from "./Flow.t.sol";
 import {IFlowEvents, IFlow} from "../src/interfaces/IFlow.sol";
 import {Flow} from "../src/Flow.sol";
 import {MockERC721} from "./mocks/MockERC721.sol";
 import {console} from "forge-std/console.sol";
 
-contract DelegateVotingTest is FlowTest {
+contract DelegateVotingTest is ERC721FlowTest {
 
     function setUp() override public {
         super.setUp();

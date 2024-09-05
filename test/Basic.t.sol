@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.23;
 
-import {FlowTest} from "./Flow.t.sol";
-import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
-import {Flow} from "../src/Flow.sol";
+import {ERC721FlowTest} from "./Flow.t.sol";
+import {IFlowEvents,IFlow,IERC721Flow} from "../src/interfaces/IFlow.sol";
+import {ERC721Flow} from "../src/ERC721Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
 import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 
-contract BasicFlowTest is FlowTest {
+contract BasicERC721FlowTest is ERC721FlowTest {
 
     function setUp() override public {
         super.setUp();
@@ -53,7 +53,7 @@ contract BasicFlowTest is FlowTest {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
         vm.prank(address(manager));
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
-        IFlow(flowProxy).initialize({
+        IERC721Flow(flowProxy).initialize({
             nounsToken: address(0),
             superToken: address(superToken),
             flowImpl: flowImpl,
@@ -68,7 +68,7 @@ contract BasicFlowTest is FlowTest {
         flowProxy = address(new ERC1967Proxy(flowImpl, ""));
         vm.prank(address(manager));
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
-        IFlow(flowProxy).initialize({
+        IERC721Flow(flowProxy).initialize({
             nounsToken: address(0x1),
             superToken: address(superToken),
             flowImpl: address(0),
@@ -80,7 +80,7 @@ contract BasicFlowTest is FlowTest {
         flowImpl = originalFlowImpl;
 
         // Test double initialization (should revert)
-        Flow(payable(flowProxy)).initialize(
+        IERC721Flow(payable(flowProxy)).initialize(
             address(0x1),
             address(superToken),
             address(flowImpl),
@@ -92,7 +92,7 @@ contract BasicFlowTest is FlowTest {
 
         // Test double initialization (should revert)
         vm.expectRevert("Initializable: contract is already initialized");
-        Flow(payable(flowProxy)).initialize(
+        IERC721Flow(payable(flowProxy)).initialize(
             address(0x1),
             address(superToken),
             address(flowImpl),
@@ -153,7 +153,7 @@ contract BasicFlowTest is FlowTest {
         address parent = address(flow);
 
         // Check if the new flow recipient is properly initialized
-        Flow newFlow = Flow(newFlowRecipient);
+        ERC721Flow newFlow = ERC721Flow(newFlowRecipient);
         assertEq(address(newFlow.erc721Votes()), address(nounsToken));
         assertEq(address(newFlow.superToken()), address(superToken));
         assertEq(newFlow.flowImpl(), flowImpl);
