@@ -5,7 +5,7 @@ import {Flow} from "./Flow.sol";
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
 import {IFlow} from "./interfaces/IFlow.sol";
 import {IERC721Checkpointable} from "./interfaces/IERC721Checkpointable.sol";
-import {L2NounsVerifier} from "./state-proof/L2NounsVerifier.sol";
+import {IL2NounsVerifier} from "./interfaces/IL2NounsVerifier.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -25,11 +25,12 @@ contract NounsFlow is
     FlowStorageV1,
     Flow
 {
-    L2NounsVerifier public verifier;
+    IL2NounsVerifier public verifier;
 
     constructor() payable initializer Flow() {}
 
     function initialize(
+        address _verifier,
         address _superToken,
         address _flowImpl,
         address _manager,
@@ -39,6 +40,6 @@ contract NounsFlow is
     ) public initializer {
         __Flow_init(_superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
 
-        verifier = new L2NounsVerifier();
+        verifier = IL2NounsVerifier(_verifier);
     }
 }
