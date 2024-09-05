@@ -77,3 +77,18 @@ console.log('Proof Execution State Root:', ownerProofObj.executionStateRoot)
 
 // Write the proof object to a JSON file
 await Bun.write(`outputs/proofs[${delegators}][${tokenIds}].json`, JSON.stringify(ownerProofObj));
+
+// Construct a proof object without storage proofs
+const proofObjWithoutStorage = {
+  beaconRoot: beaconInfo.beaconRoot,
+  beaconOracleTimestamp: toHex(beaconInfo.timestampForL2BeaconOracle, {size: 32}),
+  executionStateRoot: stateRootInclusion.leaf,
+  stateRootProof: stateRootInclusion.proof,
+  accountProof: ownerProofs[0].accountProof, // same for all
+};
+
+// Verify that the execution state root matches for this object as well
+console.log('Proof Without Storage - Execution State Root:', proofObjWithoutStorage.executionStateRoot);
+
+// Write this new proof object to a separate JSON file
+await Bun.write(`outputs/proofWithoutStorage_${block.body.executionPayload.blockNumber}.json`, JSON.stringify(proofObjWithoutStorage));
