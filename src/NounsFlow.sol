@@ -3,8 +3,7 @@ pragma solidity ^0.8.23;
 
 import {Flow} from "./Flow.sol";
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
-import {IFlow} from "./interfaces/IFlow.sol";
-import {IERC721Checkpointable} from "./interfaces/IERC721Checkpointable.sol";
+import {IFlow, INounsFlow} from "./interfaces/IFlow.sol";
 import {IL2NounsVerifier} from "./interfaces/IL2NounsVerifier.sol";
 import {StateVerifier} from "./state-proof/StateVerifier.sol";
 
@@ -18,14 +17,7 @@ import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/inte
 import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
-contract NounsFlow is
-    UUPSUpgradeable,
-    Ownable2StepUpgradeable,
-    ReentrancyGuardUpgradeable,
-    EIP712Upgradeable,
-    FlowStorageV1,
-    Flow
-{
+contract NounsFlow is INounsFlow, Flow {
     IL2NounsVerifier public verifier;
 
     constructor() payable initializer Flow() {}
@@ -44,7 +36,7 @@ contract NounsFlow is
         verifier = IL2NounsVerifier(_verifier);
     }
 
-        /**
+    /**
      * @notice Cast a vote for a set of grant addresses.
      * @param tokenIds The tokenIds that the voter is using to vote.
      * @param recipientIds The recpientIds of the grant recipients.
@@ -72,17 +64,17 @@ contract NounsFlow is
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
 
-        NounsFlow(recipient).initialize({
-            _verifier: address(verifier),
-            _superToken: address(superToken),
-            _flowImpl: flowImpl,
-            _manager: flowManager,
-            _parent: address(this),
-            _flowParams: FlowParams({
+        INounsFlow(recipient).initialize({
+            verifier: address(verifier),
+            superToken: address(superToken),
+            flowImpl: flowImpl,
+            manager: flowManager,
+            parent: address(this),
+            flowParams: FlowParams({
                 tokenVoteWeight: tokenVoteWeight,
                 baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
             }),
-            _metadata: metadata
+            metadata: metadata
         });
 
         Ownable2StepUpgradeable(recipient).transferOwnership(owner());
