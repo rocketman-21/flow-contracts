@@ -31,7 +31,7 @@ For more detailed information on the original concept and implementation, please
 
 3. Run the application:
    ```
-   bun owner.ts && bun delegate.ts
+   bun _owners.ts && bun _delegates.ts
    ```
 
 This will execute the main script and demonstrate the functionality of the offchain library.

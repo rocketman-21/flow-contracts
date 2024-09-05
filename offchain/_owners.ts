@@ -54,4 +54,4 @@ console.log('Execution Payload State Root:', toHex(block.body.executionPayload.s
 console.log('Proof Execution State Root:', proofObj.executionStateRoot)
 
 // Write the proof object to a JSON file
-await Bun.write("output.json", JSON.stringify(proofObj));
+await Bun.write(`outputs/_owners[${tokenId}].json`, JSON.stringify(proofObj));
