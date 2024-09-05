@@ -1,3 +1,8 @@
+## To note
+
+If you get BeaconRootsOracleCallFailed when creating new tests, ensure the fork block you use comes after the block you generated the storage proofs on.
+
+
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**

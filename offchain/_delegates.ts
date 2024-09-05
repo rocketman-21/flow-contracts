@@ -55,5 +55,7 @@ const proofObj = {
 console.log('Execution Payload State Root:', toHex(block.body.executionPayload.stateRoot))
 console.log('Proof Execution State Root:', proofObj.executionStateRoot)
 
+const ensName = await l1Client.getEnsName({address: delegator as Address})
+
 // Write the proof object to a JSON file
-await Bun.write(`outputs/_delegates[${delegator}].json`, JSON.stringify(proofObj));
+await Bun.write(`outputs/_delegates[${ensName || delegator}].json`, JSON.stringify(proofObj));

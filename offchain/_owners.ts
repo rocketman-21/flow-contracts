@@ -28,7 +28,7 @@ const block = await getBeaconBlock(beaconInfo.beaconRoot);
 const stateRootInclusion = getExecutionStateRootProof(block);
 
 // Example: Generating a storage proof for a specific token in a contract
-const tokenId = BigInt(256);
+const tokenId = BigInt(40);
 const ownerMappingSlot = BigInt(3);
 const slot = keccak256(encodeAbiParameters([{type: 'uint256'}, {type: 'uint256'}], [tokenId, ownerMappingSlot]))
 
