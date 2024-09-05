@@ -24,6 +24,16 @@ library StateVerifier {
         bytes[] storageProof;
     }
 
+    // Base state proof parameters, which are the same for all storage proofs in a block
+    // for a given account / contract
+    struct BaseStateProofParameters {
+        bytes32 beaconRoot;
+        uint256 beaconOracleTimestamp;
+        bytes32 executionStateRoot;
+        bytes32[] stateRootProof;
+        bytes[] accountProof;
+    }
+
     error BeaconRootDoesNotMatch(bytes32 expected, bytes32 actual);
     error BeaconRootsOracleCallFailed(bytes callData);
     error ExecutionStateRootMerkleProofFailed();

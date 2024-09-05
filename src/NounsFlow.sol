@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {Flow} from "./Flow.sol";
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
-import {IFlow, INounsFlow} from "./interfaces/IFlow.sol";
+import {INounsFlow} from "./interfaces/IFlow.sol";
 import {IL2NounsVerifier} from "./interfaces/IL2NounsVerifier.sol";
 import {StateVerifier} from "./state-proof/StateVerifier.sol";
 
@@ -12,16 +12,6 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 contract NounsFlow is INounsFlow, Flow {
     IL2NounsVerifier public verifier;
-
-    // Base state proof parameters, which are the same for all storage proofs in a block
-    // for a given account / contract
-    struct BaseStateProofParameters {
-        bytes32 beaconRoot;
-        uint256 beaconOracleTimestamp;
-        bytes32 executionStateRoot;
-        bytes32[] stateRootProof;
-        bytes[] accountProof;
-    }
 
     constructor() payable initializer Flow() {}
 
@@ -54,7 +44,7 @@ contract NounsFlow is INounsFlow, Flow {
         uint256[][] memory tokenIds,
         uint256[] memory recipientIds,
         uint32[] memory percentAllocations,
-        BaseStateProofParameters calldata baseProofParams,
+        StateVerifier.BaseStateProofParameters memory baseProofParams,
         bytes[][][] memory ownershipStorageProofs,
         bytes[][] memory delegateStorageProofs
     )
@@ -66,7 +56,8 @@ contract NounsFlow is INounsFlow, Flow {
             StateVerifier.StateProofParameters[] memory ownershipProofs = new StateVerifier.StateProofParameters[](tokenIds[i].length);
 
             for (uint256 j = 0; j < tokenIds[i].length; j++) {
-                ownershipProofs[j] = generateStateProofParams(baseProofParams, ownershipStorageProofs[i][j]);
+                // there is one storage proof for each tokenId
+                ownershipProofs[j] = _generateStateProofParams(baseProofParams, ownershipStorageProofs[i][j]);
             }
 
             _castVotesForOwner(
@@ -76,27 +67,27 @@ contract NounsFlow is INounsFlow, Flow {
                 percentAllocations,
                 ownershipProofs,
                 // there is one delegate proof for each owner
-                generateStateProofParams(baseProofParams, delegateStorageProofs[i])
+                _generateStateProofParams(baseProofParams, delegateStorageProofs[i])
             );
         }
     }
 
     /**
-     * @notice Generates StateProofParameters from base parameters and a storage proof
-     * @param baseParams The base state proof parameters
+     * @notice Generates StateProofParameters from base parameters and storage proof
+     * @param baseProofParams The base state proof parameters
      * @param storageProof The storage proof for the specific state
      * @return StateVerifier.StateProofParameters The generated state proof parameters
      */
-    function generateStateProofParams(
-        BaseStateProofParameters memory baseParams,
+    function _generateStateProofParams(
+        StateVerifier.BaseStateProofParameters memory baseProofParams,
         bytes[] memory storageProof
     ) internal pure returns (StateVerifier.StateProofParameters memory) {
         return StateVerifier.StateProofParameters({
-            beaconRoot: baseParams.beaconRoot,
-            beaconOracleTimestamp: baseParams.beaconOracleTimestamp,
-            executionStateRoot: baseParams.executionStateRoot,
-            stateRootProof: baseParams.stateRootProof,
-            accountProof: baseParams.accountProof,
+            beaconRoot: baseProofParams.beaconRoot,
+            beaconOracleTimestamp: baseProofParams.beaconOracleTimestamp,
+            executionStateRoot: baseProofParams.executionStateRoot,
+            stateRootProof: baseProofParams.stateRootProof,
+            accountProof: baseProofParams.accountProof,
             storageProof: storageProof
         });
     }
