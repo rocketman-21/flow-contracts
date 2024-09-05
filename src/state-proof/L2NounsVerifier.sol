@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-/// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
+/// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc) and rocketman
 
 import {StateVerifier} from "./StateVerifier.sol";
 
