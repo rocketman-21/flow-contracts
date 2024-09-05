@@ -13,6 +13,16 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 contract NounsFlow is INounsFlow, Flow {
     IL2NounsVerifier public verifier;
 
+    // Base state proof parameters, which are the same for all storage proofs in a block
+    // for a given account / contract
+    struct BaseStateProofParameters {
+        bytes32 beaconRoot;
+        uint256 beaconOracleTimestamp;
+        bytes32 executionStateRoot;
+        bytes32[] stateRootProof;
+        bytes[] accountProof;
+    }
+
     constructor() payable initializer Flow() {}
 
     function initialize(
@@ -35,23 +45,54 @@ contract NounsFlow is INounsFlow, Flow {
      * @param tokenIds A 2D array of token IDs, where each inner array corresponds to an owner.
      * @param recipientIds An array of recipient IDs for the grant recipients.
      * @param percentAllocations An array of basis points allocations for each recipient.
-     * @param ownershipProofs A 2D array of state proofs for token ownership, corresponding to each token ID.
-     * @param delegateProofs An array of state proofs for delegation, one for each owner.
+     * @param baseProofParams The base state proof parameters.
+     * @param ownershipStorageProofs A 2D array of storage proofs for token ownership, corresponding to each token ID.
+     * @param delegateStorageProofs A 2D array of storage proofs for delegation, corresponding to each token ID.
      */
     function castVotes(
-        address[] calldata owners,
+        address[] memory owners,
         uint256[][] memory tokenIds,
         uint256[] memory recipientIds,
         uint32[] memory percentAllocations,
-        StateVerifier.StateProofParameters[][] calldata ownershipProofs,
-        StateVerifier.StateProofParameters[] calldata delegateProofs
+        BaseStateProofParameters calldata baseProofParams,
+        bytes[][][] memory ownershipStorageProofs,
+        bytes[][] memory delegateStorageProofs
     )
         external
         nonReentrant
         validVotes(recipientIds, percentAllocations)
     {
         for (uint256 i = 0; i < owners.length; i++) {
-            _castVotesForOwner(owners[i], tokenIds[i], recipientIds, percentAllocations, ownershipProofs[i], delegateProofs[i]);
+            StateVerifier.StateProofParameters[] memory ownershipProofs = new StateVerifier.StateProofParameters[](tokenIds[i].length);
+
+            for (uint256 j = 0; j < tokenIds[i].length; j++) {
+                ownershipProofs[j] = StateVerifier.StateProofParameters({
+                    beaconRoot: baseProofParams.beaconRoot,
+                    beaconOracleTimestamp: baseProofParams.beaconOracleTimestamp,
+                    executionStateRoot: baseProofParams.executionStateRoot,
+                    stateRootProof: baseProofParams.stateRootProof,
+                    accountProof: baseProofParams.accountProof,
+                    // there is one storage proof for each tokenId
+                    storageProof: ownershipStorageProofs[i][j]
+                });
+            }
+
+            _castVotesForOwner(
+                owners[i],
+                tokenIds[i],
+                recipientIds,
+                percentAllocations,
+                ownershipProofs,
+                // there is one delegate proof for each owner
+                StateVerifier.StateProofParameters({
+                    beaconRoot: baseProofParams.beaconRoot,
+                    beaconOracleTimestamp: baseProofParams.beaconOracleTimestamp,
+                    executionStateRoot: baseProofParams.executionStateRoot,
+                    stateRootProof: baseProofParams.stateRootProof,
+                    accountProof: baseProofParams.accountProof,
+                    storageProof: delegateStorageProofs[i]
+                })
+            );
         }
     }
 
@@ -69,8 +110,8 @@ contract NounsFlow is INounsFlow, Flow {
         uint256[] memory tokenIds,
         uint256[] memory recipientIds,
         uint32[] memory percentAllocations,
-        StateVerifier.StateProofParameters[] calldata ownershipProofs,
-        StateVerifier.StateProofParameters calldata delegateProof
+        StateVerifier.StateProofParameters[] memory ownershipProofs,
+        StateVerifier.StateProofParameters memory delegateProof
     ) internal {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
