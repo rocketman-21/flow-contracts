@@ -6,7 +6,6 @@ import {IFlow} from "./interfaces/IFlow.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -19,7 +18,6 @@ abstract contract Flow is
     UUPSUpgradeable,
     Ownable2StepUpgradeable,
     ReentrancyGuardUpgradeable,
-    EIP712Upgradeable,
     FlowStorageV1
 {
     using SuperTokenV1Library for ISuperToken;
@@ -55,8 +53,6 @@ abstract contract Flow is
         if (bytes(_metadata.image).length == 0) revert INVALID_METADATA();
         if (_flowParams.baselinePoolFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_RATE_PERCENT();
 
-        // Initialize EIP-712 support
-        __EIP712_init("Flow", "1");
         __Ownable_init();
         __ReentrancyGuard_init();
 
