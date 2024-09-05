@@ -61,9 +61,6 @@ contract FlowStorageV1 {
     /// The Superfluid pool configuration
     PoolConfig public poolConfig = PoolConfig({transferabilityForUnitsOwner: false, distributionFromAnyAddress: false});
 
-    // The ERC721 voting token contract used to get the voting power of an account
-    IERC721Checkpointable public erc721Votes;
-
     // The weight of the 721 voting token
     uint256 public tokenVoteWeight;
 

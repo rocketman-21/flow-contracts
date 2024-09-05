@@ -3,7 +3,6 @@ pragma solidity ^0.8.23;
 
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
 import {IFlow} from "./interfaces/IFlow.sol";
-import {IERC721Checkpointable} from "./interfaces/IERC721Checkpointable.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -32,7 +31,6 @@ abstract contract Flow is
 
     /**
      * @notice Initializes the Flow contract
-     * @param _nounsToken The address of the Nouns token contract
      * @param _superToken The address of the SuperToken to be used for the pool
      * @param _flowImpl The address of the flow implementation contract
      * @param _manager The address of the flow manager
@@ -41,7 +39,6 @@ abstract contract Flow is
      * @param _metadata The metadata for the flow contract
      */
     function __Flow_init(
-        address _nounsToken,
         address _superToken,
         address _flowImpl,
         address _manager,
@@ -49,7 +46,6 @@ abstract contract Flow is
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
     ) public {
-        if (_nounsToken == address(0)) revert ADDRESS_ZERO();
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
         if (_manager == address(0)) revert ADDRESS_ZERO();
         if (_superToken == address(0)) revert ADDRESS_ZERO();
@@ -65,7 +61,6 @@ abstract contract Flow is
         __ReentrancyGuard_init();
 
         // Set the voting power info
-        erc721Votes = IERC721Checkpointable(_nounsToken);
         tokenVoteWeight = _flowParams.tokenVoteWeight;
         baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
         flowImpl = _flowImpl;
@@ -254,14 +249,7 @@ abstract contract Flow is
      * @param voter The address of the potential voter
      * @return bool True if the voter can vote with the token, false otherwise
      */
-    function canVoteWithToken(uint256 tokenId, address voter) public view virtual returns (bool) {
-        address tokenOwner = erc721Votes.ownerOf(tokenId);
-        // check if the token owner has delegated their voting power to the voter
-        // erc721checkpointable falls back to the owner 
-        // if the owner hasn't delegated so this will work for the owner as well
-        address delegate = erc721Votes.delegates(tokenOwner);
-        return voter == delegate;
-    }
+    function canVoteWithToken(uint256 tokenId, address voter) public view virtual returns (bool) {}
 
     /**
      * @notice Cast a vote for a set of grant addresses.
@@ -366,29 +354,12 @@ abstract contract Flow is
      * @return address The address of the newly created Flow contract
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientCreated event if the recipient is successfully added
-     //todo who should own this new contract?
      */
     function addFlowRecipient(RecipientMetadata memory metadata, address flowManager) public onlyManager validMetadata(metadata) returns (address) {
-        address recipient = address(new ERC1967Proxy(flowImpl, ""));
-        if (recipient == address(0)) revert ADDRESS_ZERO();
         if (flowManager == address(0)) revert ADDRESS_ZERO();
 
-        IFlow(recipient).initialize({
-            nounsToken: address(erc721Votes),
-            superToken: address(superToken),
-            flowImpl: flowImpl,
-            // so that a new TCR contract can control this new flow contract
-            manager: flowManager,
-            parent: address(this),
-            flowParams: FlowParams({
-                tokenVoteWeight: tokenVoteWeight,
-                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
-            }),
-            metadata: metadata
-        });
-
-        Ownable2StepUpgradeable(recipient).transferOwnership(owner());
-
+        address recipient = _deployFlowRecipient(metadata, flowManager);
+                
         // connect the new child contract to the pool!
         Flow(recipient).connectPool(bonusPool);
         Flow(recipient).connectPool(baselinePool);
@@ -411,6 +382,15 @@ abstract contract Flow is
 
         return recipient;
     }
+
+    /**
+     * @notice Deploys a new Flow contract as a recipient
+     * @dev This function is virtual to allow for different deployment strategies in derived contracts
+     * @param metadata The IPFS hash of the recipient's metadata
+     * @param flowManager The address of the flow manager for the new contract
+     * @return address The address of the newly created Flow contract
+     */
+    function _deployFlowRecipient(RecipientMetadata memory metadata, address flowManager) internal virtual returns (address) {}
 
     /**
      * @notice Removes a recipient for receiving funds

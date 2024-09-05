@@ -174,16 +174,28 @@ interface IFlow is IFlowEvents {
      * @dev Should emit a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) external;
+}
 
+
+interface IERC721Flow is IFlow {
     /**
-     * @notice Initializes a token's metadata descriptor
-     * @param nounsToken The address of the ERC721Checkpointable contract
+     * @notice Initializes an ERC721Flow contract
+     * @param nounsToken The address of the ERC721 token used for voting
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
      * @param manager The address of the flow manager
      * @param parent The address of the parent flow contract (optional)
      * @param flowParams The parameters for the flow contract
+     * @param metadata The metadata for the flow contract
      */
-    function initialize(address nounsToken, address superToken, address flowImpl, address manager, address parent, FlowParams memory flowParams, FlowStorageV1.RecipientMetadata memory metadata)
-        external;
+    function initialize(
+        address nounsToken,
+        address superToken,
+        address flowImpl,
+        address manager,
+        address parent,
+        FlowParams memory flowParams,
+        FlowStorageV1.RecipientMetadata memory metadata
+    ) external;
 }
+

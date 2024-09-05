@@ -30,15 +30,14 @@ contract NounsFlow is
     constructor() payable initializer Flow() {}
 
     function initialize(
-        address _nounsToken,
         address _superToken,
         address _flowImpl,
         address _manager,
         address _parent,
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
-    ) public override initializer {
-        __Flow_init(_nounsToken, _superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
+    ) public initializer {
+        __Flow_init(_superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
 
         verifier = new L2NounsVerifier();
     }

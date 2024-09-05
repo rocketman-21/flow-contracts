@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import {Flow} from "./Flow.sol";
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
-import {IFlow} from "./interfaces/IFlow.sol";
+import {IFlow, IERC721Flow} from "./interfaces/IFlow.sol";
 import {IERC721Checkpointable} from "./interfaces/IERC721Checkpointable.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
@@ -24,6 +24,9 @@ contract ERC721Flow is
     FlowStorageV1,
     Flow
 {
+    // The ERC721 voting token contract used to get the voting power of an account
+    IERC721Checkpointable public erc721Votes;
+
     constructor() payable initializer Flow() {}
 
     function initialize(
@@ -34,8 +37,12 @@ contract ERC721Flow is
         address _parent,
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
-    ) public override initializer {
-        __Flow_init(_nounsToken, _superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
+    ) public initializer {
+        if (_nounsToken == address(0)) revert ADDRESS_ZERO();
+        
+        erc721Votes = IERC721Checkpointable(_nounsToken);
+
+        __Flow_init(_superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
     }
 
     /**
@@ -70,4 +77,34 @@ contract ERC721Flow is
         address delegate = erc721Votes.delegates(tokenOwner);
         return voter == delegate;
     }
+
+    /**
+     * @notice Deploys a new Flow contract as a recipient
+     * @dev This function is virtual to allow for different deployment strategies in derived contracts
+     * @param metadata The IPFS hash of the recipient's metadata
+     * @param flowManager The address of the flow manager for the new contract
+     * @return address The address of the newly created Flow contract
+     */
+    function _deployFlowRecipient(RecipientMetadata memory metadata, address flowManager) internal override returns (address) {
+        address recipient = address(new ERC1967Proxy(flowImpl, ""));
+        if (recipient == address(0)) revert ADDRESS_ZERO();
+
+        IERC721Flow(recipient).initialize({
+            nounsToken: address(erc721Votes),
+            superToken: address(superToken),
+            flowImpl: flowImpl,
+            manager: flowManager,
+            parent: address(this),
+            flowParams: FlowParams({
+                tokenVoteWeight: tokenVoteWeight,
+                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
+            }),
+            metadata: metadata
+        });
+
+        Ownable2StepUpgradeable(recipient).transferOwnership(owner());
+
+        return recipient;
+    }
+
 }

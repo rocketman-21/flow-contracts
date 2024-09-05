@@ -3,8 +3,7 @@ pragma solidity ^0.8.23;
 
 import {Test} from "forge-std/Test.sol";
 
-import {IFlow} from "../src/interfaces/IFlow.sol";
-import {Flow} from "../src/Flow.sol";
+import {IFlow,IERC721Flow} from "../src/interfaces/IFlow.sol";
 import {ERC721Flow} from "../src/ERC721Flow.sol";
 import {MockERC721} from "./mocks/MockERC721.sol";
 
@@ -21,12 +20,12 @@ import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/
 import {SuperToken} from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
 import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
 
-contract FlowTest is Test {
+contract ERC721FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
     SuperfluidFrameworkDeployer internal deployer;
     SuperToken internal superToken;
 
-    Flow flow;
+    ERC721Flow flow;
     address flowImpl;
     address testUSDC;
     IFlow.FlowParams flowParams;
@@ -38,11 +37,11 @@ contract FlowTest is Test {
     FlowStorageV1.RecipientMetadata flowMetadata;
     FlowStorageV1.RecipientMetadata recipientMetadata;
 
-    function deployFlow(address erc721, address superTokenAddress) internal returns (Flow) {
+    function deployFlow(address erc721, address superTokenAddress) internal returns (ERC721Flow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
 
         vm.prank(address(manager));
-        IFlow(flowProxy).initialize({
+        IERC721Flow(flowProxy).initialize({
             nounsToken: erc721,
             superToken: superTokenAddress,
             flowImpl: flowImpl,
@@ -58,7 +57,7 @@ contract FlowTest is Test {
         vm.prank(manager);
         IFlow(flowProxy).setFlowRate(385 * 10**13); // 0.00385 tokens per second
 
-        return Flow(flowProxy);
+        return ERC721Flow(flowProxy);
     }
 
     function _transferTestTokenToFlow(address flowAddress, uint256 amount) internal {
