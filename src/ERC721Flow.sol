@@ -53,7 +53,6 @@ contract ERC721Flow is
      */
     function castVotes(uint256[] memory tokenIds, uint256[] memory recipientIds, uint32[] memory percentAllocations)
         external
-        override
         nonReentrant
         validVotes(recipientIds, percentAllocations)
     {

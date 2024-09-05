@@ -227,19 +227,6 @@ abstract contract Flow is
 
     /**
      * @notice Cast a vote for a set of grant addresses.
-     * @param tokenIds The tokenIds that the voter is using to vote.
-     * @param recipientIds The recpientIds of the grant recipients.
-     * @param percentAllocations The basis points of the vote to be split with the recipients.
-     */
-    function castVotes(uint256[] memory tokenIds, uint256[] memory recipientIds, uint32[] memory percentAllocations)
-        external
-        virtual
-        nonReentrant
-        validVotes(recipientIds, percentAllocations)
-    {}
-
-    /**
-     * @notice Cast a vote for a set of grant addresses.
      * @param tokenId The tokenId owned by the voter.
      * @param recipientIds The recipientIds of the grant recipients to vote for.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
