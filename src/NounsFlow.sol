@@ -30,18 +30,50 @@ contract NounsFlow is INounsFlow, Flow {
     }
 
     /**
-     * @notice Cast a vote for a set of grant addresses.
-     * @param tokenIds The tokenIds that the voter is using to vote.
-     * @param recipientIds The recpientIds of the grant recipients.
-     * @param percentAllocations The basis points of the vote to be split with the recipients.
+     * @notice Cast votes for multiple token owners across multiple tokens.
+     * @param owners An array of token owner addresses.
+     * @param tokenIds A 2D array of token IDs, where each inner array corresponds to an owner.
+     * @param recipientIds An array of recipient IDs for the grant recipients.
+     * @param percentAllocations An array of basis points allocations for each recipient.
+     * @param ownershipProofs A 2D array of state proofs for token ownership, corresponding to each token ID.
+     * @param delegateProofs An array of state proofs for delegation, one for each owner.
      */
-    function castVotes(uint256[] memory tokenIds, uint256[] memory recipientIds, uint32[] memory percentAllocations, address[] calldata owners, StateVerifier.StateProofParameters[] calldata ownershipProofs, StateVerifier.StateProofParameters[] calldata delegateProofs)
+    function castVotes(
+        address[] calldata owners,
+        uint256[][] memory tokenIds,
+        uint256[] memory recipientIds,
+        uint32[] memory percentAllocations,
+        StateVerifier.StateProofParameters[][] calldata ownershipProofs,
+        StateVerifier.StateProofParameters[] calldata delegateProofs
+    )
         external
         nonReentrant
         validVotes(recipientIds, percentAllocations)
     {
+        for (uint256 i = 0; i < owners.length; i++) {
+            _castVotesForOwner(owners[i], tokenIds[i], recipientIds, percentAllocations, ownershipProofs[i], delegateProofs[i]);
+        }
+    }
+
+    /**
+     * @notice Cast votes for a set of grant addresses on behalf of a token owner
+     * @param owner The address of the token owner
+     * @param tokenIds The token IDs that the owner is using to vote
+     * @param recipientIds The recipient IDs of the grant recipients
+     * @param percentAllocations The basis points of the vote to be split among the recipients
+     * @param ownershipProofs The state proofs for token ownership
+     * @param delegateProof The state proof for delegation
+     */
+    function _castVotesForOwner(
+        address owner,
+        uint256[] memory tokenIds,
+        uint256[] memory recipientIds,
+        uint32[] memory percentAllocations,
+        StateVerifier.StateProofParameters[] calldata ownershipProofs,
+        StateVerifier.StateProofParameters calldata delegateProof
+    ) internal {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (!verifier.canVoteWithToken(tokenIds[i], owners[i], msg.sender, ownershipProofs[i], delegateProofs[i])) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
+            if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
             _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
         }
     }
