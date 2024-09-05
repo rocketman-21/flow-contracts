@@ -238,6 +238,7 @@ abstract contract Flow is
      */
     function castVotes(uint256[] memory tokenIds, uint256[] memory recipientIds, uint32[] memory percentAllocations)
         external
+        virtual
         nonReentrant
         validVotes(recipientIds, percentAllocations)
     {
@@ -253,7 +254,7 @@ abstract contract Flow is
      * @param voter The address of the potential voter
      * @return bool True if the voter can vote with the token, false otherwise
      */
-    function canVoteWithToken(uint256 tokenId, address voter) public view returns (bool) {
+    function canVoteWithToken(uint256 tokenId, address voter) public view virtual returns (bool) {
         address tokenOwner = erc721Votes.ownerOf(tokenId);
         // check if the token owner has delegated their voting power to the voter
         // erc721checkpointable falls back to the owner 
