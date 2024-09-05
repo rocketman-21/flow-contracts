@@ -4,7 +4,6 @@ pragma solidity ^0.8.23;
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
 
 import {StateVerifier} from "./StateVerifier.sol";
-import {ERC721Checkpointable} from "../base/ERC721Checkpointable.sol";
 
 contract L2NounsVerifier {
     function isOwner(uint256 tokenId, address account, StateVerifier.StateProofParameters calldata proofParams)
@@ -25,19 +24,8 @@ contract L2NounsVerifier {
         view
         returns (bool)
     {
-        bool isOwnerValid = StateVerifier.validateState({
-            account: 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03, // Nouns Token on mainnet
-            storageKey: abi.encodePacked(_getOwnerKey(tokenId)),
-            storageValue: abi.encodePacked(owner),
-            proofParams: ownershipProof
-        });
-
-        bool isDelegateValid = StateVerifier.validateState({
-            account: 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03, // Nouns Token on mainnet
-            storageKey: abi.encodePacked(_getDelegateKey(owner)),
-            storageValue: abi.encodePacked(voter),
-            proofParams: delegateProof
-        });
+        bool isOwnerValid = this.isOwner(tokenId, owner, ownershipProof);
+        bool isDelegateValid = this.isDelegate(owner, voter, delegateProof);
 
         return isOwnerValid && isDelegateValid;
     }

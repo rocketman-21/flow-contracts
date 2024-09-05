@@ -48,11 +48,11 @@ contract L2NounsVotingVerifier is L2NounsVerifierTest {
         StateVerifier.StateProofParameters memory ownershipProof = getStateProofParams(ownershipPath);
 
         assertTrue(verifier.isDelegate(vaultNoun40, delegate, delegateProof));
+        assertFalse(verifier.isDelegate(vaultNoun40, vaultNoun40, delegateProof));
         assertTrue(verifier.isOwner(tokenId, vaultNoun40, ownershipProof));
         assertTrue(verifier.canVoteWithToken(tokenId, vaultNoun40, delegate, ownershipProof, delegateProof));
 
         // can't vote with your own token that is delegated out
-        vm.expectRevert(abi.encodeWithSignature("StorageProofVerificationFailed()"));
-        verifier.canVoteWithToken(tokenId, vaultNoun40, vaultNoun40, ownershipProof, delegateProof);
+        assertFalse(verifier.canVoteWithToken(tokenId, vaultNoun40, vaultNoun40, ownershipProof, delegateProof));
     }
 }
