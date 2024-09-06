@@ -22,6 +22,4 @@ contract L2NounsVerifierTest is Test {
             accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
         });
     }
-
-    // Add more helper functions or setup as needed
 }

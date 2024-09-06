@@ -20,6 +20,11 @@ contract L2NounsOwnershipVerifierTest is L2NounsVerifierTest {
         IStateProof.Parameters memory params = getStateProofParams(path);
 
         assertTrue(verifier.isOwner(tokenId, 0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71, params));
+
+        // try to mess with timestamp and make a past proof for the future
+        params.beaconOracleTimestamp += 1;
+        vm.expectRevert();
+        verifier.isOwner(tokenId, 0xb1a32FC9F9D8b2cf86C068Cae13108809547ef71, params);
     }
 
     function test__isNotOwner() public {
