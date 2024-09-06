@@ -7,13 +7,15 @@ import {IStateProof} from "../interfaces/IStateProof.sol";
 import {StateVerifier} from "./StateVerifier.sol";
 
 contract L2NounsVerifier {
+    address private constant NOUNS_TOKEN_ADDRESS = 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03; // Nouns Token on mainnet
+
     function isOwner(uint256 tokenId, address account, IStateProof.Parameters calldata proofParams)
         external
         view
         returns (bool)
     {
         return StateVerifier.validateState({
-            account: 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03, // Nouns Token on mainnet
+            account: NOUNS_TOKEN_ADDRESS,
             storageKey: abi.encodePacked(_getOwnerKey(tokenId)),
             storageValue: abi.encodePacked(account),
             proofParams: proofParams
@@ -53,7 +55,7 @@ contract L2NounsVerifier {
         IStateProof.Parameters calldata proofParams
     ) external view returns (bool) {
         return StateVerifier.validateState({
-            account: 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03, // Nouns Token on mainnet
+            account: NOUNS_TOKEN_ADDRESS,
             storageKey: abi.encodePacked(_getDelegateKey(owner)),
             storageValue: delegate,
             proofParams: proofParams
