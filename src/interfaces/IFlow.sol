@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.26;
 
 import {FlowStorageV1} from "../storage/FlowStorageV1.sol";
 
@@ -200,6 +200,10 @@ interface IERC721Flow is IFlow {
 }
 
 interface INounsFlow is IFlow {
+
+    /// @dev Reverts if the proof timestamp is too old
+    error PAST_PROOF();
+
     /**
      * @notice Initializes an NounsFlow contract
      * @param verifier The address of the NounsVerifier contract

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.26;
 
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
 import {IFlow} from "./interfaces/IFlow.sol";
@@ -21,11 +21,6 @@ abstract contract Flow is
     FlowStorageV1
 {
     using SuperTokenV1Library for ISuperToken;
-
-    /**
-     * @notice Initializes a token's metadata descriptor
-     */
-    constructor() payable {}
 
     /**
      * @notice Initializes the Flow contract
@@ -335,6 +330,7 @@ abstract contract Flow is
         Flow(recipient).connectPool(baselinePool);
 
         _initializeBaselineMemberUnits(recipient);
+        _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         uint256 recipientId = recipientCount;
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.26;
 
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
 
@@ -7,6 +7,7 @@ import {L2NounsVerifierTest} from "./L2NounsVerifier.t.sol";
 
 import {StateVerifier} from "../../src/state-proof/StateVerifier.sol";
 import {L2NounsVerifier} from "../../src/state-proof/L2NounsVerifier.sol";
+import {IStateProof} from "../../src/interfaces/IStateProof.sol";
 
 contract L2NounsVotingVerifier is L2NounsVerifierTest {
 
@@ -20,13 +21,13 @@ contract L2NounsVotingVerifier is L2NounsVerifierTest {
         string memory rootPath = vm.projectRoot();
         string memory delegatePath = string.concat(rootPath, "/test/proof-data/_delegates/", vm.toString(account), ".json");
         
-        StateVerifier.StateProofParameters memory delegationParams = getStateProofParams(delegatePath);
+        IStateProof.Parameters memory delegationParams = getStateProofParams(delegatePath);
 
         assertTrue(verifier.isDelegate(account, account, delegationParams));
         
         // this account owns no nouns - try to vote with wilsons token
         string memory ownershipPath = string.concat(rootPath, "/test/proof-data/_owners/", vm.toString(tokenId), ".json");
-        StateVerifier.StateProofParameters memory params = getStateProofParams(ownershipPath);
+        IStateProof.Parameters memory params = getStateProofParams(ownershipPath);
 
         vm.expectRevert(abi.encodeWithSignature("StorageProofVerificationFailed()"));
         verifier.canVoteWithToken(tokenId, account, account, params, params);
@@ -44,8 +45,8 @@ contract L2NounsVotingVerifier is L2NounsVerifierTest {
         string memory delegatePath = string.concat(rootPath, "/test/proof-data/_delegates/", vm.toString(vaultNoun40), ".json");
         string memory ownershipPath = string.concat(rootPath, "/test/proof-data/_owners/", vm.toString(tokenId), ".json");
 
-        StateVerifier.StateProofParameters memory delegateProof = getStateProofParams(delegatePath);
-        StateVerifier.StateProofParameters memory ownershipProof = getStateProofParams(ownershipPath);
+        IStateProof.Parameters memory delegateProof = getStateProofParams(delegatePath);
+        IStateProof.Parameters memory ownershipProof = getStateProofParams(ownershipPath);
 
         assertTrue(verifier.isDelegate(vaultNoun40, delegate, delegateProof));
         assertFalse(verifier.isDelegate(vaultNoun40, vaultNoun40, delegateProof));

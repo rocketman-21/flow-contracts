@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.26;
 
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
 
@@ -7,6 +7,7 @@ import {RLPReader} from "optimism/packages/contracts-bedrock/src/libraries/rlp/R
 import {MerkleTrie} from "optimism/packages/contracts-bedrock/src/libraries/trie/MerkleTrie.sol";
 import {SecureMerkleTrie} from "optimism/packages/contracts-bedrock/src/libraries/trie/SecureMerkleTrie.sol";
 import {SSZ} from "eip-4788-proof/SSZ.sol";
+import {IStateProof} from "../interfaces/IStateProof.sol";
 
 library StateVerifier {
     using RLPReader for RLPReader.RLPItem;
@@ -14,15 +15,6 @@ library StateVerifier {
 
     address private constant BEACON_ROOTS_ORACLE = 0x000F3df6D732807Ef1319fB7B8bB8522d0Beac02;
     uint256 private constant STATE_ROOT_GINDEX = 6434;
-
-    struct StateProofParameters {
-        bytes32 beaconRoot;
-        uint256 beaconOracleTimestamp;
-        bytes32 executionStateRoot;
-        bytes32[] stateRootProof;
-        bytes[] accountProof;
-        bytes[] storageProof;
-    }
 
     error BeaconRootDoesNotMatch(bytes32 expected, bytes32 actual);
     error BeaconRootsOracleCallFailed(bytes callData);
@@ -34,7 +26,7 @@ library StateVerifier {
         address account,
         bytes memory storageKey,
         bytes memory storageValue,
-        StateProofParameters calldata proofParams
+        IStateProof.Parameters calldata proofParams
     ) internal view returns (bool) {
         _checkValidBeaconRoot(proofParams.beaconRoot, proofParams.beaconOracleTimestamp);
         _checkValidStateRoot(proofParams.beaconRoot, proofParams.executionStateRoot, proofParams.stateRootProof);

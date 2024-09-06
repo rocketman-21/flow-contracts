@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.26;
 
 import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import { IERC721Checkpointable } from "../../src/interfaces/IERC721Checkpointable.sol";
@@ -24,11 +24,11 @@ contract MockERC721 is ERC721, IERC721Checkpointable {
     }
 
     // Stub implementations for IERC721Checkpointable
-    function getCurrentVotes(address account) external view override returns (uint96) {
+    function getCurrentVotes(address) external pure override returns (uint96) {
         return 0;
     }
 
-    function getPriorVotes(address account, uint256 blockNumber) external view override returns (uint96) {
+    function getPriorVotes(address, uint256) external pure override returns (uint96) {
         return 0;
     }
 }
