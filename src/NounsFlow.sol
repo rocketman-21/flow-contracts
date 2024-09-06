@@ -56,9 +56,11 @@ contract NounsFlow is INounsFlow, Flow {
         if(baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
 
         for (uint256 i = 0; i < owners.length; i++) {
-            IStateProof.Parameters[] memory ownershipProofs = new IStateProof.Parameters[](tokenIds[i].length);
+            uint256 tokenIdCount = tokenIds[i].length;
 
-            for (uint256 j = 0; j < tokenIds[i].length; j++) {
+            IStateProof.Parameters[] memory ownershipProofs = new IStateProof.Parameters[](tokenIdCount);
+
+            for (uint256 j = 0; j < tokenIdCount; j++) {
                 // there is one storage proof for each tokenId
                 ownershipProofs[j] = _generateStateProofParams(baseProofParams, ownershipStorageProofs[i][j]);
             }

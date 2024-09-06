@@ -13,6 +13,41 @@ import {IStateProof} from "../../src/interfaces/IStateProof.sol";
 contract VotingNounsFlowTest is NounsFlowTest {
     using stdJson for string;
 
+        function _setupTestParameters() internal returns (
+        address[] memory,
+        uint256[][] memory,
+        uint256[] memory,
+        uint32[] memory,
+        address
+    ) {
+        address recipient1 = address(0x1);
+        address recipient2 = address(0x2);
+
+        address[] memory owners = new address[](1);
+        owners[0] = 0xA2b6590A6dC916fe317Dcab169a18a5B87A5c3d5; // safe
+        address delegate = 0x65599970Af18EeA5f4ec0B82f23B018fd15EBd11; // delegate
+
+        uint256[][] memory tokenIds = new uint256[][](1);
+        tokenIds[0] = new uint256[](2);
+        tokenIds[0][0] = 788;
+        tokenIds[0][1] = 832;
+
+        uint256[] memory recipientIds = new uint256[](2);
+        recipientIds[0] = 0;
+        recipientIds[1] = 1;
+
+        vm.startPrank(manager);
+        flow.addRecipient(recipient1, recipientMetadata);
+        flow.addRecipient(recipient2, recipientMetadata);
+        vm.stopPrank();
+
+        uint32[] memory percentAllocations = new uint32[](2);
+        percentAllocations[0] = 1e6 / 2; // 50%
+        percentAllocations[1] = 1e6 / 2; // 50%
+
+        return (owners, tokenIds, recipientIds, percentAllocations, delegate);
+    }
+
     function test__castVotes() public {
         _setUpWithForkBlock(19434510);
 
