@@ -119,10 +119,41 @@ contract NounsFlowTest is Test {
         flow = deployFlow(address(verifier), address(superToken));
     }
 
-    function test__castVotes() public {
-        _setUpWithForkBlock(19434510);
+    function _setupBaseParameters() internal returns (IStateProof.BaseParameters memory) {
+        string memory rootPath = vm.projectRoot();
+        string memory proofPath = string.concat(rootPath, "/test/proof-data/papercliplabs.json");
+        string memory json = vm.readFile(proofPath);
 
-        // Set up test parameters
+        return IStateProof.BaseParameters({
+            beaconRoot: json.readBytes32(".beaconRoot"),
+            beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
+            executionStateRoot: json.readBytes32(".executionStateRoot"),
+            stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
+            accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
+        });
+    }
+
+    function _setupStorageProofs() internal returns (bytes[][][] memory, bytes[][] memory) {
+        string memory rootPath = vm.projectRoot();
+        string memory proofPath = string.concat(rootPath, "/test/proof-data/papercliplabs.json");
+        string memory json = vm.readFile(proofPath);
+
+        bytes[][][] memory ownershipStorageProofs = new bytes[][][](1);
+        ownershipStorageProofs[0] = new bytes[][](1);
+        ownershipStorageProofs[0][0] = abi.decode(json.parseRaw(".ownershipStorageProof1"), (bytes[]));
+
+        bytes[][] memory delegateStorageProofs = abi.decode(json.parseRaw(".delegateStorageProofs"), (bytes[][]));
+
+        return (ownershipStorageProofs, delegateStorageProofs);
+    }
+
+    function _setupTestParameters() internal returns (
+        address[] memory,
+        uint256[][] memory,
+        uint256[] memory,
+        uint32[] memory,
+        address
+    ) {
         address recipient1 = address(0x1);
         address recipient2 = address(0x2);
 
@@ -147,24 +178,24 @@ contract NounsFlowTest is Test {
         percentAllocations[0] = 1e6 / 2; // 50%
         percentAllocations[1] = 1e6 / 2; // 50%
 
+        return (owners, tokenIds, recipientIds, percentAllocations, delegate);
+    }
+
+    function test__castVotes() public {
+        _setUpWithForkBlock(19434510);
+
+        // Set up test parameters
+        (
+            address[] memory owners,
+            uint256[][] memory tokenIds,
+            uint256[] memory recipientIds,
+            uint32[] memory percentAllocations,
+            address delegate
+        ) = _setupTestParameters();
+
         // Fetch ownership proof
-        string memory rootPath = vm.projectRoot();
-        string memory proofPath = string.concat(rootPath, "/test/proof-data/papercliplabs.json");
-        string memory json = vm.readFile(proofPath);
-
-        IStateProof.BaseParameters memory baseParams = IStateProof.BaseParameters({
-            beaconRoot: json.readBytes32(".beaconRoot"),
-            beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
-            executionStateRoot: json.readBytes32(".executionStateRoot"),
-            stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
-            accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
-        });
-
-        bytes[][] memory delegateStorageProofs = abi.decode(json.parseRaw(".delegateStorageProofs"), (bytes[][]));
-
-        bytes[][][] memory ownershipStorageProofs = new bytes[][][](1);
-        ownershipStorageProofs[0] = new bytes[][](1);
-        ownershipStorageProofs[0][0] = abi.decode(json.parseRaw(".ownershipStorageProof1"), (bytes[]));
+        IStateProof.BaseParameters memory baseParams = _setupBaseParameters();
+        (bytes[][][] memory ownershipStorageProofs, bytes[][] memory delegateStorageProofs) = _setupStorageProofs();
 
         // Cast votes
         vm.prank(delegate);
@@ -186,29 +217,17 @@ contract NounsFlowTest is Test {
         _setUpWithForkBlock(19434588);
 
         address delegator = 0xA2b6590A6dC916fe317Dcab169a18a5B87A5c3d5;
-
-        string memory rootPath = vm.projectRoot();
-        string memory proofPath = string.concat(rootPath, "/test/proof-data/papercliplabs.json");
-        string memory json = vm.readFile(proofPath);
-
-        IStateProof.BaseParameters memory baseParams = IStateProof.BaseParameters({
-            beaconRoot: json.readBytes32(".beaconRoot"),
-            beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
-            executionStateRoot: json.readBytes32(".executionStateRoot"),
-            stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
-            accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
-        });
-
-        bytes[] memory delegateStorageProof = abi.decode(json.parseRaw(".delegateStorageProofs"), (bytes[][]))[0];
-
         address delegate = 0x65599970Af18EeA5f4ec0B82f23B018fd15EBd11;
+
+        IStateProof.BaseParameters memory baseParams = _setupBaseParameters();
+        (,bytes[][] memory delegateStorageProofs) = _setupStorageProofs();
 
         assertTrue(verifier.isDelegate(delegator, delegate, IStateProof.Parameters({
             beaconRoot: baseParams.beaconRoot,
             beaconOracleTimestamp: baseParams.beaconOracleTimestamp,
             executionStateRoot: baseParams.executionStateRoot,
             stateRootProof: baseParams.stateRootProof,
-            storageProof: delegateStorageProof,
+            storageProof: delegateStorageProofs[0],
             accountProof: baseParams.accountProof
         })));
     }
@@ -219,26 +238,15 @@ contract NounsFlowTest is Test {
         uint256 tokenId = 788;
         address owner = 0xA2b6590A6dC916fe317Dcab169a18a5B87A5c3d5;
 
-        string memory rootPath = vm.projectRoot();
-        string memory proofPath = string.concat(rootPath, "/test/proof-data/papercliplabs.json");
-        string memory json = vm.readFile(proofPath);
-
-        IStateProof.BaseParameters memory baseParams = IStateProof.BaseParameters({
-            beaconRoot: json.readBytes32(".beaconRoot"),
-            beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
-            executionStateRoot: json.readBytes32(".executionStateRoot"),
-            stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
-            accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
-        });
-
-        bytes[] memory ownershipStorageProof = abi.decode(json.parseRaw(".ownershipStorageProof1"), (bytes[]));
+        IStateProof.BaseParameters memory baseParams = _setupBaseParameters();
+        (bytes[][][] memory ownershipStorageProofs,) = _setupStorageProofs();
 
         assertTrue(verifier.isOwner(tokenId, owner, IStateProof.Parameters({
             beaconRoot: baseParams.beaconRoot,
             beaconOracleTimestamp: baseParams.beaconOracleTimestamp,
             executionStateRoot: baseParams.executionStateRoot,
             stateRootProof: baseParams.stateRootProof,
-            storageProof: ownershipStorageProof,
+            storageProof: ownershipStorageProofs[0][0],
             accountProof: baseParams.accountProof
         })));
 
@@ -250,7 +258,7 @@ contract NounsFlowTest is Test {
             beaconOracleTimestamp: baseParams.beaconOracleTimestamp,
             executionStateRoot: baseParams.executionStateRoot,
             stateRootProof: baseParams.stateRootProof,
-            storageProof: ownershipStorageProof,
+            storageProof: ownershipStorageProofs[0][0],
             accountProof: baseParams.accountProof
         }));
     }
@@ -265,13 +273,7 @@ contract NounsFlowTest is Test {
         string memory proofPath = string.concat(rootPath, "/test/proof-data/papercliplabs.json");
         string memory json = vm.readFile(proofPath);
 
-        IStateProof.BaseParameters memory baseParams = IStateProof.BaseParameters({
-            beaconRoot: json.readBytes32(".beaconRoot"),
-            beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
-            executionStateRoot: json.readBytes32(".executionStateRoot"),
-            stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
-            accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
-        });
+        IStateProof.BaseParameters memory baseParams = _setupBaseParameters();
 
         bytes[] memory ownershipStorageProof = abi.decode(json.parseRaw(".ownershipStorageProof2"), (bytes[]));
 
