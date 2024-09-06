@@ -5,8 +5,8 @@ pragma solidity ^0.8.23;
 
 import {L2NounsVerifierTest} from "./L2NounsVerifier.t.sol";
 
-import {StateVerifier} from "../../src/state-proof/StateVerifier.sol";
 import {L2NounsVerifier} from "../../src/state-proof/L2NounsVerifier.sol";
+import {IStateProof} from "../../src/interfaces/IStateProof.sol";
 
 contract L2NounsDelegateVerifier is L2NounsVerifierTest {
 
@@ -18,7 +18,7 @@ contract L2NounsDelegateVerifier is L2NounsVerifierTest {
 
         string memory path = string.concat(rootPath, "/test/proof-data/_delegates/", vm.toString(account), ".json");
         
-        StateVerifier.StateProofParameters memory delegationParams = getStateProofParams(path);
+        IStateProof.Parameters memory delegationParams = getStateProofParams(path);
 
         assertTrue(verifier.isDelegate(account, account, delegationParams));
     }

@@ -1,27 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {StateVerifier} from "../state-proof/StateVerifier.sol";
+import {IStateProof} from "./IStateProof.sol";
 
 interface IL2NounsVerifier {
     function isOwner(
         uint256 tokenId,
         address account,
-        StateVerifier.StateProofParameters calldata proofParams
+        IStateProof.Parameters calldata proofParams
     ) external view returns (bool);
 
     function canVoteWithToken(
         uint256 tokenId,
         address owner,
         address voter,
-        StateVerifier.StateProofParameters calldata ownershipProof,
-        StateVerifier.StateProofParameters calldata delegateProof
+        IStateProof.Parameters calldata ownershipProof,
+        IStateProof.Parameters calldata delegateProof
     ) external view returns (bool);
 
     function isDelegate(
         address owner,
         address delegate,
-        StateVerifier.StateProofParameters calldata proofParams
+        IStateProof.Parameters calldata proofParams
     ) external view returns (bool);
 }
 

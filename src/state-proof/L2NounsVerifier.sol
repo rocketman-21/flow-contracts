@@ -3,10 +3,11 @@ pragma solidity ^0.8.23;
 
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc) and rocketman
 
+import {IStateProof} from "../interfaces/IStateProof.sol";
 import {StateVerifier} from "./StateVerifier.sol";
 
 contract L2NounsVerifier {
-    function isOwner(uint256 tokenId, address account, StateVerifier.StateProofParameters calldata proofParams)
+    function isOwner(uint256 tokenId, address account, IStateProof.Parameters calldata proofParams)
         external
         view
         returns (bool)
@@ -19,7 +20,7 @@ contract L2NounsVerifier {
         });
     }
 
-    function canVoteWithToken(uint256 tokenId, address owner, address voter, StateVerifier.StateProofParameters calldata ownershipProof, StateVerifier.StateProofParameters calldata delegateProof)
+    function canVoteWithToken(uint256 tokenId, address owner, address voter, IStateProof.Parameters calldata ownershipProof, IStateProof.Parameters calldata delegateProof)
         external
         view
         returns (bool)
@@ -30,7 +31,7 @@ contract L2NounsVerifier {
         return isOwnerValid && isDelegateValid;
     }
 
-    function isDelegate(address owner, address delegate, StateVerifier.StateProofParameters calldata proofParams)
+    function isDelegate(address owner, address delegate, IStateProof.Parameters calldata proofParams)
         external
         view
         returns (bool)
@@ -49,7 +50,7 @@ contract L2NounsVerifier {
     function validateDelegateState(
         address owner,
         bytes memory delegate,
-        StateVerifier.StateProofParameters calldata proofParams
+        IStateProof.Parameters calldata proofParams
     ) external view returns (bool) {
         return StateVerifier.validateState({
             account: 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03, // Nouns Token on mainnet

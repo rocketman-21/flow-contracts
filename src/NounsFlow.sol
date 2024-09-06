@@ -2,10 +2,9 @@
 pragma solidity ^0.8.23;
 
 import {Flow} from "./Flow.sol";
-import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
 import {INounsFlow} from "./interfaces/IFlow.sol";
 import {IL2NounsVerifier} from "./interfaces/IL2NounsVerifier.sol";
-import {StateVerifier} from "./state-proof/StateVerifier.sol";
+import {IStateProof} from "./interfaces/IStateProof.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -44,7 +43,7 @@ contract NounsFlow is INounsFlow, Flow {
         uint256[][] memory tokenIds,
         uint256[] memory recipientIds,
         uint32[] memory percentAllocations,
-        StateVerifier.BaseStateProofParameters memory baseProofParams,
+        IStateProof.BaseParameters memory baseProofParams,
         bytes[][][] memory ownershipStorageProofs,
         bytes[][] memory delegateStorageProofs
     )
@@ -53,7 +52,7 @@ contract NounsFlow is INounsFlow, Flow {
         validVotes(recipientIds, percentAllocations)
     {
         for (uint256 i = 0; i < owners.length; i++) {
-            StateVerifier.StateProofParameters[] memory ownershipProofs = new StateVerifier.StateProofParameters[](tokenIds[i].length);
+            IStateProof.Parameters[] memory ownershipProofs = new IStateProof.Parameters[](tokenIds[i].length);
 
             for (uint256 j = 0; j < tokenIds[i].length; j++) {
                 // there is one storage proof for each tokenId
@@ -79,10 +78,10 @@ contract NounsFlow is INounsFlow, Flow {
      * @return StateVerifier.StateProofParameters The generated state proof parameters
      */
     function _generateStateProofParams(
-        StateVerifier.BaseStateProofParameters memory baseProofParams,
+        IStateProof.BaseParameters memory baseProofParams,
         bytes[] memory storageProof
-    ) internal pure returns (StateVerifier.StateProofParameters memory) {
-        return StateVerifier.StateProofParameters({
+    ) internal pure returns (IStateProof.Parameters memory) {
+        return IStateProof.Parameters({
             beaconRoot: baseProofParams.beaconRoot,
             beaconOracleTimestamp: baseProofParams.beaconOracleTimestamp,
             executionStateRoot: baseProofParams.executionStateRoot,
@@ -106,8 +105,8 @@ contract NounsFlow is INounsFlow, Flow {
         uint256[] memory tokenIds,
         uint256[] memory recipientIds,
         uint32[] memory percentAllocations,
-        StateVerifier.StateProofParameters[] memory ownershipProofs,
-        StateVerifier.StateProofParameters memory delegateProof
+        IStateProof.Parameters[] memory ownershipProofs,
+        IStateProof.Parameters memory delegateProof
     ) internal {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();

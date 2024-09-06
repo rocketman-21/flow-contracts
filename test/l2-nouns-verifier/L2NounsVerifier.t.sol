@@ -6,13 +6,14 @@ import "forge-std/StdJson.sol";
 
 import {StateVerifier} from "../../src/state-proof/StateVerifier.sol";
 import {L2NounsVerifier} from "../../src/state-proof/L2NounsVerifier.sol";
+import {IStateProof} from "../../src/interfaces/IStateProof.sol";
 
 contract L2NounsVerifierTest is Test {
     using stdJson for string;
 
-    function getStateProofParams(string memory path) internal returns (StateVerifier.StateProofParameters memory) {
+    function getStateProofParams(string memory path) internal returns (IStateProof.Parameters memory) {
         string memory json = vm.readFile(path);
-        return StateVerifier.StateProofParameters({
+        return IStateProof.Parameters({
             beaconRoot: json.readBytes32(".beaconRoot"),
             beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
             executionStateRoot: json.readBytes32(".executionStateRoot"),

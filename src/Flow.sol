@@ -335,6 +335,7 @@ abstract contract Flow is
         Flow(recipient).connectPool(baselinePool);
 
         _initializeBaselineMemberUnits(recipient);
+        _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         uint256 recipientId = recipientCount;
 
