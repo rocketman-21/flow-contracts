@@ -200,6 +200,10 @@ interface IERC721Flow is IFlow {
 }
 
 interface INounsFlow is IFlow {
+
+    /// @dev Reverts if the proof timestamp is too old
+    error PAST_PROOF();
+
     /**
      * @notice Initializes an NounsFlow contract
      * @param verifier The address of the NounsVerifier contract

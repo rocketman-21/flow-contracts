@@ -67,7 +67,8 @@ const ownerProofObj = {
   executionStateRoot: stateRootInclusion.leaf,
   stateRootProof: stateRootInclusion.proof,
   accountProof: ownerProofs[0].accountProof, // same for all
-  storageProofs: ownerProofs.map((proof) => proof.storageProof[0].proof),
+  ownershipStorageProof1: ownerProofs[0].storageProof[0].proof,
+  ownershipStorageProof2: ownerProofs[1].storageProof[0].proof,
   delegateStorageProofs: delegateProofs.map((proof) => proof.storageProof[0].proof),
 }
 
@@ -79,16 +80,16 @@ console.log('Proof Execution State Root:', ownerProofObj.executionStateRoot)
 await Bun.write(`outputs/proofs[${delegators}][${tokenIds}].json`, JSON.stringify(ownerProofObj));
 
 // Construct a proof object without storage proofs
-const proofObjWithoutStorage = {
-  beaconRoot: beaconInfo.beaconRoot,
-  beaconOracleTimestamp: toHex(beaconInfo.timestampForL2BeaconOracle, {size: 32}),
-  executionStateRoot: stateRootInclusion.leaf,
-  stateRootProof: stateRootInclusion.proof,
-  accountProof: ownerProofs[0].accountProof, // same for all
-};
+// const proofObjWithoutStorage = {
+//   beaconRoot: beaconInfo.beaconRoot,
+//   beaconOracleTimestamp: toHex(beaconInfo.timestampForL2BeaconOracle, {size: 32}),
+//   executionStateRoot: stateRootInclusion.leaf,
+//   stateRootProof: stateRootInclusion.proof,
+//   accountProof: ownerProofs[0].accountProof, // same for all
+// };
 
-// Verify that the execution state root matches for this object as well
-console.log('Proof Without Storage - Execution State Root:', proofObjWithoutStorage.executionStateRoot);
+// // Verify that the execution state root matches for this object as well
+// console.log('Proof Without Storage - Execution State Root:', proofObjWithoutStorage.executionStateRoot);
 
-// Write this new proof object to a separate JSON file
-await Bun.write(`outputs/proofWithoutStorage_${block.body.executionPayload.blockNumber}.json`, JSON.stringify(proofObjWithoutStorage));
+// // Write this new proof object to a separate JSON file
+// await Bun.write(`outputs/proofWithoutStorage_${block.body.executionPayload.blockNumber}.json`, JSON.stringify(proofObjWithoutStorage));
