@@ -23,11 +23,6 @@ abstract contract Flow is
     using SuperTokenV1Library for ISuperToken;
 
     /**
-     * @notice Initializes a token's metadata descriptor
-     */
-    constructor() payable {}
-
-    /**
      * @notice Initializes the Flow contract
      * @param _superToken The address of the SuperToken to be used for the pool
      * @param _flowImpl The address of the flow implementation contract

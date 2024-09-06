@@ -14,7 +14,7 @@ contract ERC721Flow is IERC721Flow, Flow {
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
 
-    constructor() payable initializer Flow() {}
+    constructor() payable initializer {}
 
     function initialize(
         address _nounsToken,

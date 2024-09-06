@@ -12,7 +12,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 contract NounsFlow is INounsFlow, Flow {
     IL2NounsVerifier public verifier;
 
-    constructor() payable initializer Flow() {}
+    constructor() payable initializer {}
 
     function initialize(
         address _verifier,
