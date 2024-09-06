@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.26;
 
+import {IFlowEvents,IFlow} from "../../src/interfaces/IFlow.sol";
+import {Flow} from "../../src/Flow.sol";
+import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
 import {ERC721FlowTest} from "./ERC721Flow.t.sol";
-import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
-import {Flow} from "../src/Flow.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
 
 contract AddRecipientsTest is ERC721FlowTest {
 

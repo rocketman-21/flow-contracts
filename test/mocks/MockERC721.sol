@@ -24,11 +24,11 @@ contract MockERC721 is ERC721, IERC721Checkpointable {
     }
 
     // Stub implementations for IERC721Checkpointable
-    function getCurrentVotes(address account) external view override returns (uint96) {
+    function getCurrentVotes(address) external pure override returns (uint96) {
         return 0;
     }
 
-    function getPriorVotes(address account, uint256 blockNumber) external view override returns (uint96) {
+    function getPriorVotes(address, uint256) external pure override returns (uint96) {
         return 0;
     }
 }

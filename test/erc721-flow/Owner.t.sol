@@ -2,9 +2,9 @@
 pragma solidity ^0.8.26;
 
 import {ERC721FlowTest} from "./ERC721Flow.t.sol";
-import {IFlowEvents,IFlow} from "../src/interfaces/IFlow.sol";
-import {Flow} from "../src/Flow.sol";
-import {ERC721Flow} from "../src/ERC721Flow.sol";
+import {IFlowEvents,IFlow} from "../../src/interfaces/IFlow.sol";
+import {Flow} from "../../src/Flow.sol";
+import {ERC721Flow} from "../../src/ERC721Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import {console} from "forge-std/console.sol";

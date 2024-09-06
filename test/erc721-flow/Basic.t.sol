@@ -2,10 +2,10 @@
 pragma solidity ^0.8.26;
 
 import {ERC721FlowTest} from "./ERC721Flow.t.sol";
-import {IFlowEvents,IFlow,IERC721Flow} from "../src/interfaces/IFlow.sol";
-import {ERC721Flow} from "../src/ERC721Flow.sol";
+import {IFlowEvents,IFlow,IERC721Flow} from "../../src/interfaces/IFlow.sol";
+import {ERC721Flow} from "../../src/ERC721Flow.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
+import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
 import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 
 contract BasicERC721FlowTest is ERC721FlowTest {

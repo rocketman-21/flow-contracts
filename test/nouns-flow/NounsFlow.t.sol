@@ -4,10 +4,10 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
-import {IFlow, INounsFlow} from "../src/interfaces/IFlow.sol";
-import {NounsFlow} from "../src/NounsFlow.sol";
-import {L2NounsVerifier} from "../src/state-proof/L2NounsVerifier.sol";
-import {IStateProof} from "../src/interfaces/IStateProof.sol";
+import {IFlow, INounsFlow} from "../../src/interfaces/IFlow.sol";
+import {NounsFlow} from "../../src/NounsFlow.sol";
+import {L2NounsVerifier} from "../../src/state-proof/L2NounsVerifier.sol";
+import {IStateProof} from "../../src/interfaces/IStateProof.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -20,7 +20,7 @@ import {SuperfluidFrameworkDeployer} from
     "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
 import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import {SuperToken} from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
-import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
+import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
 
 contract NounsFlowTest is Test {
 

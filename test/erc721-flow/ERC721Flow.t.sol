@@ -3,9 +3,9 @@ pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 
-import {IFlow,IERC721Flow} from "../src/interfaces/IFlow.sol";
-import {ERC721Flow} from "../src/ERC721Flow.sol";
-import {MockERC721} from "./mocks/MockERC721.sol";
+import {IFlow,IERC721Flow} from "../../src/interfaces/IFlow.sol";
+import {ERC721Flow} from "../../src/ERC721Flow.sol";
+import {MockERC721} from "../mocks/MockERC721.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -18,7 +18,7 @@ import {SuperfluidFrameworkDeployer} from
     "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
 import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import {SuperToken} from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
-import {FlowStorageV1} from "../src/storage/FlowStorageV1.sol";
+import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
 
 contract ERC721FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
