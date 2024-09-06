@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.26;
 
 import {Flow} from "./Flow.sol";
 import {INounsFlow} from "./interfaces/IFlow.sol";
@@ -75,7 +75,7 @@ contract NounsFlow is INounsFlow, Flow {
      * @notice Generates StateProofParameters from base parameters and storage proof
      * @param baseProofParams The base state proof parameters
      * @param storageProof The storage proof for the specific state
-     * @return StateVerifier.StateProofParameters The generated state proof parameters
+     * @return IStateProof.Parameters The generated state proof parameters
      */
     function _generateStateProofParams(
         IStateProof.BaseParameters memory baseProofParams,
