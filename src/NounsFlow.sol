@@ -53,7 +53,7 @@ contract NounsFlow is INounsFlow, Flow {
     {
         // if the timestamp is more than 5 minutes old, it is invalid
         // TODO check through security considerations if this is a valid assumption
-        // if(baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
+        if(baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
 
         for (uint256 i = 0; i < owners.length; i++) {
             IStateProof.Parameters[] memory ownershipProofs = new IStateProof.Parameters[](tokenIds[i].length);
