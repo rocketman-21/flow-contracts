@@ -287,6 +287,51 @@ contract NounsFlowTest is Test {
         })));
     }
 
+    function test_castVotes_PAST_PROOF() public {
+        // Set up a new fork 5 minutes in the future from the one used in castVotes
+        uint256 futureBlock = 19434588 + (5 * 60 / 12); // Assuming 12-second block time
+        _setUpWithForkBlock(futureBlock);
+
+        // Get the current block timestamp
+        uint256 currentTimestamp = block.timestamp;
+
+        // Set up parameters for castVotes
+        (address[] memory owners, uint256[][] memory tokenIds, uint256[] memory recipientIds, uint32[] memory percentAllocations, address delegate) = _setupTestParameters();
+
+        // Set up base parameters with a timestamp more than 5 minutes in the past
+        IStateProof.BaseParameters memory baseParams = _setupBaseParameters();
+        baseParams.beaconOracleTimestamp = currentTimestamp - 6 minutes;
+
+        (bytes[][][] memory ownershipStorageProofs, bytes[][] memory delegateStorageProofs) = _setupStorageProofs();
+
+        // Expect the PAST_PROOF error
+        vm.expectRevert(abi.encodeWithSignature("PAST_PROOF()"));
+
+        // Attempt to cast votes with outdated proof
+        flow.castVotes(
+            owners,
+            tokenIds,
+            recipientIds,
+            percentAllocations,
+            baseParams,
+            ownershipStorageProofs,
+            delegateStorageProofs
+        );
+
+        // Verify that a more recent timestamp you can't just change the timestamp in the proof
+        baseParams.beaconOracleTimestamp = currentTimestamp - 5 minutes;
+        vm.expectRevert();
+        flow.castVotes(
+            owners,
+            tokenIds,
+            recipientIds,
+            percentAllocations,
+            baseParams,
+            ownershipStorageProofs,
+            delegateStorageProofs
+        );
+    }
+
     function getStateProofParams(string memory path) internal returns (IStateProof.Parameters memory) {
         string memory json = vm.readFile(path);
         return IStateProof.Parameters({
