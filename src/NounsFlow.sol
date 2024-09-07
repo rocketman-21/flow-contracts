@@ -56,14 +56,8 @@ contract NounsFlow is INounsFlow, Flow {
         if(baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
 
         for (uint256 i = 0; i < owners.length; i++) {
-            uint256 tokenIdCount = tokenIds[i].length;
-
-            IStateProof.Parameters[] memory ownershipProofs = new IStateProof.Parameters[](tokenIdCount);
-
-            for (uint256 j = 0; j < tokenIdCount; j++) {
-                // there is one storage proof for each tokenId
-                ownershipProofs[j] = _generateStateProofParams(baseProofParams, ownershipStorageProofs[i][j]);
-            }
+            IStateProof.Parameters[] memory ownershipProofs = _generateOwnershipProofs(baseProofParams, ownershipStorageProofs[i]);
+            IStateProof.Parameters memory delegateProof = _generateStateProofParams(baseProofParams, delegateStorageProofs[i]);
 
             _castVotesForOwner(
                 owners[i],
@@ -71,10 +65,31 @@ contract NounsFlow is INounsFlow, Flow {
                 recipientIds,
                 percentAllocations,
                 ownershipProofs,
-                // there is one delegate proof for each owner
-                _generateStateProofParams(baseProofParams, delegateStorageProofs[i])
+                delegateProof
             );
         }
+    }
+    
+    /**
+     * @notice Generates an array of ownership proofs for multiple token IDs
+     * @dev This function creates state proof parameters for each token ID using the base parameters and storage proofs
+     * @param baseProofParams The base state proof parameters common to all proofs
+     * @param ownershipStorageProofs A 2D array of storage proofs, where each inner array corresponds to a token ID
+     * @return An array of IStateProof.Parameters, one for each token ID
+     */
+    function _generateOwnershipProofs(
+        IStateProof.BaseParameters memory baseProofParams,
+        bytes[][] memory ownershipStorageProofs
+    ) internal pure returns (IStateProof.Parameters[] memory) {
+        uint256 tokenIdCount = ownershipStorageProofs.length;
+        IStateProof.Parameters[] memory ownershipProofs = new IStateProof.Parameters[](tokenIdCount);
+
+        for (uint256 j = 0; j < tokenIdCount; j++) {
+            // there is one storage proof for each tokenId
+            ownershipProofs[j] = _generateStateProofParams(baseProofParams, ownershipStorageProofs[j]);
+        }
+
+        return ownershipProofs;
     }
 
     /**
