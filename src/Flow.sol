@@ -462,6 +462,20 @@ abstract contract Flow is
     }
 
     /**
+     * @notice Sets a new manager for the Flow contract
+     * @param _newManager The address of the new manager
+     * @dev Only callable by the current owner
+     * @dev Emits a ManagerUpdated event with the old and new manager addresses
+     */
+    function setManager(address _newManager) external onlyOwner nonReentrant {
+        if (_newManager == address(0)) revert ADDRESS_ZERO();
+
+        address oldManager = manager;
+        manager = _newManager;
+        emit ManagerUpdated(oldManager, _newManager);
+    }
+
+    /**
      * @notice Internal function to set the flow rate for the Superfluid pool
      * @param _flowRate The new flow rate to be set
      * @dev Emits a FlowRateUpdated event with the old and new flow rates

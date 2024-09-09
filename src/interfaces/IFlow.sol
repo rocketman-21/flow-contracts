@@ -34,6 +34,9 @@ interface IFlowEvents {
 
     /// @notice Emitted when the baseline flow rate percentage is updated
     event BaselineFlowRatePercentUpdated(uint32 oldBaselineFlowRatePercent, uint32 newBaselineFlowRatePercent);
+
+    /// @notice Emitted when the manager is updated
+    event ManagerUpdated(address indexed oldManager, address indexed newManager);
 }
 
 /**

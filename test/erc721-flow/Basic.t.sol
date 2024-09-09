@@ -305,4 +305,30 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         flow.setBaselineFlowRatePercent(250000); // 25%
         assertEq(flow.baselinePoolFlowRatePercent(), 250000, "Baseline percentage should be updated by parent");
     }
+
+    function testSetManager() public {
+        address initialManager = flow.manager();
+        address newManager = address(0xbee);
+
+        // Test calling from non-owner address
+        vm.prank(address(0xdead));
+        vm.expectRevert("Ownable: caller is not the owner");
+        flow.setManager(newManager);
+
+        // Test calling from owner address
+        vm.prank(flow.owner());
+        vm.expectEmit(true, true, false, true);
+        emit IFlowEvents.ManagerUpdated(initialManager, newManager);
+        flow.setManager(newManager);
+
+        assertEq(flow.manager(), newManager, "Manager should be updated");
+
+        // Test setting manager to zero address
+        vm.prank(flow.owner());
+        vm.expectRevert(abi.encodeWithSelector(IFlow.ADDRESS_ZERO.selector));
+        flow.setManager(address(0));
+
+        // Verify that the manager was not changed
+        assertEq(flow.manager(), newManager, "Manager should not be changed to zero address");
+    }
 }
