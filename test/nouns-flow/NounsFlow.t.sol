@@ -6,7 +6,7 @@ import "forge-std/StdJson.sol";
 
 import {IFlow, INounsFlow} from "../../src/interfaces/IFlow.sol";
 import {NounsFlow} from "../../src/NounsFlow.sol";
-import {L2NounsVerifier} from "../../src/state-proof/L2NounsVerifier.sol";
+import {TokenVerifier} from "../../src/state-proof/TokenVerifier.sol";
 import {IStateProof} from "../../src/interfaces/IStateProof.sol";
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -35,12 +35,14 @@ contract NounsFlowTest is Test {
     address testUSDC;
     IFlow.FlowParams flowParams;
 
-    L2NounsVerifier verifier;
+    TokenVerifier verifier;
 
     address manager = address(0x1998);
 
     FlowStorageV1.RecipientMetadata flowMetadata;
     FlowStorageV1.RecipientMetadata recipientMetadata;
+
+    address NOUNS_TOKEN_ADDRESS = 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03;
 
     function deployFlow(address verifierAddress, address superTokenAddress) internal returns (NounsFlow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
@@ -97,7 +99,7 @@ contract NounsFlowTest is Test {
             image: "ipfs://image"
         });
 
-        verifier = new L2NounsVerifier();
+        verifier = new TokenVerifier(NOUNS_TOKEN_ADDRESS);
         flowImpl = address(new NounsFlow());
 
         flowParams = IFlow.FlowParams({

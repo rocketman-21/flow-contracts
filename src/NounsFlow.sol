@@ -3,14 +3,14 @@ pragma solidity ^0.8.26;
 
 import {Flow} from "./Flow.sol";
 import {INounsFlow} from "./interfaces/IFlow.sol";
-import {IL2NounsVerifier} from "./interfaces/IL2NounsVerifier.sol";
+import {ITokenVerifier} from "./interfaces/ITokenVerifier.sol";
 import {IStateProof} from "./interfaces/IStateProof.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract NounsFlow is INounsFlow, Flow {
-    IL2NounsVerifier public verifier;
+    ITokenVerifier public verifier;
 
     constructor() payable initializer {}
 
@@ -25,7 +25,7 @@ contract NounsFlow is INounsFlow, Flow {
     ) public initializer {
         __Flow_init(_superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
 
-        verifier = IL2NounsVerifier(_verifier);
+        verifier = ITokenVerifier(_verifier);
     }
 
     /**
@@ -69,7 +69,7 @@ contract NounsFlow is INounsFlow, Flow {
             );
         }
     }
-    
+
     /**
      * @notice Generates an array of ownership proofs for multiple token IDs
      * @dev This function creates state proof parameters for each token ID using the base parameters and storage proofs

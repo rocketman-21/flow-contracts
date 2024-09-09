@@ -5,11 +5,13 @@ import {Test, console2} from "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
 import {StateVerifier} from "../../src/state-proof/StateVerifier.sol";
-import {L2NounsVerifier} from "../../src/state-proof/L2NounsVerifier.sol";
+import {TokenVerifier} from "../../src/state-proof/TokenVerifier.sol";
 import {IStateProof} from "../../src/interfaces/IStateProof.sol";
 
-contract L2NounsVerifierTest is Test {
+contract TokenVerifierTest is Test {
     using stdJson for string;
+
+    address NOUNS_TOKEN_ADDRESS = 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03;
 
     function getStateProofParams(string memory path) internal returns (IStateProof.Parameters memory) {
         string memory json = vm.readFile(path);
