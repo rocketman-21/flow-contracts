@@ -21,13 +21,10 @@ interface IFlowEvents {
     event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
 
     /// @notice Emitted when a new grants recipient is set
-    event RecipientCreated(address indexed recipient, address indexed approvedBy, uint256 indexed recipientId);
+    event RecipientCreated(uint256 indexed recipientId, FlowStorageV1.FlowRecipient recipient, address indexed approvedBy);
 
     /// @notice Emitted when the flow rate is updated
     event FlowRateUpdated(int96 oldTotalFlowRate, int96 newTotalFlowRate, int96 baselinePoolFlowRate, int96 bonusPoolFlowRate);
-
-    /// @notice Emitted when a new child flow contract is created
-    event FlowCreated(address indexed parent, address indexed flow, uint256 indexed recipientId);
 
     /// @notice Emitted when a new flow implementation is set
     event FlowImplementationSet(address indexed flowImpl);

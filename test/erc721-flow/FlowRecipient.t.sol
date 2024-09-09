@@ -42,9 +42,13 @@ contract FlowRecipientTest is ERC721FlowTest {
         vm.startPrank(flow.owner());
 
         // Test successful addition of a Flow recipient
-        vm.expectEmit(false, false, true, true);
-        emit IFlowEvents.RecipientCreated(address(0), manager, 0); // address(0) as we don't know the new address yet
-
+        vm.expectEmit(false, true, false, false);
+        emit IFlowEvents.RecipientCreated(0, FlowStorageV1.FlowRecipient({
+            recipientType: FlowStorageV1.RecipientType.FlowContract,
+            removed: false,
+            recipient: address(0),
+            metadata: metadata
+        }), flow.owner());
         address newFlowAddress = flow.addFlowRecipient(metadata, flowManager);
 
         assertNotEq(newFlowAddress, address(0));

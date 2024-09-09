@@ -309,7 +309,7 @@ abstract contract Flow is
         _initializeBaselineMemberUnits(recipient);
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
-        emit RecipientCreated(recipient, msg.sender, recipientId);
+        emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
     }
 
     /**
@@ -343,8 +343,7 @@ abstract contract Flow is
 
         _incrementRecipientCounts();
 
-        emit RecipientCreated(recipient, msg.sender, recipientId);
-        emit FlowCreated(address(this), recipient, recipientId);
+        emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
 
         return recipient;
     }

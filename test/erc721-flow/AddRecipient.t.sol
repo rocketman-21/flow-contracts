@@ -17,7 +17,12 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Test successful addition of a recipient
         vm.startPrank(flow.owner());
         vm.expectEmit(true, true, true, true);
-        emit IFlowEvents.RecipientCreated(recipient, flow.owner(), 0);
+        emit IFlowEvents.RecipientCreated(0, FlowStorageV1.FlowRecipient({
+            recipientType: FlowStorageV1.RecipientType.ExternalAccount,
+            removed: false,
+            recipient: recipient,
+            metadata: recipientMetadata
+        }), flow.owner());
         flow.addRecipient(recipient, recipientMetadata);
 
         // Verify recipient was added correctly
