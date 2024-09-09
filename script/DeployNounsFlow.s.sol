@@ -7,28 +7,35 @@ import { Flow } from "../src/Flow.sol";
 import { IFlow } from "../src/interfaces/IFlow.sol";
 import { FlowStorageV1 } from "../src/storage/FlowStorageV1.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { TokenVerifier } from "../src/state-proof/TokenVerifier.sol";
 
 contract DeployNounsFlow is DeployScript {
     address public nounsFlow;
+    address public tokenVerifier;
+    address public nounsFlowImplementation;
 
     function deploy() internal override {
-        address verifier = vm.envAddress("VERIFIER");
+        // Deploy NounsFlow implementation
+        NounsFlow nounsFlowImpl = new NounsFlow();
+        nounsFlowImplementation = address(nounsFlowImpl);
+
+        address tokenAddress = vm.envAddress("TOKEN_ADDRESS");
         address superToken = vm.envAddress("SUPER_TOKEN");
-        address flowImpl = vm.envAddress("FLOW_IMPL");
         address manager = vm.envAddress("MANAGER");
         address parent = vm.envAddress("PARENT");
         uint256 tokenVoteWeight = vm.envUint("TOKEN_VOTE_WEIGHT");
         uint32 baselinePoolFlowRatePercent = uint32(vm.envUint("BASELINE_POOL_FLOW_RATE_PERCENT"));
 
-        // Deploy NounsFlow implementation
-        NounsFlow nounsFlowImpl = new NounsFlow();
+        // Deploy TokenVerifier
+        TokenVerifier verifier = new TokenVerifier(tokenAddress);
+        tokenVerifier = address(verifier);
 
         // Prepare initialization data
         bytes memory initData = abi.encodeWithSelector(
             NounsFlow.initialize.selector,
-            verifier,
+            tokenVerifier,
             superToken,
-            flowImpl,
+            address(nounsFlowImpl),
             manager,
             parent,
             IFlow.FlowParams({
@@ -50,7 +57,9 @@ contract DeployNounsFlow is DeployScript {
     }
 
     function writeAdditionalDeploymentDetails(string memory filePath) internal override {
-        vm.writeLine(filePath, string(abi.encodePacked("NounsFlow: ", addressToString(nounsFlow))));
+        vm.writeLine(filePath, string(abi.encodePacked("NounsFlowImpl: ", addressToString(nounsFlowImplementation))));
+        vm.writeLine(filePath, string(abi.encodePacked("TokenVerifier: ", addressToString(tokenVerifier))));
+        vm.writeLine(filePath, string(abi.encodePacked("NounsFlowProxy: ", addressToString(nounsFlow))));
     }
 
     function getContractName() internal pure override returns (string memory) {
