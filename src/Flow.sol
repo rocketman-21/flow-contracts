@@ -552,14 +552,6 @@ abstract contract Flow is
     }
 
     /**
-     * @notice Retrieves the net flow rate for a specific account
-     * @return netFlowRate The net flow rate for the account
-     */
-    function getNetFlowRate() public view returns (int96 netFlowRate) {
-        return superToken.getNetFlowRate(address(this));
-    }
-
-    /**
      * @notice Retrieves the flow rate for a specific member in the pool
      * @param memberAddr The address of the member
      * @return flowRate The flow rate for the member

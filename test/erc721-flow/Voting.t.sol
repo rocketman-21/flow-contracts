@@ -250,10 +250,6 @@ contract VotingFlowTest is ERC721FlowTest {
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        // Check that the flow rate for the flow recipient has changed
-        int96 flowRecipientFlowRate = Flow(flowRecipient).getNetFlowRate();
-        assertEq(flowRecipientFlowRate, 0);
-
         int96 flowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
         assertGt(flowRecipientTotalFlowRate, 0);
 
@@ -308,10 +304,6 @@ contract VotingFlowTest is ERC721FlowTest {
 
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
-
-        // Check that the flow rate for the flow recipient has changed
-        int96 flowRecipientFlowRate = Flow(flowRecipient).getNetFlowRate();
-        assertGt(flowRecipientFlowRate, 0);
 
         // the total flow rate should be 0 because the recipient does not have the buffer amount yet
         int96 flowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
