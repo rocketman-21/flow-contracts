@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {Flow} from "./Flow.sol";
 import {INounsFlow} from "./interfaces/IFlow.sol";

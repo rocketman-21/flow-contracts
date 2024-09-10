@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {IFlowEvents,IFlow} from "../../src/interfaces/IFlow.sol";
 import {ERC721Flow} from "../../src/ERC721Flow.sol";
