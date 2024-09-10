@@ -119,7 +119,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
 
         Request storage request = item.requests[item.requests.length - 1];
         require(
-            now - request.submissionTime <= challengePeriodDuration,
+            block.timestamp - request.submissionTime <= challengePeriodDuration,
             "Challenges must occur during the challenge period."
         );
         require(!request.disputed, "The request should not have already been disputed.");
@@ -168,7 +168,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         require(request.disputed, "A dispute must have been raised to fund an appeal.");
         (uint appealPeriodStart, uint appealPeriodEnd) = request.arbitrator.appealPeriod(request.disputeID);
         require(
-            now >= appealPeriodStart && now < appealPeriodEnd,
+            block.timestamp >= appealPeriodStart && block.timestamp < appealPeriodEnd,
             "Contributions must be made within the appeal period."
         );
 
@@ -179,7 +179,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
             if (winner == Party.Requester) loser = Party.Challenger;
             else if (winner == Party.Challenger) loser = Party.Requester;
             require(
-                _side != loser || (now - appealPeriodStart < (appealPeriodEnd - appealPeriodStart) / 2),
+                _side != loser || (block.timestamp - appealPeriodStart < (appealPeriodEnd - appealPeriodStart) / 2),
                 "The loser must contribute during the first half of the appeal period."
             );
 
@@ -264,7 +264,10 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
     function executeRequest(bytes32 _itemID) external {
         Item storage item = items[_itemID];
         Request storage request = item.requests[item.requests.length - 1];
-        require(now - request.submissionTime > challengePeriodDuration, "Time to challenge the request must pass.");
+        require(
+            block.timestamp - request.submissionTime > challengePeriodDuration,
+            "Time to challenge the request must pass."
+        );
         require(!request.disputed, "The request should not be disputed.");
 
         if (item.status == Status.RegistrationRequested) item.status = Status.Registered;
@@ -442,7 +445,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         }
 
         request.parties[uint(Party.Requester)] = msg.sender;
-        request.submissionTime = now;
+        request.submissionTime = block.timestamp;
         request.arbitrator = arbitrator;
         request.arbitratorExtraData = arbitratorExtraData;
 
