@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {ERC721FlowTest} from "./ERC721Flow.t.sol";
 import {IFlowEvents,IFlow,IERC721Flow} from "../../src/interfaces/IFlow.sol";
@@ -60,7 +60,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager: manager, // Add this line
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
+            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
         });
 
         // Test initialization with zero address for _flowImpl
@@ -75,7 +75,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager: manager, // Add this line
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
+            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
         });
         flowImpl = originalFlowImpl;
 
@@ -87,7 +87,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager, // Add this line
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
+            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
         );
 
         // Test double initialization (should revert)
@@ -99,49 +99,17 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager, // Add this line
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
+            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
         );
-    }
-
-    function testGetNetFlowRate() public {
-        // Setup: Create a flow to establish a non-zero net flow rate
-        int96 initialFlowRate = 1000000000; // 1 token per second
-        vm.prank(manager);
-        flow.setFlowRate(initialFlowRate);
-
-        // Get the net flow rate
-        int96 netFlowRate = flow.getNetFlowRate();
-
-        // Assert that the net flow rate matches the initial flow rate
-        assertEq(netFlowRate, initialFlowRate * -1, "Net flow rate should match the initial flow rate");
-
-        // Change the flow rate
-        int96 newFlowRate = 2000000000; // 2 tokens per second
-        vm.prank(manager);
-        flow.setFlowRate(newFlowRate);
-
-        // Get the updated net flow rate
-        int96 updatedNetFlowRate = flow.getNetFlowRate();
-
-        // Assert that the updated net flow rate matches the new flow rate
-        assertEq(updatedNetFlowRate, newFlowRate * -1, "Updated net flow rate should match the new flow rate");
-
-        // Test with zero flow rate
-        vm.prank(manager);
-        flow.setFlowRate(0);
-
-        // Get the net flow rate after setting to zero
-        int96 zeroNetFlowRate = flow.getNetFlowRate();
-
-        // Assert that the net flow rate is zero
-        assertEq(zeroNetFlowRate, 0, "Net flow rate should be zero after setting flow rate to zero");
     }
 
     function testAddFlowRecipient() public {
         FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
             title: "Test Flow Recipient",
             description: "A test flow recipient",
-            image: "ipfs://testimage"
+            image: "ipfs://testimage",
+            tagline: "Test Flow Tagline",
+            url: "https://testflow.com"
         });
         address flowManager = address(0x123);
 
@@ -169,6 +137,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(storedMetadata.title, metadata.title);
         assertEq(storedMetadata.description, metadata.description);
         assertEq(storedMetadata.image, metadata.image);
+        assertEq(storedMetadata.tagline, metadata.tagline);
+        assertEq(storedMetadata.url, metadata.url);
 
         // Test adding with zero address flowManager (should revert)
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
@@ -208,7 +178,9 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
             title: "Test Recipient",
             description: "A test recipient",
-            image: "ipfs://test"
+            image: "ipfs://test",
+            tagline: "Test Recipient Tagline",
+            url: "https://testrecipient.com"
         });
         vm.prank(manager);
         flow.addRecipient(address(0x123), metadata);
@@ -264,8 +236,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         
         // Verify flow rates are updated
         int96 totalFlowRate = flow.getTotalFlowRate();
-        int96 baselineFlowRate = flow.getMemberBaselineFlowRate(address(flow));
-        int96 bonusFlowRate = flow.getMemberBonusFlowRate(address(flow));
+        int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(address(flow));
+        int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(address(flow));
         
         assertEq(totalFlowRate, initialFlowRate, "Total flow rate should remain unchanged");
         assertEq(baselineFlowRate, int96((int256(initialFlowRate) * int256(uint256(newPercent))) / int256(uint256(flow.PERCENTAGE_SCALE()))), "Baseline flow rate should be updated");
@@ -304,5 +276,31 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         vm.prank(managerAddress);
         flow.setBaselineFlowRatePercent(250000); // 25%
         assertEq(flow.baselinePoolFlowRatePercent(), 250000, "Baseline percentage should be updated by parent");
+    }
+
+    function testSetManager() public {
+        address initialManager = flow.manager();
+        address newManager = address(0xbee);
+
+        // Test calling from non-owner address
+        vm.prank(address(0xdead));
+        vm.expectRevert("Ownable: caller is not the owner");
+        flow.setManager(newManager);
+
+        // Test calling from owner address
+        vm.prank(flow.owner());
+        vm.expectEmit(true, true, false, true);
+        emit IFlowEvents.ManagerUpdated(initialManager, newManager);
+        flow.setManager(newManager);
+
+        assertEq(flow.manager(), newManager, "Manager should be updated");
+
+        // Test setting manager to zero address
+        vm.prank(flow.owner());
+        vm.expectRevert(abi.encodeWithSelector(IFlow.ADDRESS_ZERO.selector));
+        flow.setManager(address(0));
+
+        // Verify that the manager was not changed
+        assertEq(flow.manager(), newManager, "Manager should not be changed to zero address");
     }
 }

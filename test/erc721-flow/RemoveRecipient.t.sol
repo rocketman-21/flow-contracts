@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {ERC721FlowTest} from "./ERC721Flow.t.sol";
 import {IFlowEvents,IFlow} from "../../src/interfaces/IFlow.sol";
@@ -88,8 +88,20 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveMultipleRecipients() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Recipient 1", "Description 1", "ipfs://image1");
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Recipient 2", "Description 2", "ipfs://image2");
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+            "Recipient 1",
+            "Description 1",
+            "ipfs://image1",
+            "Tagline 1",
+            "https://recipient1.com"
+        );
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+            "Recipient 2",
+            "Description 2",
+            "ipfs://image2",
+            "Tagline 2",
+            "https://recipient2.com"
+        );
 
         // Add recipients
         vm.startPrank(flow.owner());
@@ -244,8 +256,20 @@ contract RemoveRecipientsTest is ERC721FlowTest {
        function testRemoveRecipientBaselineMemberUnits() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Recipient 1", "Description 1", "ipfs://image1");
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Recipient 2", "Description 2", "ipfs://image2");
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+            "Recipient 1",
+            "Description 1",
+            "ipfs://image1",
+            "Tagline 1",
+            "https://recipient1.com"
+        );
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+            "Recipient 2",
+            "Description 2",
+            "ipfs://image2",
+            "Tagline 2",
+            "https://recipient2.com"
+        );
 
         // Add recipients
         vm.prank(flow.owner());
@@ -289,7 +313,13 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a new recipient and verify units are assigned correctly
         address recipient3 = address(0x789);
-        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata("Recipient 3", "Description 3", "ipfs://image3");
+        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata(
+            "Recipient 3",
+            "Description 3",
+            "ipfs://image3",
+            "Tagline 3",
+            "https://recipient3.com"
+        );
         vm.prank(flow.owner());
         flow.addRecipient(recipient3, metadata3);
 
@@ -300,8 +330,20 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveFlowRecipient() public {
         address flowManager1 = address(0x123);
         address flowManager2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Flow Recipient 1", "Description 1", "ipfs://image1");
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Flow Recipient 2", "Description 2", "ipfs://image2");
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+            "Flow Recipient 1",
+            "Description 1",
+            "ipfs://image1",
+            "Tagline 1",
+            "https://flowrecipient1.com"
+        );
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+            "Flow Recipient 2",
+            "Description 2",
+            "ipfs://image2",
+            "Tagline 2",
+            "https://flowrecipient2.com"
+        );
 
         // Add flow recipients
         vm.startPrank(flow.owner());
@@ -345,7 +387,13 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a new flow recipient and verify units are assigned correctly
         address flowManager3 = address(0x789);
-        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata("Flow Recipient 3", "Description 3", "ipfs://image3");
+        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata(
+            "Flow Recipient 3",
+            "Description 3",
+            "ipfs://image3",
+            "Tagline 3",
+            "https://flowrecipient3.com"
+        );
         vm.prank(flow.owner());
         address flowRecipient3 = flow.addFlowRecipient(metadata3, flowManager3);
 

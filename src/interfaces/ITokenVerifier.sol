@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {IStateProof} from "./IStateProof.sol";
 
-interface IL2NounsVerifier {
+interface ITokenVerifier {
     function canVoteWithToken(
         uint256 tokenId,
         address owner,

@@ -1,0 +1,3 @@
+NounsFlowImpl: 0x52b94a0c19d3e4e202aa43646666e2cf6580a803
+TokenVerifier: 0x7adba870de0a106473278292fd552bbbc6959dc4
+NounsFlowProxy: 0x788cc64d900ec522dc52fb6b480ec8398c0e6c62

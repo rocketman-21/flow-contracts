@@ -18,5 +18,6 @@ settings.json
 # macOS system files
 .DS_Store
 
+soljson-v0.8.27+commit.40a35a09.js
 
-soljson-v0.8.26+commit.8a97fa7a.js
+broadcast/

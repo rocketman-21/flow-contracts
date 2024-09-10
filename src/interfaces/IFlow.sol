@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {FlowStorageV1} from "../storage/FlowStorageV1.sol";
 
@@ -21,13 +21,10 @@ interface IFlowEvents {
     event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
 
     /// @notice Emitted when a new grants recipient is set
-    event RecipientCreated(address indexed recipient, address indexed approvedBy, uint256 indexed recipientId);
+    event RecipientCreated(uint256 indexed recipientId, FlowStorageV1.FlowRecipient recipient, address indexed approvedBy);
 
     /// @notice Emitted when the flow rate is updated
     event FlowRateUpdated(int96 oldTotalFlowRate, int96 newTotalFlowRate, int96 baselinePoolFlowRate, int96 bonusPoolFlowRate);
-
-    /// @notice Emitted when a new child flow contract is created
-    event FlowCreated(address indexed parent, address indexed flow, uint256 indexed recipientId);
 
     /// @notice Emitted when a new flow implementation is set
     event FlowImplementationSet(address indexed flowImpl);
@@ -37,6 +34,9 @@ interface IFlowEvents {
 
     /// @notice Emitted when the baseline flow rate percentage is updated
     event BaselineFlowRatePercentUpdated(uint32 oldBaselineFlowRatePercent, uint32 newBaselineFlowRatePercent);
+
+    /// @notice Emitted when the manager is updated
+    event ManagerUpdated(address indexed oldManager, address indexed newManager);
 }
 
 /**
@@ -157,15 +157,9 @@ interface IFlow is IFlowEvents {
      * @param baselinePoolFlowRatePercent The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
      */
     struct FlowParams {
-        uint256 tokenVoteWeight;
+        uint256 tokenVoteWeight; // scaled by 1e18
         uint32 baselinePoolFlowRatePercent;
     }
-
-    /**
-     * @notice Retrieves the net flow rate for this Flow contract
-     * @return netFlowRate The net flow rate for the contract
-     */
-    function getNetFlowRate() external view returns (int96 netFlowRate);
 
     /**
      * @notice Sets the flow rate for the Superfluid pool

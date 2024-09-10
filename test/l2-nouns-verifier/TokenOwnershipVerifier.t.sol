@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
 
-import {L2NounsVerifierTest} from "./L2NounsVerifier.t.sol";
+import {TokenVerifierTest} from "./TokenVerifier.t.sol";
 
-import {L2NounsVerifier} from "../../src/state-proof/L2NounsVerifier.sol";
+import {TokenVerifier} from "../../src/state-proof/TokenVerifier.sol";
 import {IStateProof} from "../../src/interfaces/IStateProof.sol";
 
-contract L2NounsOwnershipVerifierTest is L2NounsVerifierTest {
+contract L2NounsOwnershipVerifierTest is TokenVerifierTest {
 
     function test__isOwner() public {
         uint256 tokenId = 256;
         vm.createSelectFork("https://mainnet.base.org", 19354086);
-        L2NounsVerifier verifier = new L2NounsVerifier();
+        TokenVerifier verifier = new TokenVerifier(NOUNS_TOKEN_ADDRESS);
         string memory rootPath = vm.projectRoot();
         string memory path = string.concat(rootPath, "/test/proof-data/_owners/", vm.toString(tokenId), ".json");
         
@@ -30,7 +30,7 @@ contract L2NounsOwnershipVerifierTest is L2NounsVerifierTest {
     function test__isNotOwner() public {
         uint256 tokenId = 256;
         vm.createSelectFork("https://mainnet.base.org", 19354086);
-        L2NounsVerifier verifier = new L2NounsVerifier();
+        TokenVerifier verifier = new TokenVerifier(NOUNS_TOKEN_ADDRESS);
         string memory rootPath = vm.projectRoot();
         string memory path = string.concat(rootPath, "/test/proof-data/_owners/", vm.toString(tokenId), ".json");
         

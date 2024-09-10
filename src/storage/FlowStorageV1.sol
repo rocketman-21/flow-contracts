@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {IFlow} from "../interfaces/IFlow.sol";
 import {IERC721Checkpointable} from "../interfaces/IERC721Checkpointable.sol";
@@ -86,6 +86,8 @@ contract FlowStorageV1 {
         string title;
         string description;
         string image;
+        string tagline;
+        string url;
     }
 
     // Struct to handle potential recipients
@@ -96,7 +98,7 @@ contract FlowStorageV1 {
         bool removed;
         // the type of recipient, either account or flow contract
         RecipientType recipientType;
-        // the ipfs hash of the recipient's metadata
+        // the metadata of the recipient
         RecipientMetadata metadata;
     }
 }

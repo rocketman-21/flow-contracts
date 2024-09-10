@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {Flow} from "./Flow.sol";
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
@@ -67,7 +67,7 @@ contract ERC721Flow is IERC721Flow, Flow {
     /**
      * @notice Deploys a new Flow contract as a recipient
      * @dev This function is virtual to allow for different deployment strategies in derived contracts
-     * @param metadata The IPFS hash of the recipient's metadata
+     * @param metadata The recipient's metadata like title, description, etc.
      * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      */

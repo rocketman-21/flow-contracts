@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
 import {IFlow} from "./interfaces/IFlow.sol";
@@ -52,7 +52,7 @@ abstract contract Flow is
         __ReentrancyGuard_init();
 
         // Set the voting power info
-        tokenVoteWeight = _flowParams.tokenVoteWeight;
+        tokenVoteWeight = _flowParams.tokenVoteWeight; // scaled by 1e18
         baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
         flowImpl = _flowImpl;
         manager = _manager;
@@ -287,9 +287,9 @@ abstract contract Flow is
     /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
-     * @param metadata The ipfs hash of the recipient's metadata
+     * @param metadata The metadata of the recipient
      */
-    function addRecipient(address recipient, RecipientMetadata memory metadata) public onlyManager nonReentrant validMetadata(metadata) {
+    function addRecipient(address recipient, RecipientMetadata memory metadata) external onlyManager nonReentrant validMetadata(metadata) {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
         if (recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
 
@@ -309,18 +309,19 @@ abstract contract Flow is
         _initializeBaselineMemberUnits(recipient);
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
-        emit RecipientCreated(recipient, msg.sender, recipientId);
+        emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
     }
 
     /**
      * @notice Adds a new Flow contract as a recipient
      * @dev This function creates a new Flow contract and adds it as a recipient
-     * @param metadata The IPFS hash of the recipient's metadata
+     * @param metadata The metadata of the recipient
+     * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientCreated event if the recipient is successfully added
      */
-    function addFlowRecipient(RecipientMetadata memory metadata, address flowManager) public onlyManager validMetadata(metadata) returns (address) {
+    function addFlowRecipient(RecipientMetadata memory metadata, address flowManager) external onlyManager validMetadata(metadata) returns (address) {
         if (flowManager == address(0)) revert ADDRESS_ZERO();
 
         address recipient = _deployFlowRecipient(metadata, flowManager);
@@ -343,8 +344,7 @@ abstract contract Flow is
 
         _incrementRecipientCounts();
 
-        emit RecipientCreated(recipient, msg.sender, recipientId);
-        emit FlowCreated(address(this), recipient, recipientId);
+        emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
 
         return recipient;
     }
@@ -352,7 +352,7 @@ abstract contract Flow is
     /**
      * @notice Deploys a new Flow contract as a recipient
      * @dev This function is virtual to allow for different deployment strategies in derived contracts
-     * @param metadata The IPFS hash of the recipient's metadata
+     * @param metadata The metadata of the recipient
      * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      */
@@ -364,7 +364,7 @@ abstract contract Flow is
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
-    function removeRecipient(uint256 recipientId) public onlyManager nonReentrant {
+    function removeRecipient(uint256 recipientId) external onlyManager nonReentrant {
         if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
@@ -463,6 +463,20 @@ abstract contract Flow is
     }
 
     /**
+     * @notice Sets a new manager for the Flow contract
+     * @param _newManager The address of the new manager
+     * @dev Only callable by the current owner
+     * @dev Emits a ManagerUpdated event with the old and new manager addresses
+     */
+    function setManager(address _newManager) external onlyOwner nonReentrant {
+        if (_newManager == address(0)) revert ADDRESS_ZERO();
+
+        address oldManager = manager;
+        manager = _newManager;
+        emit ManagerUpdated(oldManager, _newManager);
+    }
+
+    /**
      * @notice Internal function to set the flow rate for the Superfluid pool
      * @param _flowRate The new flow rate to be set
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
@@ -539,38 +553,12 @@ abstract contract Flow is
     }
 
     /**
-     * @notice Retrieves the net flow rate for a specific account
-     * @return netFlowRate The net flow rate for the account
-     */
-    function getNetFlowRate() public view returns (int96 netFlowRate) {
-        return superToken.getNetFlowRate(address(this));
-    }
-
-    /**
      * @notice Retrieves the flow rate for a specific member in the pool
      * @param memberAddr The address of the member
      * @return flowRate The flow rate for the member
      */
     function getMemberTotalFlowRate(address memberAddr) public view returns (int96 flowRate) {
         flowRate = bonusPool.getMemberFlowRate(memberAddr) + baselinePool.getMemberFlowRate(memberAddr);
-    }
-
-    /**
-     * @notice Retrieves the flow rate for a specific member in the bonus pool
-     * @param memberAddr The address of the member
-     * @return flowRate The flow rate for the member in the bonus pool
-     */
-    function getMemberBonusFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        return bonusPool.getMemberFlowRate(memberAddr);
-    }
-
-    /**
-     * @notice Retrieves the flow rate for a specific member in the baseline pool
-     * @param memberAddr The address of the member
-     * @return flowRate The flow rate for the member in the baseline pool
-     */
-    function getMemberBaselineFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        return baselinePool.getMemberFlowRate(memberAddr);
     }
 
     /**

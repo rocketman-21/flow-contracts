@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.26;
+pragma solidity ^0.8.27;
 
 import {IFlowEvents,IFlow} from "../../src/interfaces/IFlow.sol";
 import {ERC721Flow} from "../../src/ERC721Flow.sol";
@@ -12,7 +12,13 @@ contract FlowRecipientTest is ERC721FlowTest {
         super.setUp();
     }
     function testAddFlowRecipientParent() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Flow Recipient", "A new Flow contract", "ipfs://image");
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+            "Flow Recipient",
+            "A new Flow contract",
+            "ipfs://image",
+            "Flow Recipient Tagline",
+            "https://flowrecipient.com"
+        );
         address flowManager = address(0x123);
 
         vm.prank(manager);
@@ -36,15 +42,25 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipient() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Flow Recipient", "A new Flow contract", "ipfs://image");
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+            "Flow Recipient",
+            "A new Flow contract",
+            "ipfs://image",
+            "Flow Recipient Tagline",
+            "https://flowrecipient.com"
+        );
         address flowManager = address(0x123); // New flow manager address
 
         vm.startPrank(flow.owner());
 
         // Test successful addition of a Flow recipient
-        vm.expectEmit(false, false, true, true);
-        emit IFlowEvents.RecipientCreated(address(0), manager, 0); // address(0) as we don't know the new address yet
-
+        vm.expectEmit(false, true, false, false);
+        emit IFlowEvents.RecipientCreated(0, FlowStorageV1.FlowRecipient({
+            recipientType: FlowStorageV1.RecipientType.FlowContract,
+            removed: false,
+            recipient: address(0),
+            metadata: metadata
+        }), flow.owner());
         address newFlowAddress = flow.addFlowRecipient(metadata, flowManager);
 
         assertNotEq(newFlowAddress, address(0));
@@ -58,6 +74,8 @@ contract FlowRecipientTest is ERC721FlowTest {
         assertEq(storedMetadata.title, metadata.title);
         assertEq(storedMetadata.description, metadata.description);
         assertEq(storedMetadata.image, metadata.image);
+        assertEq(storedMetadata.tagline, metadata.tagline);
+        assertEq(storedMetadata.url, metadata.url);
 
         // Verify recipient count increased
         assertEq(flow.recipientCount(), 1);
@@ -69,10 +87,12 @@ contract FlowRecipientTest is ERC721FlowTest {
         assertEq(newFlow.flowImpl(), flow.flowImpl());
         assertEq(newFlow.manager(), flowManager); // Check that the manager is set to the new flowManager
         assertEq(newFlow.tokenVoteWeight(), flow.tokenVoteWeight());
-        (string memory title, string memory description, string memory image) = newFlow.metadata();
+        (string memory title, string memory description, string memory image, string memory tagline, string memory url) = newFlow.metadata();
         assertEq(title, metadata.title);
         assertEq(description, metadata.description);
         assertEq(image, metadata.image);
+        assertEq(tagline, metadata.tagline);
+        assertEq(url, metadata.url);
         vm.stopPrank();
 
         // Test accepting ownership of the new Flow contract
@@ -86,7 +106,13 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipientEmptyManager() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Flow Recipient", "A new Flow contract", "ipfs://image");
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+            "Flow Recipient",
+            "A new Flow contract",
+            "ipfs://image",
+            "Flow Recipient Tagline",
+            "https://flowrecipient.com"
+        );
         address emptyManager = address(0);
 
         vm.startPrank(flow.owner());
@@ -98,7 +124,7 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipientEmptyMetadata() public {
-        FlowStorageV1.RecipientMetadata memory emptyMetadata = FlowStorageV1.RecipientMetadata("", "", "");
+        FlowStorageV1.RecipientMetadata memory emptyMetadata = FlowStorageV1.RecipientMetadata("", "", "", "", "");
         address flowManager = address(0x123);
 
         vm.prank(flow.owner());
@@ -107,7 +133,13 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipientNonManager() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Flow Recipient", "A new Flow contract", "ipfs://image");
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+            "Flow Recipient",
+            "A new Flow contract",
+            "ipfs://image",
+            "Flow Recipient Tagline",
+            "https://flowrecipient.com"
+        );
         address flowManager = address(0x123);
 
         vm.prank(address(0xABC));
@@ -116,8 +148,8 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddMultipleFlowRecipients() public {
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Flow Recipient 1", "First Flow contract", "ipfs://image1");
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Flow Recipient 2", "Second Flow contract", "ipfs://image2");
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Flow Recipient 1", "First Flow contract", "ipfs://image1", "Tagline 1", "https://flow1.com");
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Flow Recipient 2", "Second Flow contract", "ipfs://image2", "Tagline 2", "https://flow2.com");
         address flowManager1 = address(0x123);
         address flowManager2 = address(0x456);
 
