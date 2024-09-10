@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {FlowStorageV1} from "../storage/FlowStorageV1.sol";
+import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
 
 /**
  * @title IFlowEvents
@@ -21,10 +21,19 @@ interface IFlowEvents {
     event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
 
     /// @notice Emitted when a new grants recipient is set
-    event RecipientCreated(uint256 indexed recipientId, FlowStorageV1.FlowRecipient recipient, address indexed approvedBy);
+    event RecipientCreated(
+        uint256 indexed recipientId,
+        FlowStorageV1.FlowRecipient recipient,
+        address indexed approvedBy
+    );
 
     /// @notice Emitted when the flow rate is updated
-    event FlowRateUpdated(int96 oldTotalFlowRate, int96 newTotalFlowRate, int96 baselinePoolFlowRate, int96 bonusPoolFlowRate);
+    event FlowRateUpdated(
+        int96 oldTotalFlowRate,
+        int96 newTotalFlowRate,
+        int96 baselinePoolFlowRate,
+        int96 bonusPoolFlowRate
+    );
 
     /// @notice Emitted when a new flow implementation is set
     event FlowImplementationSet(address indexed flowImpl);
@@ -140,7 +149,6 @@ interface IFlow is IFlowEvents {
     /// @dev Reverts if pool connection fails
     error POOL_CONNECTION_FAILED();
 
-
     ///                                                          ///
     ///                         STRUCTS                          ///
     ///                                                          ///
@@ -170,7 +178,6 @@ interface IFlow is IFlowEvents {
     function setFlowRate(int96 _flowRate) external;
 }
 
-
 interface IERC721Flow is IFlow {
     /**
      * @notice Initializes an ERC721Flow contract
@@ -194,7 +201,6 @@ interface IERC721Flow is IFlow {
 }
 
 interface INounsFlow is IFlow {
-
     /// @dev Reverts if the proof timestamp is too old
     error PAST_PROOF();
 

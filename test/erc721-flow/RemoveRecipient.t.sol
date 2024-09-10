@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import {ERC721FlowTest} from "./ERC721Flow.t.sol";
-import {IFlowEvents,IFlow} from "../../src/interfaces/IFlow.sol";
-import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
+import { ERC721FlowTest } from "./ERC721Flow.t.sol";
+import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
+import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
 
 contract RemoveRecipientsTest is ERC721FlowTest {
-
-    function setUp() override public {
+    function setUp() public override {
         super.setUp();
     }
 
     function testRemoveRecipient() public {
         address recipient = address(0x123);
-        
 
         // Add a recipient first
         vm.prank(flow.owner());
@@ -37,7 +35,6 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientInvalidId() public {
         address recipient = address(0x123);
-        
 
         // Add a recipient first
         vm.prank(flow.owner());
@@ -56,7 +53,6 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientAlreadyRemoved() public {
         address recipient = address(0x123);
-        
 
         // Add a recipient
         vm.prank(flow.owner());
@@ -74,7 +70,6 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientNonManager() public {
         address recipient = address(0x123);
-        
 
         // Add a recipient
         vm.prank(flow.owner());
@@ -130,7 +125,6 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientUpdateMemberUnits() public {
         address recipient = address(0x123);
-        
 
         // Add a recipient
         vm.prank(flow.owner());
@@ -166,7 +160,6 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientAndVoteAgain() public {
         address recipient = address(0x123);
-        
 
         // Add a recipient
         vm.prank(flow.owner());
@@ -203,7 +196,6 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testVoteAfterRemovingRecipient() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        
 
         // Add two recipients
         vm.startPrank(flow.owner());
@@ -253,7 +245,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         assertGt(units2, 0);
     }
 
-       function testRemoveRecipientBaselineMemberUnits() public {
+    function testRemoveRecipientBaselineMemberUnits() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
         FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
@@ -287,15 +279,27 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Check units after removing first recipient
         uint128 unitsAfterRemove1 = flow.baselinePool().getTotalUnits();
-        assertEq(unitsAfterRemove1, flow.BASELINE_MEMBER_UNITS() + 1, "Total units incorrect after removing first recipient");
+        assertEq(
+            unitsAfterRemove1,
+            flow.BASELINE_MEMBER_UNITS() + 1,
+            "Total units incorrect after removing first recipient"
+        );
         assertEq(flow.baselinePool().getUnits(recipient1), 0, "Removed recipient should have 0 units");
-        assertEq(flow.baselinePool().getUnits(recipient2), flow.BASELINE_MEMBER_UNITS(), "Remaining recipient should keep units");
+        assertEq(
+            flow.baselinePool().getUnits(recipient2),
+            flow.BASELINE_MEMBER_UNITS(),
+            "Remaining recipient should keep units"
+        );
 
         // Try to remove the same recipient again (should not change anything)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.RECIPIENT_ALREADY_REMOVED.selector);
         flow.removeRecipient(0);
-        assertEq(flow.baselinePool().getTotalUnits(), unitsAfterRemove1, "Total units should not change when removing already removed recipient");
+        assertEq(
+            flow.baselinePool().getTotalUnits(),
+            unitsAfterRemove1,
+            "Total units should not change when removing already removed recipient"
+        );
 
         // Remove second recipient
         vm.prank(flow.owner());
@@ -323,8 +327,16 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         vm.prank(flow.owner());
         flow.addRecipient(recipient3, metadata3);
 
-        assertEq(flow.baselinePool().getTotalUnits(), flow.BASELINE_MEMBER_UNITS() + 1, "Total units incorrect after adding new recipient");
-        assertEq(flow.baselinePool().getUnits(recipient3), flow.BASELINE_MEMBER_UNITS(), "New recipient should have baseline member units");
+        assertEq(
+            flow.baselinePool().getTotalUnits(),
+            flow.BASELINE_MEMBER_UNITS() + 1,
+            "Total units incorrect after adding new recipient"
+        );
+        assertEq(
+            flow.baselinePool().getUnits(recipient3),
+            flow.BASELINE_MEMBER_UNITS(),
+            "New recipient should have baseline member units"
+        );
     }
 
     function testRemoveFlowRecipient() public {
@@ -361,15 +373,27 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Check units after removing first recipient
         uint128 unitsAfterRemove1 = flow.baselinePool().getTotalUnits();
-        assertEq(unitsAfterRemove1, flow.BASELINE_MEMBER_UNITS() + 1, "Total units incorrect after removing first recipient");
+        assertEq(
+            unitsAfterRemove1,
+            flow.BASELINE_MEMBER_UNITS() + 1,
+            "Total units incorrect after removing first recipient"
+        );
         assertEq(flow.baselinePool().getUnits(flowRecipient1), 0, "Removed recipient should have 0 units");
-        assertEq(flow.baselinePool().getUnits(flowRecipient2), flow.BASELINE_MEMBER_UNITS(), "Remaining recipient should keep units");
+        assertEq(
+            flow.baselinePool().getUnits(flowRecipient2),
+            flow.BASELINE_MEMBER_UNITS(),
+            "Remaining recipient should keep units"
+        );
 
         // Try to remove the same recipient again (should not change anything)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.RECIPIENT_ALREADY_REMOVED.selector);
         flow.removeRecipient(0);
-        assertEq(flow.baselinePool().getTotalUnits(), unitsAfterRemove1, "Total units should not change when removing already removed recipient");
+        assertEq(
+            flow.baselinePool().getTotalUnits(),
+            unitsAfterRemove1,
+            "Total units should not change when removing already removed recipient"
+        );
 
         // Remove second flow recipient
         vm.prank(flow.owner());
@@ -397,8 +421,15 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         vm.prank(flow.owner());
         address flowRecipient3 = flow.addFlowRecipient(metadata3, flowManager3);
 
-        assertEq(flow.baselinePool().getTotalUnits(), flow.BASELINE_MEMBER_UNITS() + 1, "Total units incorrect after adding new recipient");
-        assertEq(flow.baselinePool().getUnits(flowRecipient3), flow.BASELINE_MEMBER_UNITS(), "New recipient should have baseline member units");
+        assertEq(
+            flow.baselinePool().getTotalUnits(),
+            flow.BASELINE_MEMBER_UNITS() + 1,
+            "Total units incorrect after adding new recipient"
+        );
+        assertEq(
+            flow.baselinePool().getUnits(flowRecipient3),
+            flow.BASELINE_MEMBER_UNITS(),
+            "New recipient should have baseline member units"
+        );
     }
-
 }

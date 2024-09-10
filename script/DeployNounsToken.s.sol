@@ -17,13 +17,15 @@ contract DeployNounsToken is DeployScript {
         address seeder = vm.envAddress("SEEDER");
         address proxyRegistry = vm.envAddress("PROXY_REGISTRY");
 
-        nounsToken = address(new NounsToken(
-            noundersDAO,
-            minter,
-            INounsDescriptorMinimal(descriptor),
-            INounsSeeder(seeder),
-            IProxyRegistry(proxyRegistry)
-        ));
+        nounsToken = address(
+            new NounsToken(
+                noundersDAO,
+                minter,
+                INounsDescriptorMinimal(descriptor),
+                INounsSeeder(seeder),
+                IProxyRegistry(proxyRegistry)
+            )
+        );
     }
 
     function writeAdditionalDeploymentDetails(string memory filePath) internal override {

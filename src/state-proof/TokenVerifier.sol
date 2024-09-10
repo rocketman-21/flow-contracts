@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc) and rocketman
 
-import {IStateProof} from "../interfaces/IStateProof.sol";
-import {StateVerifier} from "./StateVerifier.sol";
+import { IStateProof } from "../interfaces/IStateProof.sol";
+import { StateVerifier } from "./StateVerifier.sol";
 
 contract TokenVerifier {
     address private immutable TOKEN_ADDRESS;
@@ -14,35 +14,38 @@ contract TokenVerifier {
         TOKEN_ADDRESS = _tokenAddress;
     }
 
-    function isOwner(uint256 tokenId, address account, IStateProof.Parameters calldata proofParams)
-        external
-        view
-        returns (bool)
-    {
-        return StateVerifier.validateState({
-            account: TOKEN_ADDRESS,
-            storageKey: abi.encodePacked(_getOwnerKey(tokenId)),
-            storageValue: abi.encodePacked(account),
-            proofParams: proofParams
-        });
+    function isOwner(
+        uint256 tokenId,
+        address account,
+        IStateProof.Parameters calldata proofParams
+    ) external view returns (bool) {
+        return
+            StateVerifier.validateState({
+                account: TOKEN_ADDRESS,
+                storageKey: abi.encodePacked(_getOwnerKey(tokenId)),
+                storageValue: abi.encodePacked(account),
+                proofParams: proofParams
+            });
     }
 
-    function canVoteWithToken(uint256 tokenId, address owner, address voter, IStateProof.Parameters calldata ownershipProof, IStateProof.Parameters calldata delegateProof)
-        external
-        view
-        returns (bool)
-    {
+    function canVoteWithToken(
+        uint256 tokenId,
+        address owner,
+        address voter,
+        IStateProof.Parameters calldata ownershipProof,
+        IStateProof.Parameters calldata delegateProof
+    ) external view returns (bool) {
         bool isOwnerValid = this.isOwner(tokenId, owner, ownershipProof);
         bool isDelegateValid = this.isDelegate(owner, voter, delegateProof);
 
         return isOwnerValid && isDelegateValid;
     }
 
-    function isDelegate(address owner, address delegate, IStateProof.Parameters calldata proofParams)
-        external
-        view
-        returns (bool)
-    {
+    function isDelegate(
+        address owner,
+        address delegate,
+        IStateProof.Parameters calldata proofParams
+    ) external view returns (bool) {
         try this.validateDelegateState(owner, abi.encodePacked(delegate), proofParams) returns (bool result) {
             if (result) return true;
         } catch {}
@@ -59,21 +62,23 @@ contract TokenVerifier {
         bytes memory delegate,
         IStateProof.Parameters calldata proofParams
     ) external view returns (bool) {
-        return StateVerifier.validateState({
-            account: TOKEN_ADDRESS,
-            storageKey: abi.encodePacked(_getDelegateKey(owner)),
-            storageValue: delegate,
-            proofParams: proofParams
-        });
+        return
+            StateVerifier.validateState({
+                account: TOKEN_ADDRESS,
+                storageKey: abi.encodePacked(_getDelegateKey(owner)),
+                storageValue: delegate,
+                proofParams: proofParams
+            });
     }
 
     function _getOwnerKey(uint256 tokenId) private pure returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                tokenId,
-                3 // _owner slot
-            )
-        );
+        return
+            keccak256(
+                abi.encode(
+                    tokenId,
+                    3 // _owner slot
+                )
+            );
     }
 
     function _getDelegateKey(address delegator) private pure returns (bytes32) {

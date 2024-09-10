@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {IStateProof} from "./IStateProof.sol";
+import { IStateProof } from "./IStateProof.sol";
 
 interface ITokenVerifier {
     function canVoteWithToken(
@@ -12,4 +12,3 @@ interface ITokenVerifier {
         IStateProof.Parameters calldata delegateProof
     ) external view returns (bool);
 }
-

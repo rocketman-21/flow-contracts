@@ -3,14 +3,13 @@ pragma solidity ^0.8.27;
 
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
 
-import {TokenVerifierTest} from "./TokenVerifier.t.sol";
+import { TokenVerifierTest } from "./TokenVerifier.t.sol";
 
-import {StateVerifier} from "../../src/state-proof/StateVerifier.sol";
-import {TokenVerifier} from "../../src/state-proof/TokenVerifier.sol";
-import {IStateProof} from "../../src/interfaces/IStateProof.sol";
+import { StateVerifier } from "../../src/state-proof/StateVerifier.sol";
+import { TokenVerifier } from "../../src/state-proof/TokenVerifier.sol";
+import { IStateProof } from "../../src/interfaces/IStateProof.sol";
 
 contract L2NounsVotingVerifier is TokenVerifierTest {
-
     function test__isOwnDelegateNoNouns() public {
         uint256 tokenId = 256;
         address account = 0x77D920b4d1163DbC516E7Ce70596225D17819dC5;
@@ -19,14 +18,24 @@ contract L2NounsVotingVerifier is TokenVerifierTest {
         TokenVerifier verifier = new TokenVerifier(NOUNS_TOKEN_ADDRESS);
 
         string memory rootPath = vm.projectRoot();
-        string memory delegatePath = string.concat(rootPath, "/test/proof-data/_delegates/", vm.toString(account), ".json");
-        
+        string memory delegatePath = string.concat(
+            rootPath,
+            "/test/proof-data/_delegates/",
+            vm.toString(account),
+            ".json"
+        );
+
         IStateProof.Parameters memory delegationParams = getStateProofParams(delegatePath);
 
         assertTrue(verifier.isDelegate(account, account, delegationParams));
-        
+
         // this account owns no nouns - try to vote with wilsons token
-        string memory ownershipPath = string.concat(rootPath, "/test/proof-data/_owners/", vm.toString(tokenId), ".json");
+        string memory ownershipPath = string.concat(
+            rootPath,
+            "/test/proof-data/_owners/",
+            vm.toString(tokenId),
+            ".json"
+        );
         IStateProof.Parameters memory params = getStateProofParams(ownershipPath);
 
         vm.expectRevert(abi.encodeWithSignature("StorageProofVerificationFailed()"));
@@ -42,8 +51,18 @@ contract L2NounsVotingVerifier is TokenVerifierTest {
         TokenVerifier verifier = new TokenVerifier(NOUNS_TOKEN_ADDRESS);
 
         string memory rootPath = vm.projectRoot();
-        string memory delegatePath = string.concat(rootPath, "/test/proof-data/_delegates/", vm.toString(vaultNoun40), ".json");
-        string memory ownershipPath = string.concat(rootPath, "/test/proof-data/_owners/", vm.toString(tokenId), ".json");
+        string memory delegatePath = string.concat(
+            rootPath,
+            "/test/proof-data/_delegates/",
+            vm.toString(vaultNoun40),
+            ".json"
+        );
+        string memory ownershipPath = string.concat(
+            rootPath,
+            "/test/proof-data/_owners/",
+            vm.toString(tokenId),
+            ".json"
+        );
 
         IStateProof.Parameters memory delegateProof = getStateProofParams(delegatePath);
         IStateProof.Parameters memory ownershipProof = getStateProofParams(ownershipPath);

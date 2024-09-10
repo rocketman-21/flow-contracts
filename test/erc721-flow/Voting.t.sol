@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import {ERC721FlowTest} from "./ERC721Flow.t.sol";
-import {IFlowEvents,IFlow} from "../../src/interfaces/IFlow.sol";
-import {Flow} from "../../src/Flow.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
-import {console} from "forge-std/console.sol";
+import { ERC721FlowTest } from "./ERC721Flow.t.sol";
+import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
+import { Flow } from "../../src/Flow.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
+import { console } from "forge-std/console.sol";
 
 contract VotingFlowTest is ERC721FlowTest {
-
-    function setUp() override public {
+    function setUp() public override {
         super.setUp();
     }
 
@@ -27,7 +26,7 @@ contract VotingFlowTest is ERC721FlowTest {
         flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
-        uint256[] memory recipientIds =  new uint256[](1);
+        uint256[] memory recipientIds = new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
@@ -71,7 +70,7 @@ contract VotingFlowTest is ERC721FlowTest {
         flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
-        uint256[] memory recipientIds =  new uint256[](1);
+        uint256[] memory recipientIds = new uint256[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory tokenIds2 = new uint256[](1);
@@ -96,7 +95,7 @@ contract VotingFlowTest is ERC721FlowTest {
 
         assertGt(secondVoteUnits, originalUnits);
 
-        uint256[] memory newRecipientIds =  new uint256[](1);
+        uint256[] memory newRecipientIds = new uint256[](1);
         newRecipientIds[0] = 1;
 
         vm.prank(voter1);
@@ -144,7 +143,7 @@ contract VotingFlowTest is ERC721FlowTest {
 
         // Check number of allocations
         assertEq(voteAllocations.length, 2);
-        
+
         // Check first allocation
         assertEq(voteAllocations[0].recipientId, 0);
         assertEq(voteAllocations[0].bps, splitPercentage);
@@ -245,7 +244,7 @@ contract VotingFlowTest is ERC721FlowTest {
         tokenIds[0] = tokenId;
 
         // // ensure small balance - need to be able to set flow rate
-        _transferTestTokenToFlow(flowRecipient, 56 * 10**18);
+        _transferTestTokenToFlow(flowRecipient, 56 * 10 ** 18);
 
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
@@ -310,7 +309,7 @@ contract VotingFlowTest is ERC721FlowTest {
         assertEq(flowRecipientTotalFlowRate, 0);
 
         // transfer tokens to flow recipient
-        _transferTestTokenToFlow(flowRecipient, 100 * 10**18);
+        _transferTestTokenToFlow(flowRecipient, 100 * 10 ** 18);
 
         // vote again check total flow rate is now gt 0
         vm.prank(voter);
@@ -319,5 +318,4 @@ contract VotingFlowTest is ERC721FlowTest {
         int96 newFlowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
         assertGt(newFlowRecipientTotalFlowRate, 0);
     }
-
 }

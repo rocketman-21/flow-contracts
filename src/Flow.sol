@@ -1,25 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
-import {IFlow} from "./interfaces/IFlow.sol";
+import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
+import { IFlow } from "./interfaces/IFlow.sol";
 
-import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
-import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
-import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
-abstract contract Flow is
-    IFlow,
-    UUPSUpgradeable,
-    Ownable2StepUpgradeable,
-    ReentrancyGuardUpgradeable,
-    FlowStorageV1
-{
+abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable, FlowStorageV1 {
     using SuperTokenV1Library for ISuperToken;
 
     /**
@@ -83,7 +77,7 @@ abstract contract Flow is
      */
     function setFlowImpl(address _flowImpl) public onlyOwner nonReentrant {
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
-        
+
         flowImpl = _flowImpl;
         emit FlowImplementationSet(_flowImpl);
     }
@@ -102,7 +96,9 @@ abstract contract Flow is
      * @param tokenIds An array of tokenIds to retrieve votes for
      * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
      */
-    function getVotesForTokenIds(uint256[] memory tokenIds) public view returns (VoteAllocation[][] memory allocations) {
+    function getVotesForTokenIds(
+        uint256[] memory tokenIds
+    ) public view returns (VoteAllocation[][] memory allocations) {
         allocations = new VoteAllocation[][](tokenIds.length);
         for (uint256 i = 0; i < tokenIds.length; i++) {
             allocations[i] = votes[tokenIds[i]];
@@ -138,7 +134,7 @@ abstract contract Flow is
         uint128 memberUnits = currentUnits + newUnits;
 
         // update votes, track recipient, bps, and total member units assigned
-        votes[tokenId].push(VoteAllocation({recipientId: recipientId, bps: bps, memberUnits: newUnits}));
+        votes[tokenId].push(VoteAllocation({ recipientId: recipientId, bps: bps, memberUnits: newUnits }));
 
         // update member units
         _updateBonusMemberUnits(recipientAddress, memberUnits);
@@ -189,12 +185,12 @@ abstract contract Flow is
         delete votes[tokenId];
     }
 
-     /**
-     * @notice Checks that the recipients and percentAllocations are valid 
+    /**
+     * @notice Checks that the recipients and percentAllocations are valid
      * @param recipientIds The recipientIds of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-     modifier validVotes(uint256[] memory recipientIds, uint32[] memory percentAllocations) {
+    modifier validVotes(uint256[] memory recipientIds, uint32[] memory percentAllocations) {
         // must have recipientIds
         if (recipientIds.length < 1) {
             revert TOO_FEW_RECIPIENTS();
@@ -214,7 +210,7 @@ abstract contract Flow is
         }
 
         _;
-     }
+    }
 
     /**
      * @notice Cast a vote for a set of grant addresses.
@@ -222,9 +218,11 @@ abstract contract Flow is
      * @param recipientIds The recipientIds of the grant recipients to vote for.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function _setVotesAllocationForTokenId(uint256 tokenId, uint256[] memory recipientIds, uint32[] memory percentAllocations)
-        internal
-    {
+    function _setVotesAllocationForTokenId(
+        uint256 tokenId,
+        uint256[] memory recipientIds,
+        uint32[] memory percentAllocations
+    ) internal {
         uint256 weight = tokenVoteWeight;
 
         // _getSum should overflow if sum != PERCENTAGE_SCALE
@@ -289,8 +287,11 @@ abstract contract Flow is
      * @param recipient The address to be added as an approved recipient
      * @param metadata The metadata of the recipient
      */
-    function addRecipient(address recipient, RecipientMetadata memory metadata) external onlyManager nonReentrant validMetadata(metadata) {
-        if (recipient == address(0)) revert ADDRESS_ZERO(); 
+    function addRecipient(
+        address recipient,
+        RecipientMetadata memory metadata
+    ) external onlyManager nonReentrant validMetadata(metadata) {
+        if (recipient == address(0)) revert ADDRESS_ZERO();
         if (recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
 
         uint256 recipientId = recipientCount;
@@ -321,11 +322,14 @@ abstract contract Flow is
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientCreated event if the recipient is successfully added
      */
-    function addFlowRecipient(RecipientMetadata memory metadata, address flowManager) external onlyManager validMetadata(metadata) returns (address) {
+    function addFlowRecipient(
+        RecipientMetadata memory metadata,
+        address flowManager
+    ) external onlyManager validMetadata(metadata) returns (address) {
         if (flowManager == address(0)) revert ADDRESS_ZERO();
 
         address recipient = _deployFlowRecipient(metadata, flowManager);
-                
+
         // connect the new child contract to the pool!
         Flow(recipient).connectPool(bonusPool);
         Flow(recipient).connectPool(baselinePool);
@@ -356,7 +360,10 @@ abstract contract Flow is
      * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      */
-    function _deployFlowRecipient(RecipientMetadata memory metadata, address flowManager) internal virtual returns (address) {}
+    function _deployFlowRecipient(
+        RecipientMetadata memory metadata,
+        address flowManager
+    ) internal virtual returns (address) {}
 
     /**
      * @notice Removes a recipient for receiving funds
@@ -370,7 +377,7 @@ abstract contract Flow is
 
         address recipientAddress = recipients[recipientId].recipient;
         recipientExists[recipientAddress] = false;
-        
+
         // set member units to 0
         _updateBonusMemberUnits(recipientAddress, 0);
         _removeBaselineMemberUnits(recipientAddress);
@@ -392,7 +399,7 @@ abstract contract Flow is
 
         // Call setFlowRate on the child contract
         // only set if buffer required is less than balance of contract
-        if(superToken.getBufferAmountByFlowRate(memberFlowRate) < superToken.balanceOf(childAddress)) {
+        if (superToken.getBufferAmountByFlowRate(memberFlowRate) < superToken.balanceOf(childAddress)) {
             IFlow(childAddress).setFlowRate(memberFlowRate);
         }
     }
@@ -482,7 +489,7 @@ abstract contract Flow is
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function _setFlowRate(int96 _flowRate) internal {
-        if(_flowRate < 0) revert FLOW_RATE_NEGATIVE();
+        if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
         int256 baselineFlowRate256 = int256(_scaleAmountByPercentage(uint96(_flowRate), baselinePoolFlowRatePercent));
 
@@ -506,11 +513,11 @@ abstract contract Flow is
      */
     function setBaselineFlowRatePercent(uint32 _baselineFlowRatePercent) external onlyOwnerOrManager nonReentrant {
         if (_baselineFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_PERCENTAGE();
-        
+
         emit BaselineFlowRatePercentUpdated(baselinePoolFlowRatePercent, _baselineFlowRatePercent);
 
         baselinePoolFlowRatePercent = _baselineFlowRatePercent;
-        
+
         // Update flow rates to reflect the new percentage
         _setFlowRate(getTotalFlowRate());
     }
@@ -523,7 +530,7 @@ abstract contract Flow is
     function _getSum(uint32[] memory numbers) internal pure returns (uint32 sum) {
         // overflow should be impossible in for-loop index
         uint256 numbersLength = numbers.length;
-        for (uint256 i = 0; i < numbersLength;) {
+        for (uint256 i = 0; i < numbersLength; ) {
             sum += numbers[i];
             unchecked {
                 // overflow should be impossible in for-loop index
@@ -538,11 +545,10 @@ abstract contract Flow is
      *  @param scaledPercent Percent scaled by PERCENTAGE_SCALE
      *  @return scaledAmount Percent of `amount`.
      */
-    function _scaleAmountByPercentage(uint256 amount, uint256 scaledPercent)
-        internal
-        pure
-        returns (uint256 scaledAmount)
-    {
+    function _scaleAmountByPercentage(
+        uint256 amount,
+        uint256 scaledPercent
+    ) internal pure returns (uint256 scaledAmount) {
         // use assembly to bypass checking for overflow & division by 0
         // scaledPercent has been validated to be < PERCENTAGE_SCALE)
         // & PERCENTAGE_SCALE will never be 0
@@ -567,7 +573,9 @@ abstract contract Flow is
      * @return totalAmountReceived The total amount received by the member
      */
     function getTotalReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
-        totalAmountReceived = bonusPool.getTotalAmountReceivedByMember(memberAddr) + baselinePool.getTotalAmountReceivedByMember(memberAddr);
+        totalAmountReceived =
+            bonusPool.getTotalAmountReceivedByMember(memberAddr) +
+            baselinePool.getTotalAmountReceivedByMember(memberAddr);
     }
 
     /**

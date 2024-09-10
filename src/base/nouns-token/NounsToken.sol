@@ -17,14 +17,14 @@
 
 pragma solidity ^0.8.6;
 
-import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
-import { ERC721Checkpointable } from './ERC721Checkpointable.sol';
-import { INounsDescriptorMinimal } from './interfaces/INounsDescriptorMinimal.sol';
-import { INounsSeeder } from './interfaces/INounsSeeder.sol';
-import { INounsToken } from './interfaces/INounsToken.sol';
-import { ERC721 } from './ERC721.sol';
-import { IERC721 } from '@openzeppelin/contracts/token/ERC721/IERC721.sol';
-import { IProxyRegistry } from './external/opensea/IProxyRegistry.sol';
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ERC721Checkpointable } from "./ERC721Checkpointable.sol";
+import { INounsDescriptorMinimal } from "./interfaces/INounsDescriptorMinimal.sol";
+import { INounsSeeder } from "./interfaces/INounsSeeder.sol";
+import { INounsToken } from "./interfaces/INounsToken.sol";
+import { ERC721 } from "./ERC721.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IProxyRegistry } from "./external/opensea/IProxyRegistry.sol";
 
 contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
     // The nounders DAO address (creators org)
@@ -55,7 +55,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
     uint256 private _currentNounId;
 
     // IPFS content hash of contract-level metadata
-    string private _contractURIHash = 'QmZi1n79FqWt2tTLwCqiy6nLM6xLGRsEPQ5JmReJQKNNzX';
+    string private _contractURIHash = "QmZi1n79FqWt2tTLwCqiy6nLM6xLGRsEPQ5JmReJQKNNzX";
 
     // OpenSea's Proxy Registry
     IProxyRegistry public immutable proxyRegistry;
@@ -64,7 +64,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
      * @notice Require that the minter has not been locked.
      */
     modifier whenMinterNotLocked() {
-        require(!isMinterLocked, 'Minter is locked');
+        require(!isMinterLocked, "Minter is locked");
         _;
     }
 
@@ -72,7 +72,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
      * @notice Require that the descriptor has not been locked.
      */
     modifier whenDescriptorNotLocked() {
-        require(!isDescriptorLocked, 'Descriptor is locked');
+        require(!isDescriptorLocked, "Descriptor is locked");
         _;
     }
 
@@ -80,7 +80,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
      * @notice Require that the seeder has not been locked.
      */
     modifier whenSeederNotLocked() {
-        require(!isSeederLocked, 'Seeder is locked');
+        require(!isSeederLocked, "Seeder is locked");
         _;
     }
 
@@ -88,7 +88,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
      * @notice Require that the sender is the nounders DAO.
      */
     modifier onlyNoundersDAO() {
-        require(msg.sender == noundersDAO, 'Sender is not the nounders DAO');
+        require(msg.sender == noundersDAO, "Sender is not the nounders DAO");
         _;
     }
 
@@ -96,7 +96,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
      * @notice Require that the sender is the minter.
      */
     modifier onlyMinter() {
-        require(msg.sender == minter, 'Sender is not the minter');
+        require(msg.sender == minter, "Sender is not the minter");
         _;
     }
 
@@ -106,7 +106,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
         INounsDescriptorMinimal _descriptor,
         INounsSeeder _seeder,
         IProxyRegistry _proxyRegistry
-    ) ERC721('Nouns', 'NOUN') {
+    ) ERC721("Nouns", "NOUN") {
         noundersDAO = _noundersDAO;
         minter = _minter;
         descriptor = _descriptor;
@@ -118,7 +118,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
      * @notice The IPFS URI of contract-level metadata.
      */
     function contractURI() public view returns (string memory) {
-        return string(abi.encodePacked('ipfs://', _contractURIHash));
+        return string(abi.encodePacked("ipfs://", _contractURIHash));
     }
 
     /**
@@ -166,7 +166,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), 'NounsToken: URI query for nonexistent token');
+        require(_exists(tokenId), "NounsToken: URI query for nonexistent token");
         return descriptor.tokenURI(tokenId, seeds[tokenId]);
     }
 
@@ -175,7 +175,7 @@ contract NounsToken is INounsToken, Ownable, ERC721Checkpointable {
      * with the JSON contents directly inlined.
      */
     function dataURI(uint256 tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), 'NounsToken: URI query for nonexistent token');
+        require(_exists(tokenId), "NounsToken: URI query for nonexistent token");
         return descriptor.dataURI(tokenId, seeds[tokenId]);
     }
 

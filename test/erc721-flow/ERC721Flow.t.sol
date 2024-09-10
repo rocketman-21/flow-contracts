@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 
-import {IFlow,IERC721Flow} from "../../src/interfaces/IFlow.sol";
-import {ERC721Flow} from "../../src/ERC721Flow.sol";
-import {MockERC721} from "../mocks/MockERC721.sol";
+import { IFlow, IERC721Flow } from "../../src/interfaces/IFlow.sol";
+import { ERC721Flow } from "../../src/ERC721Flow.sol";
+import { MockERC721 } from "../mocks/MockERC721.sol";
 
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
-import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import {PoolConfig} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import {ERC1820RegistryCompiled} from
-    "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
-import {SuperfluidFrameworkDeployer} from
-    "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
-import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
-import {SuperToken} from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
-import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
+import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
+import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
+import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
+import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
 
 contract ERC721FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
@@ -51,34 +49,34 @@ contract ERC721FlowTest is Test {
             metadata: flowMetadata
         });
 
-        _transferTestTokenToFlow(flowProxy, 10_000 * 10**18); //10k usdc a month to start
+        _transferTestTokenToFlow(flowProxy, 10_000 * 10 ** 18); //10k usdc a month to start
 
-        // set small flow rate 
+        // set small flow rate
         vm.prank(manager);
-        IFlow(flowProxy).setFlowRate(385 * 10**13); // 0.00385 tokens per second
+        IFlow(flowProxy).setFlowRate(385 * 10 ** 13); // 0.00385 tokens per second
 
         return ERC721Flow(flowProxy);
     }
 
     function _transferTestTokenToFlow(address flowAddress, uint256 amount) internal {
         vm.startPrank(manager);
-        
+
         // Mint underlying tokens
         TestToken(testUSDC).mint(manager, amount);
-        
+
         // Approve SuperToken to spend underlying tokens
         TestToken(testUSDC).approve(address(superToken), amount);
-        
+
         // Upgrade (wrap) the tokens
         ISuperToken(address(superToken)).upgrade(amount);
-        
+
         // Transfer the wrapped tokens to the Flow contract
         ISuperToken(address(superToken)).transfer(flowAddress, amount);
-        
+
         vm.stopPrank();
     }
 
-    function deployMock721(string memory name, string memory symbol) public virtual returns(MockERC721) {
+    function deployMock721(string memory name, string memory symbol) public virtual returns (MockERC721) {
         return new MockERC721(name, symbol);
     }
 
@@ -112,13 +110,17 @@ contract ERC721FlowTest is Test {
         deployer = new SuperfluidFrameworkDeployer();
         deployer.deployTestFramework();
         sf = deployer.getFramework();
-        (TestToken underlyingToken, SuperToken token) =
-            deployer.deployWrapperSuperToken("MR Token", "MRx", 18, 1e18 * 1e9, manager);
+        (TestToken underlyingToken, SuperToken token) = deployer.deployWrapperSuperToken(
+            "MR Token",
+            "MRx",
+            18,
+            1e18 * 1e9,
+            manager
+        );
 
         superToken = token;
         testUSDC = address(underlyingToken);
 
         flow = deployFlow(address(nounsToken), address(superToken));
     }
-
 }
