@@ -6,6 +6,8 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 solc_version = '0.8.27'
 evm_version = "cancun"
 via_ir = true
+optimizer = true
+optimizer_runs = 1
 
 [profile.dev]
 optimizer = false 

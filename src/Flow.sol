@@ -289,7 +289,7 @@ abstract contract Flow is
      * @param recipient The address to be added as an approved recipient
      * @param metadata The ipfs hash of the recipient's metadata
      */
-    function addRecipient(address recipient, RecipientMetadata memory metadata) public onlyManager nonReentrant validMetadata(metadata) {
+    function addRecipient(address recipient, RecipientMetadata memory metadata) external onlyManager nonReentrant validMetadata(metadata) {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
         if (recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
 
@@ -320,7 +320,7 @@ abstract contract Flow is
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientCreated event if the recipient is successfully added
      */
-    function addFlowRecipient(RecipientMetadata memory metadata, address flowManager) public onlyManager validMetadata(metadata) returns (address) {
+    function addFlowRecipient(RecipientMetadata memory metadata, address flowManager) external onlyManager validMetadata(metadata) returns (address) {
         if (flowManager == address(0)) revert ADDRESS_ZERO();
 
         address recipient = _deployFlowRecipient(metadata, flowManager);
@@ -363,7 +363,7 @@ abstract contract Flow is
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
-    function removeRecipient(uint256 recipientId) public onlyManager nonReentrant {
+    function removeRecipient(uint256 recipientId) external onlyManager nonReentrant {
         if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
@@ -566,24 +566,6 @@ abstract contract Flow is
      */
     function getMemberTotalFlowRate(address memberAddr) public view returns (int96 flowRate) {
         flowRate = bonusPool.getMemberFlowRate(memberAddr) + baselinePool.getMemberFlowRate(memberAddr);
-    }
-
-    /**
-     * @notice Retrieves the flow rate for a specific member in the bonus pool
-     * @param memberAddr The address of the member
-     * @return flowRate The flow rate for the member in the bonus pool
-     */
-    function getMemberBonusFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        return bonusPool.getMemberFlowRate(memberAddr);
-    }
-
-    /**
-     * @notice Retrieves the flow rate for a specific member in the baseline pool
-     * @param memberAddr The address of the member
-     * @return flowRate The flow rate for the member in the baseline pool
-     */
-    function getMemberBaselineFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        return baselinePool.getMemberFlowRate(memberAddr);
     }
 
     /**
