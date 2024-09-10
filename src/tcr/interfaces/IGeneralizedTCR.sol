@@ -1,28 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-/**
- * @title IGeneralizedTCREvents
- * @notice Interface for events emitted by the GeneralizedTCR contract
- */
-interface IGeneralizedTCREvents {
+interface IGeneralizedTCR {
+    /* Enums */
+
     /**
      * @notice Enum representing the status of an item in the registry
      */
     enum Status {
-        Absent,
-        Registered,
-        RegistrationRequested,
-        ClearingRequested
+        Absent, // The item is not in the registry.
+        Registered, // The item is in the registry.
+        RegistrationRequested, // The item has a request to be added to the registry.
+        ClearingRequested // The item has a request to be removed from the registry.
     }
 
     /**
      * @notice Enum representing the parties involved in a dispute
      */
     enum Party {
-        None,
-        Requester,
-        Challenger
+        None, // Party per default when there is no challenger or requester. Also used for inconclusive ruling.
+        Requester, // Party that made the request to change a status.
+        Challenger // Party that challenges the request to change a status.
     }
 
     /**
@@ -103,27 +101,4 @@ interface IGeneralizedTCREvents {
      * @param _connectedTCR The address of the connected TCR
      */
     event ConnectedTCRSet(address indexed _connectedTCR);
-}
-
-interface IGeneralizedTCR is IGeneralizedTCREvents {
-    /* Enums */
-
-    /**
-     * @notice Enum representing the status of an item in the registry
-     */
-    enum Status {
-        Absent, // The item is not in the registry.
-        Registered, // The item is in the registry.
-        RegistrationRequested, // The item has a request to be added to the registry.
-        ClearingRequested // The item has a request to be removed from the registry.
-    }
-
-    /**
-     * @notice Enum representing the parties involved in a dispute
-     */
-    enum Party {
-        None, // Party per default when there is no challenger or requester. Also used for inconclusive ruling.
-        Requester, // Party that made the request to change a status.
-        Challenger // Party that challenges the request to change a status.
-    }
 }
