@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
 import {IFlow} from "./interfaces/IFlow.sol";
+import {FlowLibraryV1} from "./libraries/FlowLibraryV1.sol";
 
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -21,6 +22,8 @@ abstract contract Flow is
     FlowStorageV1
 {
     using SuperTokenV1Library for ISuperToken;
+    using FlowLibraryV1 for uint256;
+    using FlowLibraryV1 for uint32[];
 
     /**
      * @notice Initializes the Flow contract
@@ -131,7 +134,7 @@ abstract contract Flow is
         // double check for overflow before casting
         // and scale back by 1e15 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
         // gives someone with 1 vote at least 1e3 units to work with
-        uint256 scaledUnits = _scaleAmountByPercentage(totalWeight, bps) / 1e15;
+        uint256 scaledUnits = totalWeight.scaleAmountByPercentage(bps, PERCENTAGE_SCALE) / 1e15;
         if (scaledUnits > type(uint128).max) revert OVERFLOW();
         uint128 newUnits = uint128(scaledUnits);
 
@@ -227,8 +230,8 @@ abstract contract Flow is
     {
         uint256 weight = tokenVoteWeight;
 
-        // _getSum should overflow if sum != PERCENTAGE_SCALE
-        if (_getSum(percentAllocations) != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
+        // getSum should overflow if sum != PERCENTAGE_SCALE
+        if (percentAllocations.getSum() != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
 
         // update member units for previous votes
         _clearPreviousVotes(tokenId);
@@ -483,7 +486,7 @@ abstract contract Flow is
     function _setFlowRate(int96 _flowRate) internal {
         if(_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
-        int256 baselineFlowRate256 = int256(_scaleAmountByPercentage(uint96(_flowRate), baselinePoolFlowRatePercent));
+        int256 baselineFlowRate256 = int256((uint256(uint96(_flowRate))).scaleAmountByPercentage(baselinePoolFlowRatePercent, PERCENTAGE_SCALE));
 
         if (baselineFlowRate256 > type(int96).max) revert FLOW_RATE_TOO_HIGH();
 
@@ -512,43 +515,6 @@ abstract contract Flow is
         
         // Update flow rates to reflect the new percentage
         _setFlowRate(getTotalFlowRate());
-    }
-
-    /**
-     * @notice Sums array of uint32s
-     *  @param numbers Array of uint32s to sum
-     *  @return sum Sum of `numbers`.
-     */
-    function _getSum(uint32[] memory numbers) internal pure returns (uint32 sum) {
-        // overflow should be impossible in for-loop index
-        uint256 numbersLength = numbers.length;
-        for (uint256 i = 0; i < numbersLength;) {
-            sum += numbers[i];
-            unchecked {
-                // overflow should be impossible in for-loop index
-                ++i;
-            }
-        }
-    }
-
-    /**
-     * @notice Multiplies an amount by a scaled percentage
-     *  @param amount Amount to get `scaledPercentage` of
-     *  @param scaledPercent Percent scaled by PERCENTAGE_SCALE
-     *  @return scaledAmount Percent of `amount`.
-     */
-    function _scaleAmountByPercentage(uint256 amount, uint256 scaledPercent)
-        internal
-        pure
-        returns (uint256 scaledAmount)
-    {
-        // use assembly to bypass checking for overflow & division by 0
-        // scaledPercent has been validated to be < PERCENTAGE_SCALE)
-        // & PERCENTAGE_SCALE will never be 0
-        assembly {
-            /* eg (100 * 2*1e4) / (1e6) */
-            scaledAmount := div(mul(amount, scaledPercent), PERCENTAGE_SCALE)
-        }
     }
 
     /**
