@@ -10,173 +10,16 @@ pragma solidity ^0.8.27;
 import { IArbitrable } from "./interfaces/IArbitrable.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
 import { IEvidence } from "./interfaces/IEvidence.sol";
+import { IGeneralizedTCR } from "./interfaces/IGeneralizedTCR.sol";
 import { CappedMath } from "./utils/CappedMath.sol";
+import { GeneralizedTCRStorageV1 } from "./storage/GeneralizedTCRStorageV1.sol";
 
 /**
  *  @title GeneralizedTCR
  *  This contract is a curated registry for any types of items. Just like a TCR contract it features the request-challenge protocol and appeal fees crowdfunding.
  */
-contract GeneralizedTCR is IArbitrable, IEvidence {
+contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedTCRStorageV1 {
     using CappedMath for uint256;
-
-    /* Enums */
-
-    enum Status {
-        Absent, // The item is not in the registry.
-        Registered, // The item is in the registry.
-        RegistrationRequested, // The item has a request to be added to the registry.
-        ClearingRequested // The item has a request to be removed from the registry.
-    }
-
-    enum Party {
-        None, // Party per default when there is no challenger or requester. Also used for unconclusive ruling.
-        Requester, // Party that made the request to change a status.
-        Challenger // Party that challenges the request to change a status.
-    }
-
-    /* Structs */
-
-    struct Item {
-        bytes data; // The data describing the item.
-        Status status; // The current status of the item.
-        Request[] requests; // List of status change requests made for the item in the form requests[requestID].
-    }
-
-    // Arrays with 3 elements map with the Party enum for better readability:
-    // - 0: is unused, matches `Party.None`.
-    // - 1: for `Party.Requester`.
-    // - 2: for `Party.Challenger`.
-    struct Request {
-        bool disputed; // True if a dispute was raised.
-        uint disputeID; // ID of the dispute, if any.
-        uint submissionTime; // Time when the request was made. Used to track when the challenge period ends.
-        bool resolved; // True if the request was executed and/or any raised disputes were resolved.
-        address payable[3] parties; // Address of requester and challenger, if any, in the form parties[party].
-        Round[] rounds; // Tracks each round of a dispute in the form rounds[roundID].
-        Party ruling; // The final ruling given, if any.
-        IArbitrator arbitrator; // The arbitrator trusted to solve disputes for this request.
-        bytes arbitratorExtraData; // The extra data for the trusted arbitrator of this request.
-        uint metaEvidenceID; // The meta evidence to be used in a dispute for this case.
-    }
-
-    struct Round {
-        uint[3] amountPaid; // Tracks the sum paid for each Party in this round. Includes arbitration fees, fee stakes and deposits.
-        bool[3] hasPaid; // True if the Party has fully paid its fee in this round.
-        uint feeRewards; // Sum of reimbursable fees and stake rewards available to the parties that made contributions to the side that ultimately wins a dispute.
-        mapping(address => uint[3]) contributions; // Maps contributors to their contributions for each side in the form contributions[address][party].
-    }
-
-    /* Storage */
-
-    IArbitrator public arbitrator; // The arbitrator contract.
-    bytes public arbitratorExtraData; // Extra data for the arbitrator contract.
-
-    uint RULING_OPTIONS = 2; // The amount of non 0 choices the arbitrator can give.
-
-    address public governor; // The address that can make changes to the parameters of the contract.
-    uint public submissionBaseDeposit; // The base deposit to submit an item.
-    uint public removalBaseDeposit; // The base deposit to remove an item.
-    uint public submissionChallengeBaseDeposit; // The base deposit to challenge a submission.
-    uint public removalChallengeBaseDeposit; // The base deposit to challenge a removal request.
-    uint public challengePeriodDuration; // The time after which a request becomes executable if not challenged.
-    uint public metaEvidenceUpdates; // The number of times the meta evidence has been updated. Used to track the latest meta evidence ID.
-
-    // Multipliers are in basis points.
-    uint public winnerStakeMultiplier; // Multiplier for calculating the fee stake paid by the party that won the previous round.
-    uint public loserStakeMultiplier; // Multiplier for calculating the fee stake paid by the party that lost the previous round.
-    uint public sharedStakeMultiplier; // Multiplier for calculating the fee stake that must be paid in the case where arbitrator refused to arbitrate.
-    uint public constant MULTIPLIER_DIVISOR = 10000; // Divisor parameter for multipliers.
-
-    bytes32[] public itemList; // List of IDs of all submitted items.
-    mapping(bytes32 => Item) public items; // Maps the item ID to its data in the form items[_itemID].
-    mapping(address => mapping(uint => bytes32)) public arbitratorDisputeIDToItem; // Maps a dispute ID to the ID of the item with the disputed request in the form arbitratorDisputeIDToItem[arbitrator][disputeID].
-    mapping(bytes32 => uint) public itemIDtoIndex; // Maps an item's ID to its position in the list in the form itemIDtoIndex[itemID].
-
-    /* Modifiers */
-
-    modifier onlyGovernor() {
-        require(msg.sender == governor, "The caller must be the governor.");
-        _;
-    }
-
-    /* Events */
-
-    /**
-     *  @dev Emitted when a party makes a request, raises a dispute or when a request is resolved.
-     *  @param _itemID The ID of the affected item.
-     *  @param _requestIndex The index of the request.
-     *  @param _roundIndex The index of the round.
-     *  @param _disputed Whether the request is disputed.
-     *  @param _resolved Whether the request is executed.
-     */
-    event ItemStatusChange(
-        bytes32 indexed _itemID,
-        uint indexed _requestIndex,
-        uint indexed _roundIndex,
-        bool _disputed,
-        bool _resolved
-    );
-
-    /**
-     *  @dev Emitted when someone submits an item for the first time.
-     *  @param _itemID The ID of the new item.
-     *  @param _submitter The address of the requester.
-     *  @param _evidenceGroupID Unique identifier of the evidence group the evidence belongs to.
-     *  @param _data The item data.
-     */
-    event ItemSubmitted(
-        bytes32 indexed _itemID,
-        address indexed _submitter,
-        uint indexed _evidenceGroupID,
-        bytes _data
-    );
-
-    /**
-     *  @dev Emitted when someone submits a request.
-     *  @param _itemID The ID of the affected item.
-     *  @param _requestIndex The index of the latest request.
-     *  @param _requestType Whether it is a registration or a removal request.
-     */
-    event RequestSubmitted(bytes32 indexed _itemID, uint indexed _requestIndex, Status indexed _requestType);
-
-    /**
-     *  @dev Emitted when someone submits a request. This is useful to quickly find an item and request from an evidence event and vice-versa.
-     *  @param _itemID The ID of the affected item.
-     *  @param _requestIndex The index of the latest request.
-     *  @param _evidenceGroupID The evidence group ID used for this request.
-     */
-    event RequestEvidenceGroupID(bytes32 indexed _itemID, uint indexed _requestIndex, uint indexed _evidenceGroupID);
-
-    /**
-     *  @dev Emitted when a party contributes to an appeal.
-     *  @param _itemID The ID of the item.
-     *  @param _contributor The address making the contribution.
-     *  @param _request The index of the request.
-     *  @param _round The index of the round receiving the contribution.
-     *  @param _amount The amount of the contribution.
-     *  @param _side The party receiving the contribution.
-     */
-    event AppealContribution(
-        bytes32 indexed _itemID,
-        address indexed _contributor,
-        uint indexed _request,
-        uint _round,
-        uint _amount,
-        Party _side
-    );
-
-    /** @dev Emitted when one of the parties successfully paid its appeal fees.
-     *  @param _itemID The ID of the item.
-     *  @param _request The index of the request.
-     *  @param _round The index of the round.
-     *  @param _side The side that is fully funded.
-     */
-    event HasPaidAppealFee(bytes32 indexed _itemID, uint indexed _request, uint indexed _round, Party _side);
-
-    /** @dev Emitted when the address of the connected TCR is set. The connected TCR is an instance of the Generalized TCR contract where each item is the address of a TCR related to this one.
-     *  @param _connectedTCR The address of the connected TCR.
-     */
-    event ConnectedTCRSet(address indexed _connectedTCR);
 
     /**
      *  @dev Deploy the arbitrable curated registry.
@@ -806,5 +649,12 @@ contract GeneralizedTCR is IArbitrable, IEvidence {
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
         return (_round != (request.rounds.length - 1), round.amountPaid, round.hasPaid, round.feeRewards);
+    }
+
+    /* Modifiers */
+
+    modifier onlyGovernor() {
+        require(msg.sender == governor, "The caller must be the governor.");
+        _;
     }
 }
