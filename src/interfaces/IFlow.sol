@@ -157,7 +157,7 @@ interface IFlow is IFlowEvents {
      * @param baselinePoolFlowRatePercent The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
      */
     struct FlowParams {
-        uint256 tokenVoteWeight;
+        uint256 tokenVoteWeight; // scaled by 1e18
         uint32 baselinePoolFlowRatePercent;
     }
 

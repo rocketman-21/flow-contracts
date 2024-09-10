@@ -52,7 +52,7 @@ abstract contract Flow is
         __ReentrancyGuard_init();
 
         // Set the voting power info
-        tokenVoteWeight = _flowParams.tokenVoteWeight;
+        tokenVoteWeight = _flowParams.tokenVoteWeight; // scaled by 1e18
         baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
         flowImpl = _flowImpl;
         manager = _manager;
