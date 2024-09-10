@@ -137,7 +137,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         round.hasPaid[uint(Party.Challenger)] = true;
 
         // Raise a dispute.
-        request.disputeID = request.arbitrator.createDispute.value(arbitrationCost)(
+        request.disputeID = request.arbitrator.createDispute{ value: arbitrationCost }(
             RULING_OPTIONS,
             request.arbitratorExtraData
         );
@@ -209,7 +209,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
 
         // Raise appeal if both sides are fully funded.
         if (round.hasPaid[uint(Party.Challenger)] && round.hasPaid[uint(Party.Requester)]) {
-            request.arbitrator.appeal.value(appealCost)(request.disputeID, request.arbitratorExtraData);
+            request.arbitrator.appeal{ value: appealCost }(request.disputeID, request.arbitratorExtraData);
             request.rounds.length++;
             round.feeRewards = round.feeRewards.subCap(appealCost);
         }
