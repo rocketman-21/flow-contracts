@@ -31,7 +31,9 @@ abstract contract DeployScript is Script {
     function deploy() internal virtual;
 
     function writeDeploymentDetailsToFile() internal virtual {
-        string memory filePath = string(abi.encodePacked("deploys/", getContractName(), ".", chainID.toString(), ".txt"));
+        string memory filePath = string(
+            abi.encodePacked("deploys/", getContractName(), ".", chainID.toString(), ".txt")
+        );
         vm.writeFile(filePath, "");
         writeAdditionalDeploymentDetails(filePath);
     }

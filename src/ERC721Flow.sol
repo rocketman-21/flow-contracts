@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {Flow} from "./Flow.sol";
-import {FlowStorageV1} from "./storage/FlowStorageV1.sol";
-import {IFlow, IERC721Flow} from "./interfaces/IFlow.sol";
-import {IERC721Checkpointable} from "./interfaces/IERC721Checkpointable.sol";
+import { Flow } from "./Flow.sol";
+import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
+import { IFlow, IERC721Flow } from "./interfaces/IFlow.sol";
+import { IERC721Checkpointable } from "./interfaces/IERC721Checkpointable.sol";
 
-import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ERC721Flow is IERC721Flow, Flow {
     // The ERC721 voting token contract used to get the voting power of an account
@@ -26,7 +26,7 @@ contract ERC721Flow is IERC721Flow, Flow {
         RecipientMetadata memory _metadata
     ) public initializer {
         if (_nounsToken == address(0)) revert ADDRESS_ZERO();
-        
+
         erc721Votes = IERC721Checkpointable(_nounsToken);
 
         __Flow_init(_superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
@@ -38,11 +38,11 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @param recipientIds The recpientIds of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    function castVotes(uint256[] memory tokenIds, uint256[] memory recipientIds, uint32[] memory percentAllocations)
-        external
-        nonReentrant
-        validVotes(recipientIds, percentAllocations)
-    {
+    function castVotes(
+        uint256[] memory tokenIds,
+        uint256[] memory recipientIds,
+        uint32[] memory percentAllocations
+    ) external nonReentrant validVotes(recipientIds, percentAllocations) {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
             _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
@@ -58,7 +58,7 @@ contract ERC721Flow is IERC721Flow, Flow {
     function canVoteWithToken(uint256 tokenId, address voter) public view returns (bool) {
         address tokenOwner = erc721Votes.ownerOf(tokenId);
         // check if the token owner has delegated their voting power to the voter
-        // erc721checkpointable falls back to the owner 
+        // erc721checkpointable falls back to the owner
         // if the owner hasn't delegated so this will work for the owner as well
         address delegate = erc721Votes.delegates(tokenOwner);
         return voter == delegate;
@@ -71,7 +71,10 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      */
-    function _deployFlowRecipient(RecipientMetadata memory metadata, address flowManager) internal override returns (address) {
+    function _deployFlowRecipient(
+        RecipientMetadata memory metadata,
+        address flowManager
+    ) internal override returns (address) {
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
 
@@ -92,5 +95,4 @@ contract ERC721Flow is IERC721Flow, Flow {
 
         return recipient;
     }
-
 }

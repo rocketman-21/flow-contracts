@@ -3,11 +3,11 @@ pragma solidity ^0.8.27;
 
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
 
-import {RLPReader} from "optimism/packages/contracts-bedrock/src/libraries/rlp/RLPReader.sol";
-import {MerkleTrie} from "optimism/packages/contracts-bedrock/src/libraries/trie/MerkleTrie.sol";
-import {SecureMerkleTrie} from "optimism/packages/contracts-bedrock/src/libraries/trie/SecureMerkleTrie.sol";
-import {SSZ} from "eip-4788-proof/SSZ.sol";
-import {IStateProof} from "../interfaces/IStateProof.sol";
+import { RLPReader } from "optimism/packages/contracts-bedrock/src/libraries/rlp/RLPReader.sol";
+import { MerkleTrie } from "optimism/packages/contracts-bedrock/src/libraries/trie/MerkleTrie.sol";
+import { SecureMerkleTrie } from "optimism/packages/contracts-bedrock/src/libraries/trie/SecureMerkleTrie.sol";
+import { SSZ } from "eip-4788-proof/SSZ.sol";
+import { IStateProof } from "../interfaces/IStateProof.sol";
 
 library StateVerifier {
     using RLPReader for RLPReader.RLPItem;
@@ -33,18 +33,22 @@ library StateVerifier {
 
         // Verify account state
         bytes memory accountKey = abi.encodePacked(keccak256(abi.encodePacked(account)));
-        bytes memory encodedAccount =
-            _verifyAccountProof(accountKey, proofParams.accountProof, proofParams.executionStateRoot);
+        bytes memory encodedAccount = _verifyAccountProof(
+            accountKey,
+            proofParams.accountProof,
+            proofParams.executionStateRoot
+        );
 
         // Extract storage root from account data
         bytes32 storageRoot = _extractStorageRoot(encodedAccount);
 
-        return _verifyStorageProof({
-            storageKey: storageKey,
-            expectedStorageValue: storageValue,
-            storageRoot: storageRoot,
-            storageProof: proofParams.storageProof
-        });
+        return
+            _verifyStorageProof({
+                storageKey: storageKey,
+                expectedStorageValue: storageValue,
+                storageRoot: storageRoot,
+                storageProof: proofParams.storageProof
+            });
     }
 
     function _checkValidBeaconRoot(bytes32 root, uint256 timestamp) private view {
@@ -56,24 +60,25 @@ library StateVerifier {
         bytes32 resultRoot = abi.decode(result, (bytes32));
 
         if (resultRoot != root) {
-            revert BeaconRootDoesNotMatch({expected: root, actual: resultRoot});
+            revert BeaconRootDoesNotMatch({ expected: root, actual: resultRoot });
         }
     }
 
-    function _checkValidStateRoot(bytes32 beaconRoot, bytes32 executionStateRoot, bytes32[] calldata proof)
-        private
-        view
-    {
-        if (!SSZ.verifyProof({proof: proof, root: beaconRoot, leaf: executionStateRoot, index: STATE_ROOT_GINDEX})) {
+    function _checkValidStateRoot(
+        bytes32 beaconRoot,
+        bytes32 executionStateRoot,
+        bytes32[] calldata proof
+    ) private view {
+        if (!SSZ.verifyProof({ proof: proof, root: beaconRoot, leaf: executionStateRoot, index: STATE_ROOT_GINDEX })) {
             revert ExecutionStateRootMerkleProofFailed();
         }
     }
 
-    function _verifyAccountProof(bytes memory accountKey, bytes[] memory accountProof, bytes32 stateRoot)
-        private
-        pure
-        returns (bytes memory)
-    {
+    function _verifyAccountProof(
+        bytes memory accountKey,
+        bytes[] memory accountProof,
+        bytes32 stateRoot
+    ) private pure returns (bytes memory) {
         bytes memory encodedAccount = MerkleTrie.get(accountKey, accountProof, stateRoot);
         if (encodedAccount.length == 0) {
             revert AccountProofVerificationFailed();
@@ -93,7 +98,7 @@ library StateVerifier {
         bytes32 storageRoot,
         bytes[] memory storageProof
     ) private pure returns (bool) {
-        bytes memory rlpValue = SecureMerkleTrie.get({_key: storageKey, _proof: storageProof, _root: storageRoot});
+        bytes memory rlpValue = SecureMerkleTrie.get({ _key: storageKey, _proof: storageProof, _root: storageRoot });
         bytes memory value = RLPReader.readBytes(rlpValue);
 
         bool isValid = keccak256(value) == keccak256(expectedStorageValue);

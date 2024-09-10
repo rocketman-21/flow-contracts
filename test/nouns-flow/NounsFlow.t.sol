@@ -1,29 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import {Test} from "forge-std/Test.sol";
+import { Test } from "forge-std/Test.sol";
 import "forge-std/StdJson.sol";
 
-import {IFlow, INounsFlow} from "../../src/interfaces/IFlow.sol";
-import {NounsFlow} from "../../src/NounsFlow.sol";
-import {TokenVerifier} from "../../src/state-proof/TokenVerifier.sol";
-import {IStateProof} from "../../src/interfaces/IStateProof.sol";
+import { IFlow, INounsFlow } from "../../src/interfaces/IFlow.sol";
+import { NounsFlow } from "../../src/NounsFlow.sol";
+import { TokenVerifier } from "../../src/state-proof/TokenVerifier.sol";
+import { IStateProof } from "../../src/interfaces/IStateProof.sol";
 
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
-import {SuperTokenV1Library} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import {PoolConfig} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import {ERC1820RegistryCompiled} from
-    "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
-import {SuperfluidFrameworkDeployer} from
-    "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
-import {TestToken} from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
-import {SuperToken} from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
-import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
+import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
+import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
+import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
+import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
 
 contract NounsFlowTest is Test {
-
     using stdJson for string;
 
     SuperfluidFrameworkDeployer.Framework internal sf;
@@ -58,30 +55,30 @@ contract NounsFlowTest is Test {
             metadata: flowMetadata
         });
 
-        _transferTestTokenToFlow(flowProxy, 10_000 * 10**18); //10k usdc a month to start
+        _transferTestTokenToFlow(flowProxy, 10_000 * 10 ** 18); //10k usdc a month to start
 
-        // set small flow rate 
+        // set small flow rate
         vm.prank(manager);
-        IFlow(flowProxy).setFlowRate(385 * 10**13); // 0.00385 tokens per second
+        IFlow(flowProxy).setFlowRate(385 * 10 ** 13); // 0.00385 tokens per second
 
         return NounsFlow(flowProxy);
     }
 
     function _transferTestTokenToFlow(address flowAddress, uint256 amount) internal {
         vm.startPrank(manager);
-        
+
         // Mint underlying tokens
         TestToken(testUSDC).mint(manager, amount);
-        
+
         // Approve SuperToken to spend underlying tokens
         TestToken(testUSDC).approve(address(superToken), amount);
-        
+
         // Upgrade (wrap) the tokens
         ISuperToken(address(superToken)).upgrade(amount);
-        
+
         // Transfer the wrapped tokens to the Flow contract
         ISuperToken(address(superToken)).transfer(flowAddress, amount);
-        
+
         vm.stopPrank();
     }
 
@@ -116,8 +113,13 @@ contract NounsFlowTest is Test {
         deployer = new SuperfluidFrameworkDeployer();
         deployer.deployTestFramework();
         sf = deployer.getFramework();
-        (TestToken underlyingToken, SuperToken token) =
-            deployer.deployWrapperSuperToken("MR Token", "MRx", 18, 1e18 * 1e9, manager);
+        (TestToken underlyingToken, SuperToken token) = deployer.deployWrapperSuperToken(
+            "MR Token",
+            "MRx",
+            18,
+            1e18 * 1e9,
+            manager
+        );
 
         superToken = token;
         testUSDC = address(underlyingToken);
@@ -130,13 +132,14 @@ contract NounsFlowTest is Test {
         string memory proofPath = string.concat(rootPath, "/test/proof-data/papercliplabs.json");
         string memory json = vm.readFile(proofPath);
 
-        return IStateProof.BaseParameters({
-            beaconRoot: json.readBytes32(".beaconRoot"),
-            beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
-            executionStateRoot: json.readBytes32(".executionStateRoot"),
-            stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
-            accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
-        });
+        return
+            IStateProof.BaseParameters({
+                beaconRoot: json.readBytes32(".beaconRoot"),
+                beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
+                executionStateRoot: json.readBytes32(".executionStateRoot"),
+                stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
+                accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
+            });
     }
 
     function _setupStorageProofs() internal view returns (bytes[][][] memory, bytes[][] memory) {
@@ -154,16 +157,16 @@ contract NounsFlowTest is Test {
         return (ownershipStorageProofs, delegateStorageProofs);
     }
 
-
     function getStateProofParams(string memory path) internal view returns (IStateProof.Parameters memory) {
         string memory json = vm.readFile(path);
-        return IStateProof.Parameters({
-            beaconRoot: json.readBytes32(".beaconRoot"),
-            beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
-            executionStateRoot: json.readBytes32(".executionStateRoot"),
-            stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
-            storageProof: abi.decode(json.parseRaw(".storageProof"), (bytes[])),
-            accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
-        });
+        return
+            IStateProof.Parameters({
+                beaconRoot: json.readBytes32(".beaconRoot"),
+                beaconOracleTimestamp: uint256(json.readBytes32(".beaconOracleTimestamp")),
+                executionStateRoot: json.readBytes32(".executionStateRoot"),
+                stateRootProof: abi.decode(json.parseRaw(".stateRootProof"), (bytes32[])),
+                storageProof: abi.decode(json.parseRaw(".storageProof"), (bytes[])),
+                accountProof: abi.decode(json.parseRaw(".accountProof"), (bytes[]))
+            });
     }
 }

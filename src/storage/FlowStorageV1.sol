@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import {IFlow} from "../interfaces/IFlow.sol";
-import {IERC721Checkpointable} from "../interfaces/IERC721Checkpointable.sol";
+import { IFlow } from "../interfaces/IFlow.sol";
+import { IERC721Checkpointable } from "../interfaces/IERC721Checkpointable.sol";
 
-import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
-import {ISuperfluidPool} from
-    "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
-import {PoolConfig} from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
+import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
 /// @notice Flow Storage V1
 /// @author rocketman
@@ -59,7 +58,8 @@ contract FlowStorageV1 {
     mapping(uint256 => mapping(address => uint256)) public tokenIdToRecipientMemberUnits;
 
     /// The Superfluid pool configuration
-    PoolConfig public poolConfig = PoolConfig({transferabilityForUnitsOwner: false, distributionFromAnyAddress: false});
+    PoolConfig public poolConfig =
+        PoolConfig({ transferabilityForUnitsOwner: false, distributionFromAnyAddress: false });
 
     // The weight of the 721 voting token
     uint256 public tokenVoteWeight;

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import {Flow} from "./Flow.sol";
-import {INounsFlow} from "./interfaces/IFlow.sol";
-import {ITokenVerifier} from "./interfaces/ITokenVerifier.sol";
-import {IStateProof} from "./interfaces/IStateProof.sol";
+import { Flow } from "./Flow.sol";
+import { INounsFlow } from "./interfaces/IFlow.sol";
+import { ITokenVerifier } from "./interfaces/ITokenVerifier.sol";
+import { IStateProof } from "./interfaces/IStateProof.sol";
 
-import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract NounsFlow is INounsFlow, Flow {
     ITokenVerifier public verifier;
@@ -46,18 +46,20 @@ contract NounsFlow is INounsFlow, Flow {
         IStateProof.BaseParameters memory baseProofParams,
         bytes[][][] memory ownershipStorageProofs,
         bytes[][] memory delegateStorageProofs
-    )
-        external
-        nonReentrant
-        validVotes(recipientIds, percentAllocations)
-    {
+    ) external nonReentrant validVotes(recipientIds, percentAllocations) {
         // if the timestamp is more than 5 minutes old, it is invalid
         // TODO check through security considerations if this is a valid assumption
-        if(baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
+        if (baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
 
         for (uint256 i = 0; i < owners.length; i++) {
-            IStateProof.Parameters[] memory ownershipProofs = _generateOwnershipProofs(baseProofParams, ownershipStorageProofs[i]);
-            IStateProof.Parameters memory delegateProof = _generateStateProofParams(baseProofParams, delegateStorageProofs[i]);
+            IStateProof.Parameters[] memory ownershipProofs = _generateOwnershipProofs(
+                baseProofParams,
+                ownershipStorageProofs[i]
+            );
+            IStateProof.Parameters memory delegateProof = _generateStateProofParams(
+                baseProofParams,
+                delegateStorageProofs[i]
+            );
 
             _castVotesForOwner(
                 owners[i],
@@ -102,14 +104,15 @@ contract NounsFlow is INounsFlow, Flow {
         IStateProof.BaseParameters memory baseProofParams,
         bytes[] memory storageProof
     ) internal pure returns (IStateProof.Parameters memory) {
-        return IStateProof.Parameters({
-            beaconRoot: baseProofParams.beaconRoot,
-            beaconOracleTimestamp: baseProofParams.beaconOracleTimestamp,
-            executionStateRoot: baseProofParams.executionStateRoot,
-            stateRootProof: baseProofParams.stateRootProof,
-            accountProof: baseProofParams.accountProof,
-            storageProof: storageProof
-        });
+        return
+            IStateProof.Parameters({
+                beaconRoot: baseProofParams.beaconRoot,
+                beaconOracleTimestamp: baseProofParams.beaconOracleTimestamp,
+                executionStateRoot: baseProofParams.executionStateRoot,
+                stateRootProof: baseProofParams.stateRootProof,
+                accountProof: baseProofParams.accountProof,
+                storageProof: storageProof
+            });
     }
 
     /**
@@ -130,7 +133,8 @@ contract NounsFlow is INounsFlow, Flow {
         IStateProof.Parameters memory delegateProof
     ) internal {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
+            if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof))
+                revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
             _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
         }
     }
@@ -142,7 +146,10 @@ contract NounsFlow is INounsFlow, Flow {
      * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      */
-    function _deployFlowRecipient(RecipientMetadata memory metadata, address flowManager) internal override returns (address) {
+    function _deployFlowRecipient(
+        RecipientMetadata memory metadata,
+        address flowManager
+    ) internal override returns (address) {
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
 

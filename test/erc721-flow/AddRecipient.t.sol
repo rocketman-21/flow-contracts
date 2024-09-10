@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import {IFlowEvents,IFlow} from "../../src/interfaces/IFlow.sol";
-import {Flow} from "../../src/Flow.sol";
-import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
-import {ERC721FlowTest} from "./ERC721Flow.t.sol";
+import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
+import { Flow } from "../../src/Flow.sol";
+import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 
 contract AddRecipientsTest is ERC721FlowTest {
-
-    function setUp() override public {
+    function setUp() public override {
         super.setUp();
     }
 
@@ -17,16 +16,25 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Test successful addition of a recipient
         vm.startPrank(flow.owner());
         vm.expectEmit(true, true, true, true);
-        emit IFlowEvents.RecipientCreated(0, FlowStorageV1.FlowRecipient({
-            recipientType: FlowStorageV1.RecipientType.ExternalAccount,
-            removed: false,
-            recipient: recipient,
-            metadata: recipientMetadata
-        }), flow.owner());
+        emit IFlowEvents.RecipientCreated(
+            0,
+            FlowStorageV1.FlowRecipient({
+                recipientType: FlowStorageV1.RecipientType.ExternalAccount,
+                removed: false,
+                recipient: recipient,
+                metadata: recipientMetadata
+            }),
+            flow.owner()
+        );
         flow.addRecipient(recipient, recipientMetadata);
 
         // Verify recipient was added correctly
-        (address storedRecipient, bool removed, FlowStorageV1.RecipientType recipientType, FlowStorageV1.RecipientMetadata memory storedMetadata) = flow.recipients(0);
+        (
+            address storedRecipient,
+            bool removed,
+            FlowStorageV1.RecipientType recipientType,
+            FlowStorageV1.RecipientMetadata memory storedMetadata
+        ) = flow.recipients(0);
         assertEq(storedRecipient, recipient);
         assertEq(removed, false);
         assertEq(uint8(recipientType), uint8(FlowStorageV1.RecipientType.ExternalAccount));
@@ -54,7 +62,7 @@ contract AddRecipientsTest is ERC721FlowTest {
         vm.expectRevert(IFlow.INVALID_METADATA.selector);
         flow.addRecipient(recipient, FlowStorageV1.RecipientMetadata("", "", "", "", ""));
     }
-    
+
     function testAddRecipientNonManager() public {
         address recipient = address(0x123);
 
@@ -67,8 +75,20 @@ contract AddRecipientsTest is ERC721FlowTest {
     function testAddMultipleRecipients() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Recipient 1", "Description 1", "ipfs://image1", "Tagline 1", "https://recipient1.com");
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Recipient 2", "Description 2", "ipfs://image2", "Tagline 2", "https://recipient2.com");
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+            "Recipient 1",
+            "Description 1",
+            "ipfs://image1",
+            "Tagline 1",
+            "https://recipient1.com"
+        );
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+            "Recipient 2",
+            "Description 2",
+            "ipfs://image2",
+            "Tagline 2",
+            "https://recipient2.com"
+        );
 
         // Add first recipient
         vm.prank(flow.owner());
@@ -92,7 +112,13 @@ contract AddRecipientsTest is ERC721FlowTest {
 
     function testBaselineMemberUnitsAfterAddingRecipients() public {
         address externalRecipient = address(0x123);
-        FlowStorageV1.RecipientMetadata memory externalMetadata = FlowStorageV1.RecipientMetadata("External Recipient", "Description", "ipfs://image1", "External Tagline", "https://external.com");
+        FlowStorageV1.RecipientMetadata memory externalMetadata = FlowStorageV1.RecipientMetadata(
+            "External Recipient",
+            "Description",
+            "ipfs://image1",
+            "External Tagline",
+            "https://external.com"
+        );
 
         // Add external recipient
         vm.prank(flow.owner());
@@ -101,13 +127,23 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Add flow recipient
         vm.prank(flow.owner());
         address flowRecipient = flow.addFlowRecipient(
-            FlowStorageV1.RecipientMetadata("Flow Recipient", "Description", "ipfs://image2", "Flow Tagline", "https://flow.com"),
+            FlowStorageV1.RecipientMetadata(
+                "Flow Recipient",
+                "Description",
+                "ipfs://image2",
+                "Flow Tagline",
+                "https://flow.com"
+            ),
             address(0x456) // flowManager address
         );
 
         // Check baseline member units for external recipient
         uint128 externalRecipientUnits = flow.baselinePool().getUnits(externalRecipient);
-        assertEq(externalRecipientUnits, flow.BASELINE_MEMBER_UNITS(), "External recipient should have baseline member units");
+        assertEq(
+            externalRecipientUnits,
+            flow.BASELINE_MEMBER_UNITS(),
+            "External recipient should have baseline member units"
+        );
 
         // Check baseline member units for flow recipient
         uint128 flowRecipientUnits = flow.baselinePool().getUnits(flowRecipient);
@@ -115,7 +151,11 @@ contract AddRecipientsTest is ERC721FlowTest {
 
         // Verify total units in baseline pool
         uint128 totalUnits = flow.baselinePool().getTotalUnits();
-        assertEq(totalUnits, flow.BASELINE_MEMBER_UNITS() * 2 + 1, "Total units should be 2 * BASELINE_MEMBER_UNITS + 1 (for address(this))");
+        assertEq(
+            totalUnits,
+            flow.BASELINE_MEMBER_UNITS() * 2 + 1,
+            "Total units should be 2 * BASELINE_MEMBER_UNITS + 1 (for address(this))"
+        );
     }
 
     function testAddDuplicateRecipient() public {

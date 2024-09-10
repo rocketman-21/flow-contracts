@@ -27,8 +27,8 @@
 
 pragma solidity ^0.8.0;
 
-import './ERC721.sol';
-import '@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol';
+import "./ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
 
 /**
  * @dev This implements an optional extension of {ERC721} defined in the EIP that adds
@@ -59,7 +59,7 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
      * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
      */
     function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual override returns (uint256) {
-        require(index < ERC721.balanceOf(owner), 'ERC721Enumerable: owner index out of bounds');
+        require(index < ERC721.balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
         return _ownedTokens[owner][index];
     }
 
@@ -74,7 +74,7 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
      * @dev See {IERC721Enumerable-tokenByIndex}.
      */
     function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
-        require(index < ERC721Enumerable.totalSupply(), 'ERC721Enumerable: global index out of bounds');
+        require(index < ERC721Enumerable.totalSupply(), "ERC721Enumerable: global index out of bounds");
         return _allTokens[index];
     }
 
@@ -93,11 +93,7 @@ abstract contract ERC721Enumerable is ERC721, IERC721Enumerable {
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal virtual override {
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual override {
         super._beforeTokenTransfer(from, to, tokenId);
 
         if (from == address(0)) {

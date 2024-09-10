@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import {ERC721FlowTest} from "./ERC721Flow.t.sol";
-import {IFlowEvents,IFlow,IERC721Flow} from "../../src/interfaces/IFlow.sol";
-import {ERC721Flow} from "../../src/ERC721Flow.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {FlowStorageV1} from "../../src/storage/FlowStorageV1.sol";
-import {ISuperfluidPool} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
+import { ERC721FlowTest } from "./ERC721Flow.t.sol";
+import { IFlowEvents, IFlow, IERC721Flow } from "../../src/interfaces/IFlow.sol";
+import { ERC721Flow } from "../../src/ERC721Flow.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 
 contract BasicERC721FlowTest is ERC721FlowTest {
-
-    function setUp() override public {
+    function setUp() public override {
         super.setUp();
     }
 
@@ -42,7 +41,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Check for event emission
         vm.expectEmit(true, true, true, true);
         emit IFlowEvents.FlowInitialized(manager, address(superToken), flowImpl);
-        
+
         // Re-deploy the contract to emit the event
         address votingPowerAddress = address(0x1);
         deployFlow(votingPowerAddress, address(superToken));
@@ -60,7 +59,13 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager: manager, // Add this line
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
+            metadata: FlowStorageV1.RecipientMetadata(
+                "Test Flow",
+                "ipfs://test",
+                "Test Description",
+                "Test Tagline",
+                "https://example.com"
+            )
         });
 
         // Test initialization with zero address for _flowImpl
@@ -75,7 +80,13 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager: manager, // Add this line
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
+            metadata: FlowStorageV1.RecipientMetadata(
+                "Test Flow",
+                "ipfs://test",
+                "Test Description",
+                "Test Tagline",
+                "https://example.com"
+            )
         });
         flowImpl = originalFlowImpl;
 
@@ -87,7 +98,13 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager, // Add this line
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
+            FlowStorageV1.RecipientMetadata(
+                "Test Flow",
+                "ipfs://test",
+                "Test Description",
+                "Test Tagline",
+                "https://example.com"
+            )
         );
 
         // Test double initialization (should revert)
@@ -99,7 +116,13 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager, // Add this line
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
+            FlowStorageV1.RecipientMetadata(
+                "Test Flow",
+                "ipfs://test",
+                "Test Description",
+                "Test Tagline",
+                "https://example.com"
+            )
         );
     }
 
@@ -130,7 +153,12 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(newFlow.tokenVoteWeight(), flow.tokenVoteWeight());
 
         // Check if the recipient is added to the main flow contract
-        (address recipient, bool removed, FlowStorageV1.RecipientType recipientType, FlowStorageV1.RecipientMetadata memory storedMetadata) = flow.recipients(flow.recipientCount() - 1);
+        (
+            address recipient,
+            bool removed,
+            FlowStorageV1.RecipientType recipientType,
+            FlowStorageV1.RecipientMetadata memory storedMetadata
+        ) = flow.recipients(flow.recipientCount() - 1);
         assertEq(uint(recipientType), uint(FlowStorageV1.RecipientType.FlowContract));
         assertEq(removed, false);
         assertEq(recipient, newFlowRecipient);
@@ -200,7 +228,11 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         vm.prank(manager);
         vm.expectRevert(abi.encodeWithSelector(IFlow.RECIPIENT_ALREADY_REMOVED.selector));
         flow.removeRecipient(0);
-        assertEq(flow.activeRecipientCount(), 1, "Active recipient count should still be 1 after trying to remove again");
+        assertEq(
+            flow.activeRecipientCount(),
+            1,
+            "Active recipient count should still be 1 after trying to remove again"
+        );
 
         // Remove the last recipient
         vm.prank(manager);
@@ -224,23 +256,27 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         flow.setFlowRate(initialFlowRate);
 
         uint32 initialBaselinePercent = flow.baselinePoolFlowRatePercent();
-        
+
         // Test setting a valid percentage
         uint32 newPercent = 500000; // 50%
         vm.prank(flow.owner());
         vm.expectEmit(true, true, false, true);
         emit IFlowEvents.BaselineFlowRatePercentUpdated(initialBaselinePercent, newPercent);
         flow.setBaselineFlowRatePercent(newPercent);
-        
+
         assertEq(flow.baselinePoolFlowRatePercent(), newPercent, "Baseline percentage should be updated");
-        
+
         // Verify flow rates are updated
         int96 totalFlowRate = flow.getTotalFlowRate();
         int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(address(flow));
         int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(address(flow));
-        
+
         assertEq(totalFlowRate, initialFlowRate, "Total flow rate should remain unchanged");
-        assertEq(baselineFlowRate, int96((int256(initialFlowRate) * int256(uint256(newPercent))) / int256(uint256(flow.PERCENTAGE_SCALE()))), "Baseline flow rate should be updated");
+        assertEq(
+            baselineFlowRate,
+            int96((int256(initialFlowRate) * int256(uint256(newPercent))) / int256(uint256(flow.PERCENTAGE_SCALE()))),
+            "Baseline flow rate should be updated"
+        );
         assertEq(bonusFlowRate, initialFlowRate - baselineFlowRate, "Bonus flow rate should be the remainder");
 
         // Test setting percentage to 100%
@@ -248,18 +284,18 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         vm.prank(flow.owner());
         flow.setBaselineFlowRatePercent(percent);
         assertEq(flow.baselinePoolFlowRatePercent(), percent, "Baseline percentage should be 100%");
-        
+
         // Test setting percentage to 0%
         vm.prank(flow.owner());
         flow.setBaselineFlowRatePercent(0);
         assertEq(flow.baselinePoolFlowRatePercent(), 0, "Baseline percentage should be 0%");
-        
+
         // Test setting percentage above 100%
         uint32 invalidPercent = flow.PERCENTAGE_SCALE() + 1;
         vm.prank(flow.owner());
         vm.expectRevert(abi.encodeWithSelector(IFlow.INVALID_PERCENTAGE.selector));
         flow.setBaselineFlowRatePercent(invalidPercent);
-        
+
         // Test calling from non-owner/non-parent address
         vm.prank(address(0xdead));
         vm.expectRevert(abi.encodeWithSelector(IFlow.NOT_OWNER_OR_MANAGER.selector));
@@ -270,7 +306,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         vm.prank(parentAddress);
         vm.expectRevert(abi.encodeWithSelector(IFlow.NOT_OWNER_OR_MANAGER.selector));
         flow.setBaselineFlowRatePercent(300000); // 30%
-    
+
         // Test calling from manager address
         address managerAddress = flow.manager();
         vm.prank(managerAddress);
