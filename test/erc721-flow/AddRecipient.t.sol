@@ -52,7 +52,7 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Test adding a recipient with empty metadata (should revert)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.INVALID_METADATA.selector);
-        flow.addRecipient(recipient, FlowStorageV1.RecipientMetadata("", "", ""));
+        flow.addRecipient(recipient, FlowStorageV1.RecipientMetadata("", "", "", "", ""));
     }
     
     function testAddRecipientNonManager() public {
@@ -67,8 +67,8 @@ contract AddRecipientsTest is ERC721FlowTest {
     function testAddMultipleRecipients() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Recipient 1", "Description 1", "ipfs://image1");
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Recipient 2", "Description 2", "ipfs://image2");
+        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata("Recipient 1", "Description 1", "ipfs://image1", "Tagline 1", "https://recipient1.com");
+        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata("Recipient 2", "Description 2", "ipfs://image2", "Tagline 2", "https://recipient2.com");
 
         // Add first recipient
         vm.prank(flow.owner());
@@ -92,7 +92,7 @@ contract AddRecipientsTest is ERC721FlowTest {
 
     function testBaselineMemberUnitsAfterAddingRecipients() public {
         address externalRecipient = address(0x123);
-        FlowStorageV1.RecipientMetadata memory externalMetadata = FlowStorageV1.RecipientMetadata("External Recipient", "Description", "ipfs://image1");
+        FlowStorageV1.RecipientMetadata memory externalMetadata = FlowStorageV1.RecipientMetadata("External Recipient", "Description", "ipfs://image1", "External Tagline", "https://external.com");
 
         // Add external recipient
         vm.prank(flow.owner());
@@ -101,7 +101,7 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Add flow recipient
         vm.prank(flow.owner());
         address flowRecipient = flow.addFlowRecipient(
-            FlowStorageV1.RecipientMetadata("Flow Recipient", "Description", "ipfs://image2"),
+            FlowStorageV1.RecipientMetadata("Flow Recipient", "Description", "ipfs://image2", "Flow Tagline", "https://flow.com"),
             address(0x456) // flowManager address
         );
 
@@ -120,7 +120,13 @@ contract AddRecipientsTest is ERC721FlowTest {
 
     function testAddDuplicateRecipient() public {
         address recipient = address(0x123);
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata("Recipient", "Description", "ipfs://image");
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
+            title: "Recipient",
+            description: "Description",
+            image: "ipfs://image",
+            tagline: "Test Tagline",
+            url: "https://example.com"
+        });
 
         // Add recipient for the first time
         vm.prank(flow.owner());

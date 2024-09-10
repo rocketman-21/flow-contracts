@@ -13,7 +13,7 @@ contract TokenVerifierTest is Test {
 
     address NOUNS_TOKEN_ADDRESS = 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03;
 
-    function getStateProofParams(string memory path) internal returns (IStateProof.Parameters memory) {
+    function getStateProofParams(string memory path) internal view returns (IStateProof.Parameters memory) {
         string memory json = vm.readFile(path);
         return IStateProof.Parameters({
             beaconRoot: json.readBytes32(".beaconRoot"),

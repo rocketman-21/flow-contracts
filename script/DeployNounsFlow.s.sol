@@ -45,7 +45,9 @@ contract DeployNounsFlow is DeployScript {
             FlowStorageV1.RecipientMetadata({
                 title: "NounsFlow",
                 description: "NounsFlow deployment",
-                image: "ipfs://QmNounsFlowImageHash"
+                image: "ipfs://QmNounsFlowImageHash",
+                tagline: "Nouns Flow Tagline",
+                url: "https://nounsflow.example.com"
             })
         );
 

@@ -86,6 +86,8 @@ contract FlowStorageV1 {
         string title;
         string description;
         string image;
+        string tagline;
+        string url;
     }
 
     // Struct to handle potential recipients

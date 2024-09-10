@@ -60,7 +60,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager: manager, // Add this line
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
+            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
         });
 
         // Test initialization with zero address for _flowImpl
@@ -75,7 +75,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager: manager, // Add this line
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
+            metadata: FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
         });
         flowImpl = originalFlowImpl;
 
@@ -87,7 +87,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager, // Add this line
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
+            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
         );
 
         // Test double initialization (should revert)
@@ -99,7 +99,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             manager, // Add this line
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description")
+            FlowStorageV1.RecipientMetadata("Test Flow", "ipfs://test", "Test Description", "Test Tagline", "https://example.com")
         );
     }
 
@@ -141,7 +141,9 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
             title: "Test Flow Recipient",
             description: "A test flow recipient",
-            image: "ipfs://testimage"
+            image: "ipfs://testimage",
+            tagline: "Test Flow Tagline",
+            url: "https://testflow.com"
         });
         address flowManager = address(0x123);
 
@@ -169,6 +171,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(storedMetadata.title, metadata.title);
         assertEq(storedMetadata.description, metadata.description);
         assertEq(storedMetadata.image, metadata.image);
+        assertEq(storedMetadata.tagline, metadata.tagline);
+        assertEq(storedMetadata.url, metadata.url);
 
         // Test adding with zero address flowManager (should revert)
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
@@ -208,7 +212,9 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
             title: "Test Recipient",
             description: "A test recipient",
-            image: "ipfs://test"
+            image: "ipfs://test",
+            tagline: "Test Recipient Tagline",
+            url: "https://testrecipient.com"
         });
         vm.prank(manager);
         flow.addRecipient(address(0x123), metadata);

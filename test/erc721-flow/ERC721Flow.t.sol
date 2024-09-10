@@ -86,13 +86,17 @@ contract ERC721FlowTest is Test {
         flowMetadata = FlowStorageV1.RecipientMetadata({
             title: "Test Flow",
             description: "A test flow",
-            image: "ipfs://image"
+            image: "ipfs://image",
+            tagline: "Test Flow Tagline",
+            url: "https://testflow.com"
         });
 
         recipientMetadata = FlowStorageV1.RecipientMetadata({
             title: "Test Recipient",
             description: "A test recipient",
-            image: "ipfs://image"
+            image: "ipfs://image",
+            tagline: "Test Recipient Tagline",
+            url: "https://testrecipient.com"
         });
 
         nounsToken = deployMock721("Nouns", "NOUN");
