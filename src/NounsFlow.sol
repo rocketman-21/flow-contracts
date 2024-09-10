@@ -138,7 +138,7 @@ contract NounsFlow is INounsFlow, Flow {
     /**
      * @notice Deploys a new Flow contract as a recipient
      * @dev This function overrides the base _deployFlowRecipient to use NounsFlow-specific initialization
-     * @param metadata The IPFS hash of the recipient's metadata
+     * @param metadata The recipient's metadata like title, description, etc.
      * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      */

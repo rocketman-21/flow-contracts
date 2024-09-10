@@ -287,7 +287,7 @@ abstract contract Flow is
     /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
-     * @param metadata The ipfs hash of the recipient's metadata
+     * @param metadata The metadata of the recipient
      */
     function addRecipient(address recipient, RecipientMetadata memory metadata) external onlyManager nonReentrant validMetadata(metadata) {
         if (recipient == address(0)) revert ADDRESS_ZERO(); 
@@ -315,7 +315,8 @@ abstract contract Flow is
     /**
      * @notice Adds a new Flow contract as a recipient
      * @dev This function creates a new Flow contract and adds it as a recipient
-     * @param metadata The IPFS hash of the recipient's metadata
+     * @param metadata The metadata of the recipient
+     * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientCreated event if the recipient is successfully added
@@ -351,7 +352,7 @@ abstract contract Flow is
     /**
      * @notice Deploys a new Flow contract as a recipient
      * @dev This function is virtual to allow for different deployment strategies in derived contracts
-     * @param metadata The IPFS hash of the recipient's metadata
+     * @param metadata The metadata of the recipient
      * @param flowManager The address of the flow manager for the new contract
      * @return address The address of the newly created Flow contract
      */
