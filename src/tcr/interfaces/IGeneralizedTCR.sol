@@ -2,6 +2,20 @@
 pragma solidity ^0.8.27;
 
 interface IGeneralizedTCR {
+    /* Errors */
+
+    error MUST_BE_ABSENT_TO_BE_ADDED();
+    error MUST_BE_REGISTERED_TO_BE_REMOVED();
+
+    /// @notice The item must have a pending request to be challenged.
+    error ITEM_MUST_HAVE_PENDING_REQUEST();
+
+    /// @notice Challenges must occur during the challenge period.
+    error CHALLENGE_MUST_BE_WITHIN_TIME_LIMIT();
+
+    /// @notice The request should not have already been disputed.
+    error REQUEST_ALREADY_DISPUTED();
+
     /* Enums */
 
     /**

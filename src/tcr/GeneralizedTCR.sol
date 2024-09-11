@@ -94,7 +94,7 @@ contract GeneralizedTCR is
      */
     function addItem(bytes calldata _item) external payable nonReentrant {
         bytes32 itemID = keccak256(_item);
-        require(items[itemID].status == Status.Absent, "Item must be absent to be added.");
+        if (items[itemID].status != Status.Absent) revert MUST_BE_ABSENT_TO_BE_ADDED();
         _requestStatusChange(_item, submissionBaseDeposit);
     }
 
@@ -103,7 +103,7 @@ contract GeneralizedTCR is
      *  @param _evidence A link to an evidence using its URI. Ignored if not provided.
      */
     function removeItem(bytes32 _itemID, string calldata _evidence) external payable nonReentrant {
-        require(items[_itemID].status == Status.Registered, "Item must be registered to be removed.");
+        if (items[_itemID].status != Status.Registered) revert MUST_BE_REGISTERED_TO_BE_REMOVED();
         Item storage item = items[_itemID];
 
         // Emit evidence if it was provided.
@@ -125,10 +125,8 @@ contract GeneralizedTCR is
     function challengeRequest(bytes32 _itemID, string calldata _evidence) external payable nonReentrant {
         Item storage item = items[_itemID];
 
-        require(
-            item.status == Status.RegistrationRequested || item.status == Status.ClearingRequested,
-            "The item must have a pending request."
-        );
+        if (item.status != Status.RegistrationRequested && item.status != Status.ClearingRequested)
+            revert ITEM_MUST_HAVE_PENDING_REQUEST();
 
         Request storage request = item.requests[item.requests.length - 1];
         require(
