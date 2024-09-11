@@ -453,7 +453,7 @@ contract GeneralizedTCR is
         uint arbitrationCost = request.arbitrator.arbitrationCost(request.arbitratorExtraData);
         uint totalCost = arbitrationCost.addCap(_baseDeposit);
         _contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
-        require(round.amountPaid[uint(Party.Requester)] >= totalCost, "You must fully fund your side.");
+        if (round.amountPaid[uint(Party.Requester)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Requester)] = true;
 
         emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, false, false);
