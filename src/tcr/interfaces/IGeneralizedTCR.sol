@@ -31,6 +31,18 @@ interface IGeneralizedTCR {
     /// @notice The loser must contribute during the first half of the appeal period.
     error LOSER_MUST_CONTRIBUTE_DURING_FIRST_HALF_OF_APPEAL_PERIOD();
 
+    /// @notice The request must be resolved before executing the ruling.
+    error REQUEST_MUST_BE_RESOLVED();
+
+    /// @notice The time to challenge the request must pass before execution.
+    error CHALLENGE_PERIOD_MUST_PASS();
+
+    /// @notice The request should not be disputed to be executed.
+    error REQUEST_MUST_NOT_BE_DISPUTED();
+
+    /// @notice There must be a request to execute the ruling.
+    error MUST_BE_A_REQUEST();
+
     /* Enums */
 
     /**

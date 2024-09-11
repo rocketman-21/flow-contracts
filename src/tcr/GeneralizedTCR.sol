@@ -234,7 +234,7 @@ contract GeneralizedTCR is
         Item storage item = items[_itemID];
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
-        require(request.resolved, "Request must be resolved.");
+        if (!request.resolved) revert REQUEST_MUST_BE_RESOLVED();
 
         uint reward;
         if (!round.hasPaid[uint(Party.Requester)] || !round.hasPaid[uint(Party.Challenger)]) {
@@ -273,15 +273,12 @@ contract GeneralizedTCR is
     function executeRequest(bytes32 _itemID) external nonReentrant {
         Item storage item = items[_itemID];
         Request storage request = item.requests[item.requests.length - 1];
-        require(
-            block.timestamp - request.submissionTime > challengePeriodDuration,
-            "Time to challenge the request must pass."
-        );
-        require(!request.disputed, "The request should not be disputed.");
+        if (block.timestamp - request.submissionTime <= challengePeriodDuration) revert CHALLENGE_PERIOD_MUST_PASS();
+        if (request.disputed) revert REQUEST_MUST_NOT_BE_DISPUTED();
 
         if (item.status == Status.RegistrationRequested) item.status = Status.Registered;
         else if (item.status == Status.ClearingRequested) item.status = Status.Absent;
-        else revert("There must be a request.");
+        else revert MUST_BE_A_REQUEST();
 
         request.resolved = true;
         emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1, false, true);
