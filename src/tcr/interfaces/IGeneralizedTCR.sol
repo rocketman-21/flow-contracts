@@ -43,6 +43,9 @@ interface IGeneralizedTCR {
     /// @notice There must be a request to execute the ruling.
     error MUST_BE_A_REQUEST();
 
+    /// @notice The caller must be the governor.
+    error MUST_BE_GOVERNOR();
+
     /* Enums */
 
     /**

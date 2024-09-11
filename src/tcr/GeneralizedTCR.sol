@@ -687,7 +687,7 @@ contract GeneralizedTCR is
     /* Modifiers */
 
     modifier onlyGovernor() {
-        require(msg.sender == governor, "The caller must be the governor.");
+        if (msg.sender != governor) revert MUST_BE_GOVERNOR();
         _;
     }
 
