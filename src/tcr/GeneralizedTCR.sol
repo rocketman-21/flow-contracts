@@ -94,7 +94,7 @@ contract GeneralizedTCR is
      */
     function addItem(bytes calldata _item) external payable nonReentrant {
         bytes32 itemID = keccak256(_item);
-        require(items[itemID].status == Status.Absent, "Item must be absent to be added.");
+        if (items[itemID].status != Status.Absent) revert MUST_BE_ABSENT_TO_BE_ADDED();
         _requestStatusChange(_item, submissionBaseDeposit);
     }
 
@@ -103,7 +103,7 @@ contract GeneralizedTCR is
      *  @param _evidence A link to an evidence using its URI. Ignored if not provided.
      */
     function removeItem(bytes32 _itemID, string calldata _evidence) external payable nonReentrant {
-        require(items[_itemID].status == Status.Registered, "Item must be registered to be removed.");
+        if (items[_itemID].status != Status.Registered) revert MUST_BE_REGISTERED_TO_BE_REMOVED();
         Item storage item = items[_itemID];
 
         // Emit evidence if it was provided.
@@ -125,17 +125,13 @@ contract GeneralizedTCR is
     function challengeRequest(bytes32 _itemID, string calldata _evidence) external payable nonReentrant {
         Item storage item = items[_itemID];
 
-        require(
-            item.status == Status.RegistrationRequested || item.status == Status.ClearingRequested,
-            "The item must have a pending request."
-        );
+        if (item.status != Status.RegistrationRequested && item.status != Status.ClearingRequested)
+            revert ITEM_MUST_HAVE_PENDING_REQUEST();
 
         Request storage request = item.requests[item.requests.length - 1];
-        require(
-            block.timestamp - request.submissionTime <= challengePeriodDuration,
-            "Challenges must occur during the challenge period."
-        );
-        require(!request.disputed, "The request should not have already been disputed.");
+        if (block.timestamp - request.submissionTime > challengePeriodDuration)
+            revert CHALLENGE_MUST_BE_WITHIN_TIME_LIMIT();
+        if (request.disputed) revert REQUEST_ALREADY_DISPUTED();
 
         request.parties[uint(Party.Challenger)] = msg.sender;
 
@@ -145,8 +141,8 @@ contract GeneralizedTCR is
             ? submissionChallengeBaseDeposit
             : removalChallengeBaseDeposit;
         uint totalCost = arbitrationCost.addCap(challengerBaseDeposit);
-        contribute(round, Party.Challenger, msg.sender, msg.value, totalCost);
-        require(round.amountPaid[uint(Party.Challenger)] >= totalCost, "You must fully fund your side.");
+        _contribute(round, Party.Challenger, msg.sender, msg.value, totalCost);
+        if (round.amountPaid[uint(Party.Challenger)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Challenger)] = true;
 
         // Raise a dispute.
@@ -172,18 +168,15 @@ contract GeneralizedTCR is
      *  @param _side The recipient of the contribution.
      */
     function fundAppeal(bytes32 _itemID, Party _side) external payable nonReentrant {
-        require(_side == Party.Requester || _side == Party.Challenger, "Invalid side.");
-        require(
-            items[_itemID].status == Status.RegistrationRequested || items[_itemID].status == Status.ClearingRequested,
-            "The item must have a pending request."
-        );
+        if (_side != Party.Requester && _side != Party.Challenger) revert INVALID_SIDE();
+        if (items[_itemID].status != Status.RegistrationRequested && items[_itemID].status != Status.ClearingRequested)
+            revert ITEM_MUST_HAVE_PENDING_REQUEST();
+
         Request storage request = items[_itemID].requests[items[_itemID].requests.length - 1];
-        require(request.disputed, "A dispute must have been raised to fund an appeal.");
+        if (!request.disputed) revert A_DISPUTE_MUST_BE_RAISED_TO_FUND_AN_APPEAL();
         (uint appealPeriodStart, uint appealPeriodEnd) = request.arbitrator.appealPeriod(request.disputeID);
-        require(
-            block.timestamp >= appealPeriodStart && block.timestamp < appealPeriodEnd,
-            "Contributions must be made within the appeal period."
-        );
+        if (block.timestamp < appealPeriodStart || block.timestamp >= appealPeriodEnd)
+            revert CONTRIBUTIONS_MUST_BE_MADE_WITHIN_THE_APPEAL_PERIOD();
 
         uint multiplier;
         {
@@ -191,10 +184,8 @@ contract GeneralizedTCR is
             Party loser;
             if (winner == Party.Requester) loser = Party.Challenger;
             else if (winner == Party.Challenger) loser = Party.Requester;
-            require(
-                _side != loser || (block.timestamp - appealPeriodStart < (appealPeriodEnd - appealPeriodStart) / 2),
-                "The loser must contribute during the first half of the appeal period."
-            );
+            if (_side == loser && (block.timestamp - appealPeriodStart >= (appealPeriodEnd - appealPeriodStart) / 2))
+                revert LOSER_MUST_CONTRIBUTE_DURING_FIRST_HALF_OF_APPEAL_PERIOD();
 
             if (_side == winner) multiplier = winnerStakeMultiplier;
             else if (_side == loser) multiplier = loserStakeMultiplier;
@@ -204,7 +195,7 @@ contract GeneralizedTCR is
         Round storage round = request.rounds[request.rounds.length - 1];
         uint appealCost = request.arbitrator.appealCost(request.disputeID, request.arbitratorExtraData);
         uint totalCost = appealCost.addCap((appealCost.mulCap(multiplier)) / MULTIPLIER_DIVISOR);
-        uint contribution = contribute(round, _side, msg.sender, msg.value, totalCost);
+        uint contribution = _contribute(round, _side, msg.sender, msg.value, totalCost);
 
         emit AppealContribution(
             _itemID,
@@ -243,7 +234,7 @@ contract GeneralizedTCR is
         Item storage item = items[_itemID];
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
-        require(request.resolved, "Request must be resolved.");
+        if (!request.resolved) revert REQUEST_MUST_BE_RESOLVED();
 
         uint reward;
         if (!round.hasPaid[uint(Party.Requester)] || !round.hasPaid[uint(Party.Challenger)]) {
@@ -282,15 +273,12 @@ contract GeneralizedTCR is
     function executeRequest(bytes32 _itemID) external nonReentrant {
         Item storage item = items[_itemID];
         Request storage request = item.requests[item.requests.length - 1];
-        require(
-            block.timestamp - request.submissionTime > challengePeriodDuration,
-            "Time to challenge the request must pass."
-        );
-        require(!request.disputed, "The request should not be disputed.");
+        if (block.timestamp - request.submissionTime <= challengePeriodDuration) revert CHALLENGE_PERIOD_MUST_PASS();
+        if (request.disputed) revert REQUEST_MUST_NOT_BE_DISPUTED();
 
         if (item.status == Status.RegistrationRequested) item.status = Status.Registered;
         else if (item.status == Status.ClearingRequested) item.status = Status.Absent;
-        else revert("There must be a request.");
+        else revert MUST_BE_A_REQUEST();
 
         request.resolved = true;
         emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1, false, true);
@@ -310,9 +298,9 @@ contract GeneralizedTCR is
 
         Request storage request = item.requests[item.requests.length - 1];
         Round storage round = request.rounds[request.rounds.length - 1];
-        require(_ruling <= RULING_OPTIONS, "Invalid ruling option");
-        require(address(request.arbitrator) == msg.sender, "Only the arbitrator can give a ruling");
-        require(!request.resolved, "The request must not be resolved.");
+        if (_ruling > RULING_OPTIONS) revert INVALID_RULING_OPTION();
+        if (address(request.arbitrator) != msg.sender) revert ONLY_ARBITRATOR_CAN_RULE();
+        if (request.resolved) revert REQUEST_MUST_NOT_BE_RESOLVED();
 
         // The ruling is inverted if the loser paid its fees.
         if (round.hasPaid[uint(Party.Requester)] == true)
@@ -321,7 +309,7 @@ contract GeneralizedTCR is
         else if (round.hasPaid[uint(Party.Challenger)] == true) resultRuling = Party.Challenger;
 
         emit Ruling(IArbitrator(msg.sender), _disputeID, uint(resultRuling));
-        executeRuling(_disputeID, uint(resultRuling));
+        _executeRuling(_disputeID, uint(resultRuling));
     }
 
     /** @dev Submit a reference to evidence. EVENT.
@@ -331,7 +319,7 @@ contract GeneralizedTCR is
     function submitEvidence(bytes32 _itemID, string calldata _evidence) external nonReentrant {
         Item storage item = items[_itemID];
         Request storage request = item.requests[item.requests.length - 1];
-        require(!request.resolved, "The dispute must not already be resolved.");
+        if (request.resolved) revert DISPUTE_MUST_NOT_BE_RESOLVED();
 
         uint evidenceGroupID = uint(keccak256(abi.encodePacked(_itemID, item.requests.length - 1)));
         emit Evidence(request.arbitrator, evidenceGroupID, msg.sender, _evidence);
@@ -464,8 +452,8 @@ contract GeneralizedTCR is
 
         uint arbitrationCost = request.arbitrator.arbitrationCost(request.arbitratorExtraData);
         uint totalCost = arbitrationCost.addCap(_baseDeposit);
-        contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
-        require(round.amountPaid[uint(Party.Requester)] >= totalCost, "You must fully fund your side.");
+        _contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
+        if (round.amountPaid[uint(Party.Requester)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Requester)] = true;
 
         emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, false, false);
@@ -479,7 +467,7 @@ contract GeneralizedTCR is
      *  @return taken The amount of ETH taken.
      *  @return remainder The amount of ETH left from the contribution.
      */
-    function calculateContribution(
+    function _calculateContribution(
         uint _available,
         uint _requiredAmount
     ) internal pure returns (uint taken, uint remainder) {
@@ -496,7 +484,7 @@ contract GeneralizedTCR is
      *  @param _totalRequired The total amount required for this side.
      *  @return The amount of appeal fees contributed.
      */
-    function contribute(
+    function _contribute(
         Round storage _round,
         Party _side,
         address _contributor,
@@ -506,7 +494,7 @@ contract GeneralizedTCR is
         // Take up to the amount necessary to fund the current round at the current costs.
         uint contribution; // Amount contributed.
         uint remainingETH; // Remaining ETH to send back.
-        (contribution, remainingETH) = calculateContribution(
+        (contribution, remainingETH) = _calculateContribution(
             _amount,
             _totalRequired.subCap(_round.amountPaid[uint(_side)])
         );
@@ -524,7 +512,7 @@ contract GeneralizedTCR is
      *  @param _disputeID ID of the dispute in the arbitrator contract.
      *  @param _ruling Ruling given by the arbitrator. Note that 0 is reserved for "Refused to arbitrate".
      */
-    function executeRuling(uint _disputeID, uint _ruling) internal {
+    function _executeRuling(uint _disputeID, uint _ruling) internal {
         bytes32 itemID = arbitratorDisputeIDToItem[msg.sender][_disputeID];
         Item storage item = items[itemID];
         Request storage request = item.requests[item.requests.length - 1];
@@ -699,7 +687,7 @@ contract GeneralizedTCR is
     /* Modifiers */
 
     modifier onlyGovernor() {
-        require(msg.sender == governor, "The caller must be the governor.");
+        if (msg.sender != governor) revert MUST_BE_GOVERNOR();
         _;
     }
 
