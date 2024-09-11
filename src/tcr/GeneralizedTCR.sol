@@ -319,7 +319,7 @@ contract GeneralizedTCR is
     function submitEvidence(bytes32 _itemID, string calldata _evidence) external nonReentrant {
         Item storage item = items[_itemID];
         Request storage request = item.requests[item.requests.length - 1];
-        require(!request.resolved, "The dispute must not already be resolved.");
+        if (request.resolved) revert DISPUTE_MUST_NOT_BE_RESOLVED();
 
         uint evidenceGroupID = uint(keccak256(abi.encodePacked(_itemID, item.requests.length - 1)));
         emit Evidence(request.arbitrator, evidenceGroupID, msg.sender, _evidence);

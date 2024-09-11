@@ -4,16 +4,24 @@ pragma solidity ^0.8.27;
 interface IGeneralizedTCR {
     /* Errors */
 
+    /// @notice Thrown when attempting to add an item that is not in the 'Absent' state.
+    /// @dev This error is used to ensure that only items not currently in the registry can be added.
     error MUST_BE_ABSENT_TO_BE_ADDED();
+
+    /// @notice Thrown when attempting to remove an item that is not in the 'Registered' state.
+    /// @dev This error is used to ensure that only items currently in the registry can be removed.
     error MUST_BE_REGISTERED_TO_BE_REMOVED();
 
     /// @notice The item must have a pending request to be challenged.
+    /// @dev This error is used to ensure that only items with a pending request can be challenged.
     error ITEM_MUST_HAVE_PENDING_REQUEST();
 
     /// @notice Challenges must occur during the challenge period.
+    /// @dev This error is used to ensure that only challenges within the specified time limit can be made.
     error CHALLENGE_MUST_BE_WITHIN_TIME_LIMIT();
 
     /// @notice The request should not have already been disputed.
+    /// @dev This error is used to ensure that only requests that have not been disputed can be challenged.
     error REQUEST_ALREADY_DISPUTED();
 
     /// @notice The party must fully fund their side.
@@ -54,6 +62,9 @@ interface IGeneralizedTCR {
 
     /// @notice Only the arbitrator can give a ruling.
     error ONLY_ARBITRATOR_CAN_RULE();
+
+    /// @notice The dispute must not already be resolved.
+    error DISPUTE_MUST_NOT_BE_RESOLVED();
 
     /* Enums */
 
