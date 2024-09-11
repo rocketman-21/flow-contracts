@@ -383,6 +383,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _updateBonusMemberUnits(recipientAddress, 0);
         _removeBaselineMemberUnits(recipientAddress);
 
+        // limitation of superfluid means that when total member units decrease, you must call `distributeFlow` again
+        _setFlowRate(getTotalFlowRate());
+
         emit RecipientRemoved(recipientAddress, recipientId);
 
         recipients[recipientId].removed = true;
