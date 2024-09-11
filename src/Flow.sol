@@ -144,7 +144,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             _setChildFlowRate(recipientAddress);
         }
 
-        emit VoteCast(recipientId, tokenId, memberUnits, bps);
+        emit VoteCast(recipientId, tokenId, memberUnits, bps, totalWeight);
     }
 
     /**
@@ -349,6 +349,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _incrementRecipientCounts();
 
         emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
+        emit FlowRecipientCreated(recipientId, recipient);
 
         return recipient;
     }
@@ -565,6 +566,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function getMemberTotalFlowRate(address memberAddr) public view returns (int96 flowRate) {
         flowRate = bonusPool.getMemberFlowRate(memberAddr) + baselinePool.getMemberFlowRate(memberAddr);
+    }
+
+    /**
+     * @notice Retrieves the total member units for a specific member across both pools
+     * @param memberAddr The address of the member
+     * @return totalUnits The total units for the member
+     */
+    function getTotalMemberUnits(address memberAddr) public view returns (uint256 totalUnits) {
+        totalUnits = bonusPool.getUnits(memberAddr) + baselinePool.getUnits(memberAddr);
     }
 
     /**

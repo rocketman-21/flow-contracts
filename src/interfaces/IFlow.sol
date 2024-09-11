@@ -14,8 +14,18 @@ interface IFlowEvents {
      * @param tokenId TokenId owned by the voter.
      * @param memberUnits New member units as a result of the vote.
      * @param bps Basis points of the vote. Proportion of the voters weight that is allocated to the recipient.
+     * @param totalUnits Total weight of the vote
      */
-    event VoteCast(uint256 indexed recipientId, uint256 indexed tokenId, uint256 memberUnits, uint256 bps);
+    event VoteCast(
+        uint256 indexed recipientId,
+        uint256 indexed tokenId,
+        uint256 memberUnits,
+        uint256 bps,
+        uint256 totalUnits
+    );
+
+    /// @notice Emitted when a new child flow recipient is created
+    event FlowRecipientCreated(uint256 indexed recipientId, address indexed recipient);
 
     /// @notice Emitted when the flow is initialized
     event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
