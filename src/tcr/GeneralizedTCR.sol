@@ -13,6 +13,7 @@ import { IEvidence } from "./interfaces/IEvidence.sol";
 import { IGeneralizedTCR } from "./interfaces/IGeneralizedTCR.sol";
 import { CappedMath } from "./utils/CappedMath.sol";
 import { GeneralizedTCRStorageV1 } from "./storage/GeneralizedTCRStorageV1.sol";
+import { IWETH } from "./interfaces/IWETH.sol";
 
 /**
  *  @title GeneralizedTCR
@@ -29,6 +30,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
      *  @param _registrationMetaEvidence The URI of the meta evidence object for registration requests.
      *  @param _clearingMetaEvidence The URI of the meta evidence object for clearing requests.
      *  @param _governor The trusted governor of this contract.
+     *  @param _WETH The address of the WETH contract.
      *  @param _submissionBaseDeposit The base deposit to submit an item.
      *  @param _removalBaseDeposit The base deposit to remove an item.
      *  @param _submissionChallengeBaseDeposit The base deposit to challenge a submission.
@@ -46,13 +48,14 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         string memory _registrationMetaEvidence,
         string memory _clearingMetaEvidence,
         address _governor,
+        address _WETH,
         uint _submissionBaseDeposit,
         uint _removalBaseDeposit,
         uint _submissionChallengeBaseDeposit,
         uint _removalChallengeBaseDeposit,
         uint _challengePeriodDuration,
         uint[3] memory _stakeMultipliers
-    ) public {
+    ) {
         emit MetaEvidence(0, _registrationMetaEvidence);
         emit MetaEvidence(1, _clearingMetaEvidence);
         emit ConnectedTCRSet(_connectedTCR);
@@ -60,6 +63,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         arbitrator = _arbitrator;
         arbitratorExtraData = _arbitratorExtraData;
         governor = _governor;
+        WETH = _WETH;
         submissionBaseDeposit = _submissionBaseDeposit;
         removalBaseDeposit = _removalBaseDeposit;
         submissionChallengeBaseDeposit = _submissionChallengeBaseDeposit;
@@ -255,7 +259,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         round.contributions[_beneficiary][uint(Party.Requester)] = 0;
         round.contributions[_beneficiary][uint(Party.Challenger)] = 0;
 
-        _beneficiary.send(reward);
+        _safeTransferETHWithFallback(_beneficiary, reward);
     }
 
     /** @dev Executes an unchallenged request if the challenge period has passed.
@@ -504,7 +508,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         _round.feeRewards += contribution;
 
         // Reimburse leftover ETH.
-        _contributor.send(remainingETH); // Deliberate use of send in order to not block the contract in case of reverting fallback.
+        _safeTransferETHWithFallback(_contributor, remainingETH);
 
         return contribution;
     }
@@ -652,6 +656,37 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
         return (_round != (request.rounds.length - 1), round.amountPaid, round.hasPaid, round.feeRewards);
+    }
+
+    /**
+     * @notice Transfer ETH/WETH from the contract
+     * @param _to The recipient address
+     * @param _amount The amount transferring
+     */
+    function _safeTransferETHWithFallback(address _to, uint256 _amount) private {
+        // Ensure the contract has enough ETH to transfer
+        if (address(this).balance < _amount) revert("Insufficient balance");
+
+        // Used to store if the transfer succeeded
+        bool success;
+
+        assembly {
+            // Transfer ETH to the recipient
+            // Limit the call to 30,000 gas
+            success := call(30000, _to, _amount, 0, 0, 0, 0)
+        }
+
+        // If the transfer failed:
+        if (!success) {
+            // Wrap as WETH
+            IWETH(WETH).deposit{ value: _amount }();
+
+            // Transfer WETH instead
+            bool wethSuccess = IWETH(WETH).transfer(_to, _amount);
+
+            // Ensure successful transfer
+            if (!wethSuccess) revert("WETH transfer failed");
+        }
     }
 
     /* Modifiers */

@@ -68,6 +68,10 @@ contract GeneralizedTCRStorageV1 {
      */
     address public governor;
     /**
+     * @notice The address of the WETH contract
+     */
+    address public WETH;
+    /**
      * @notice The base deposit to submit an item
      */
     uint256 public submissionBaseDeposit;
