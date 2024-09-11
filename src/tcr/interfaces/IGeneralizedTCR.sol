@@ -28,6 +28,9 @@ interface IGeneralizedTCR {
     /// @notice Contributions must be made within the appeal period.
     error CONTRIBUTIONS_MUST_BE_MADE_WITHIN_THE_APPEAL_PERIOD();
 
+    /// @notice The loser must contribute during the first half of the appeal period.
+    error LOSER_MUST_CONTRIBUTE_DURING_FIRST_HALF_OF_APPEAL_PERIOD();
+
     /* Enums */
 
     /**

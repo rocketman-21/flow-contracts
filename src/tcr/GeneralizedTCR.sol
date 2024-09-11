@@ -184,10 +184,8 @@ contract GeneralizedTCR is
             Party loser;
             if (winner == Party.Requester) loser = Party.Challenger;
             else if (winner == Party.Challenger) loser = Party.Requester;
-            require(
-                _side != loser || (block.timestamp - appealPeriodStart < (appealPeriodEnd - appealPeriodStart) / 2),
-                "The loser must contribute during the first half of the appeal period."
-            );
+            if (_side == loser && (block.timestamp - appealPeriodStart >= (appealPeriodEnd - appealPeriodStart) / 2))
+                revert LOSER_MUST_CONTRIBUTE_DURING_FIRST_HALF_OF_APPEAL_PERIOD();
 
             if (_side == winner) multiplier = winnerStakeMultiplier;
             else if (_side == loser) multiplier = loserStakeMultiplier;
