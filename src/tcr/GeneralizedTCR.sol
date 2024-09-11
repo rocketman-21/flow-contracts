@@ -141,7 +141,7 @@ contract GeneralizedTCR is
             ? submissionChallengeBaseDeposit
             : removalChallengeBaseDeposit;
         uint totalCost = arbitrationCost.addCap(challengerBaseDeposit);
-        contribute(round, Party.Challenger, msg.sender, msg.value, totalCost);
+        _contribute(round, Party.Challenger, msg.sender, msg.value, totalCost);
         if (round.amountPaid[uint(Party.Challenger)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Challenger)] = true;
 
@@ -195,7 +195,7 @@ contract GeneralizedTCR is
         Round storage round = request.rounds[request.rounds.length - 1];
         uint appealCost = request.arbitrator.appealCost(request.disputeID, request.arbitratorExtraData);
         uint totalCost = appealCost.addCap((appealCost.mulCap(multiplier)) / MULTIPLIER_DIVISOR);
-        uint contribution = contribute(round, _side, msg.sender, msg.value, totalCost);
+        uint contribution = _contribute(round, _side, msg.sender, msg.value, totalCost);
 
         emit AppealContribution(
             _itemID,
@@ -309,7 +309,7 @@ contract GeneralizedTCR is
         else if (round.hasPaid[uint(Party.Challenger)] == true) resultRuling = Party.Challenger;
 
         emit Ruling(IArbitrator(msg.sender), _disputeID, uint(resultRuling));
-        executeRuling(_disputeID, uint(resultRuling));
+        _executeRuling(_disputeID, uint(resultRuling));
     }
 
     /** @dev Submit a reference to evidence. EVENT.
@@ -452,7 +452,7 @@ contract GeneralizedTCR is
 
         uint arbitrationCost = request.arbitrator.arbitrationCost(request.arbitratorExtraData);
         uint totalCost = arbitrationCost.addCap(_baseDeposit);
-        contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
+        _contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
         require(round.amountPaid[uint(Party.Requester)] >= totalCost, "You must fully fund your side.");
         round.hasPaid[uint(Party.Requester)] = true;
 
@@ -467,7 +467,7 @@ contract GeneralizedTCR is
      *  @return taken The amount of ETH taken.
      *  @return remainder The amount of ETH left from the contribution.
      */
-    function calculateContribution(
+    function _calculateContribution(
         uint _available,
         uint _requiredAmount
     ) internal pure returns (uint taken, uint remainder) {
@@ -484,7 +484,7 @@ contract GeneralizedTCR is
      *  @param _totalRequired The total amount required for this side.
      *  @return The amount of appeal fees contributed.
      */
-    function contribute(
+    function _contribute(
         Round storage _round,
         Party _side,
         address _contributor,
@@ -494,7 +494,7 @@ contract GeneralizedTCR is
         // Take up to the amount necessary to fund the current round at the current costs.
         uint contribution; // Amount contributed.
         uint remainingETH; // Remaining ETH to send back.
-        (contribution, remainingETH) = calculateContribution(
+        (contribution, remainingETH) = _calculateContribution(
             _amount,
             _totalRequired.subCap(_round.amountPaid[uint(_side)])
         );
@@ -512,7 +512,7 @@ contract GeneralizedTCR is
      *  @param _disputeID ID of the dispute in the arbitrator contract.
      *  @param _ruling Ruling given by the arbitrator. Note that 0 is reserved for "Refused to arbitrate".
      */
-    function executeRuling(uint _disputeID, uint _ruling) internal {
+    function _executeRuling(uint _disputeID, uint _ruling) internal {
         bytes32 itemID = arbitratorDisputeIDToItem[msg.sender][_disputeID];
         Item storage item = items[itemID];
         Request storage request = item.requests[item.requests.length - 1];
