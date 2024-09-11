@@ -15,11 +15,23 @@ import { CappedMath } from "./utils/CappedMath.sol";
 import { GeneralizedTCRStorageV1 } from "./storage/GeneralizedTCRStorageV1.sol";
 import { IWETH } from "./interfaces/IWETH.sol";
 
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+
 /**
  *  @title GeneralizedTCR
  *  This contract is a curated registry for any types of items. Just like a TCR contract it features the request-challenge protocol and appeal fees crowdfunding.
  */
-contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedTCRStorageV1 {
+contract GeneralizedTCR is
+    IArbitrable,
+    IEvidence,
+    IGeneralizedTCR,
+    UUPSUpgradeable,
+    Ownable2StepUpgradeable,
+    ReentrancyGuardUpgradeable,
+    GeneralizedTCRStorageV1
+{
     using CappedMath for uint256;
 
     /**
@@ -80,17 +92,17 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
     /** @dev Submit a request to register an item. Accepts enough ETH to cover the deposit, reimburses the rest.
      *  @param _item The data describing the item.
      */
-    function addItem(bytes calldata _item) external payable {
+    function addItem(bytes calldata _item) external payable nonReentrant {
         bytes32 itemID = keccak256(_item);
         require(items[itemID].status == Status.Absent, "Item must be absent to be added.");
-        requestStatusChange(_item, submissionBaseDeposit);
+        _requestStatusChange(_item, submissionBaseDeposit);
     }
 
     /** @dev Submit a request to remove an item from the list. Accepts enough ETH to cover the deposit, reimburses the rest.
      *  @param _itemID The ID of the item to remove.
      *  @param _evidence A link to an evidence using its URI. Ignored if not provided.
      */
-    function removeItem(bytes32 _itemID, string calldata _evidence) external payable {
+    function removeItem(bytes32 _itemID, string calldata _evidence) external payable nonReentrant {
         require(items[_itemID].status == Status.Registered, "Item must be registered to be removed.");
         Item storage item = items[_itemID];
 
@@ -103,14 +115,14 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
             emit Evidence(arbitrator, evidenceGroupID, msg.sender, _evidence);
         }
 
-        requestStatusChange(item.data, removalBaseDeposit);
+        _requestStatusChange(item.data, removalBaseDeposit);
     }
 
     /** @dev Challenges the request of the item. Accepts enough ETH to cover the deposit, reimburses the rest.
      *  @param _itemID The ID of the item which request to challenge.
      *  @param _evidence A link to an evidence using its URI. Ignored if not provided.
      */
-    function challengeRequest(bytes32 _itemID, string calldata _evidence) external payable {
+    function challengeRequest(bytes32 _itemID, string calldata _evidence) external payable nonReentrant {
         Item storage item = items[_itemID];
 
         require(
@@ -159,7 +171,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
      *  @param _itemID The ID of the item which request to fund.
      *  @param _side The recipient of the contribution.
      */
-    function fundAppeal(bytes32 _itemID, Party _side) external payable {
+    function fundAppeal(bytes32 _itemID, Party _side) external payable nonReentrant {
         require(_side == Party.Requester || _side == Party.Challenger, "Invalid side.");
         require(
             items[_itemID].status == Status.RegistrationRequested || items[_itemID].status == Status.ClearingRequested,
@@ -222,7 +234,12 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
      *  @param _request The request from which to withdraw from.
      *  @param _round The round from which to withdraw from.
      */
-    function withdrawFeesAndRewards(address _beneficiary, bytes32 _itemID, uint _request, uint _round) public {
+    function withdrawFeesAndRewards(
+        address _beneficiary,
+        bytes32 _itemID,
+        uint _request,
+        uint _round
+    ) public nonReentrant {
         Item storage item = items[_itemID];
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
@@ -262,7 +279,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
     /** @dev Executes an unchallenged request if the challenge period has passed.
      *  @param _itemID The ID of the item to execute.
      */
-    function executeRequest(bytes32 _itemID) external {
+    function executeRequest(bytes32 _itemID) external nonReentrant {
         Item storage item = items[_itemID];
         Request storage request = item.requests[item.requests.length - 1];
         require(
@@ -286,7 +303,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
      *  @param _disputeID ID of the dispute in the arbitrator contract.
      *  @param _ruling Ruling given by the arbitrator. Note that 0 is reserved for "Refused to arbitrate".
      */
-    function rule(uint _disputeID, uint _ruling) public {
+    function rule(uint _disputeID, uint _ruling) public nonReentrant {
         Party resultRuling = Party(_ruling);
         bytes32 itemID = arbitratorDisputeIDToItem[msg.sender][_disputeID];
         Item storage item = items[itemID];
@@ -311,7 +328,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
      *  @param _itemID The ID of the item which the evidence is related to.
      *  @param _evidence A link to an evidence using its URI.
      */
-    function submitEvidence(bytes32 _itemID, string calldata _evidence) external {
+    function submitEvidence(bytes32 _itemID, string calldata _evidence) external nonReentrant {
         Item storage item = items[_itemID];
         Request storage request = item.requests[item.requests.length - 1];
         require(!request.resolved, "The dispute must not already be resolved.");
@@ -415,7 +432,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
      *  @param _item The data describing the item.
      *  @param _baseDeposit The base deposit for the request.
      */
-    function requestStatusChange(bytes memory _item, uint _baseDeposit) internal {
+    function _requestStatusChange(bytes memory _item, uint _baseDeposit) internal {
         bytes32 itemID = keccak256(_item);
         Item storage item = items[itemID];
 
@@ -685,4 +702,10 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         require(msg.sender == governor, "The caller must be the governor.");
         _;
     }
+
+    /**
+     * @notice Ensures the caller is authorized to upgrade the contract
+     * @param _newImpl The new implementation address
+     */
+    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
 }
