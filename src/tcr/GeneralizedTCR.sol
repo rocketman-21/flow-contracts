@@ -144,7 +144,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         );
         arbitratorDisputeIDToItem[address(request.arbitrator)][request.disputeID] = _itemID;
         request.disputed = true;
-        request.rounds.length++;
+        request.rounds.push(); // prepare for any new appeals given the new dispute
         round.feeRewards = round.feeRewards.subCap(arbitrationCost);
 
         uint evidenceGroupID = uint(keccak256(abi.encodePacked(_itemID, item.requests.length - 1)));
@@ -211,7 +211,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         // Raise appeal if both sides are fully funded.
         if (round.hasPaid[uint(Party.Challenger)] && round.hasPaid[uint(Party.Requester)]) {
             request.arbitrator.appeal{ value: appealCost }(request.disputeID, request.arbitratorExtraData);
-            request.rounds.length++;
+            request.rounds.push(); // if appeal is successfully funded, a new round is created
             round.feeRewards = round.feeRewards.subCap(appealCost);
         }
     }
@@ -443,7 +443,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
         request.arbitrator = arbitrator;
         request.arbitratorExtraData = arbitratorExtraData;
 
-        Round storage round = request.rounds[request.rounds.length++];
+        Round storage round = request.rounds.push();
 
         uint arbitrationCost = request.arbitrator.arbitrationCost(request.arbitratorExtraData);
         uint totalCost = arbitrationCost.addCap(_baseDeposit);
