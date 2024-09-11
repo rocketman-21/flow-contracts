@@ -24,6 +24,9 @@ interface IFlowEvents {
         uint256 totalUnits
     );
 
+    /// @notice Emitted when a new child flow recipient is created
+    event FlowRecipientCreated(uint256 indexed recipientId, address indexed recipient);
+
     /// @notice Emitted when the flow is initialized
     event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
 

@@ -349,6 +349,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _incrementRecipientCounts();
 
         emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
+        emit FlowRecipientCreated(recipientId, recipient);
 
         return recipient;
     }
