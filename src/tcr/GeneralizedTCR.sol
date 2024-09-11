@@ -168,18 +168,15 @@ contract GeneralizedTCR is
      *  @param _side The recipient of the contribution.
      */
     function fundAppeal(bytes32 _itemID, Party _side) external payable nonReentrant {
-        require(_side == Party.Requester || _side == Party.Challenger, "Invalid side.");
-        require(
-            items[_itemID].status == Status.RegistrationRequested || items[_itemID].status == Status.ClearingRequested,
-            "The item must have a pending request."
-        );
+        if (_side != Party.Requester && _side != Party.Challenger) revert INVALID_SIDE();
+        if (items[_itemID].status != Status.RegistrationRequested && items[_itemID].status != Status.ClearingRequested)
+            revert ITEM_MUST_HAVE_PENDING_REQUEST();
+
         Request storage request = items[_itemID].requests[items[_itemID].requests.length - 1];
-        require(request.disputed, "A dispute must have been raised to fund an appeal.");
+        if (!request.disputed) revert A_DISPUTE_MUST_BE_RAISED_TO_FUND_AN_APPEAL();
         (uint appealPeriodStart, uint appealPeriodEnd) = request.arbitrator.appealPeriod(request.disputeID);
-        require(
-            block.timestamp >= appealPeriodStart && block.timestamp < appealPeriodEnd,
-            "Contributions must be made within the appeal period."
-        );
+        if (block.timestamp < appealPeriodStart || block.timestamp >= appealPeriodEnd)
+            revert CONTRIBUTIONS_MUST_BE_MADE_WITHIN_THE_APPEAL_PERIOD();
 
         uint multiplier;
         {

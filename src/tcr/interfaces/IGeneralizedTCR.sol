@@ -19,6 +19,15 @@ interface IGeneralizedTCR {
     /// @notice The party must fully fund their side.
     error MUST_FULLY_FUND_YOUR_SIDE();
 
+    /// @notice The side must be either Requester or Challenger.
+    error INVALID_SIDE();
+
+    /// @notice The dispute must be raised to fund an appeal.
+    error A_DISPUTE_MUST_BE_RAISED_TO_FUND_AN_APPEAL();
+
+    /// @notice Contributions must be made within the appeal period.
+    error CONTRIBUTIONS_MUST_BE_MADE_WITHIN_THE_APPEAL_PERIOD();
+
     /* Enums */
 
     /**
