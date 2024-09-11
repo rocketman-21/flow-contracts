@@ -29,7 +29,7 @@ contract GeneralizedTCRStorageV1 {
         uint256 disputeID; // ID of the dispute, if any.
         uint256 submissionTime; // Time when the request was made. Used to track when the challenge period ends.
         bool resolved; // True if the request was executed and/or any raised disputes were resolved.
-        address payable[3] parties; // Address of requester and challenger, if any, in the form parties[party].
+        address[3] parties; // Address of requester and challenger, if any, in the form parties[party].
         Round[] rounds; // Tracks each round of a dispute in the form rounds[roundID].
         IGeneralizedTCR.Party ruling; // The final ruling given, if any.
         IArbitrator arbitrator; // The arbitrator trusted to solve disputes for this request.

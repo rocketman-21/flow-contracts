@@ -225,7 +225,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
      *  @param _request The request from which to withdraw from.
      *  @param _round The round from which to withdraw from.
      */
-    function withdrawFeesAndRewards(address payable _beneficiary, bytes32 _itemID, uint _request, uint _round) public {
+    function withdrawFeesAndRewards(address _beneficiary, bytes32 _itemID, uint _request, uint _round) public {
         Item storage item = items[_itemID];
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
@@ -492,7 +492,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
     function contribute(
         Round storage _round,
         Party _side,
-        address payable _contributor,
+        address _contributor,
         uint _amount,
         uint _totalRequired
     ) internal returns (uint) {
@@ -615,7 +615,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
             uint disputeID,
             uint submissionTime,
             bool resolved,
-            address payable[3] memory parties,
+            address[3] memory parties,
             uint numberOfRounds,
             Party ruling,
             IArbitrator arbitrator,
