@@ -16,6 +16,9 @@ interface IGeneralizedTCR {
     /// @notice The request should not have already been disputed.
     error REQUEST_ALREADY_DISPUTED();
 
+    /// @notice The party must fully fund their side.
+    error MUST_FULLY_FUND_YOUR_SIDE();
+
     /* Enums */
 
     /**

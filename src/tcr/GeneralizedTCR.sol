@@ -129,11 +129,9 @@ contract GeneralizedTCR is
             revert ITEM_MUST_HAVE_PENDING_REQUEST();
 
         Request storage request = item.requests[item.requests.length - 1];
-        require(
-            block.timestamp - request.submissionTime <= challengePeriodDuration,
-            "Challenges must occur during the challenge period."
-        );
-        require(!request.disputed, "The request should not have already been disputed.");
+        if (block.timestamp - request.submissionTime > challengePeriodDuration)
+            revert CHALLENGE_MUST_BE_WITHIN_TIME_LIMIT();
+        if (request.disputed) revert REQUEST_ALREADY_DISPUTED();
 
         request.parties[uint(Party.Challenger)] = msg.sender;
 
@@ -144,7 +142,7 @@ contract GeneralizedTCR is
             : removalChallengeBaseDeposit;
         uint totalCost = arbitrationCost.addCap(challengerBaseDeposit);
         contribute(round, Party.Challenger, msg.sender, msg.value, totalCost);
-        require(round.amountPaid[uint(Party.Challenger)] >= totalCost, "You must fully fund your side.");
+        if (round.amountPaid[uint(Party.Challenger)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Challenger)] = true;
 
         // Raise a dispute.
