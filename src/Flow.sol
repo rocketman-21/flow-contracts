@@ -379,14 +379,26 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         address recipientAddress = recipients[recipientId].recipient;
         recipientExists[recipientAddress] = false;
 
-        // set member units to 0
-        _updateBonusMemberUnits(recipientAddress, 0);
-        _removeBaselineMemberUnits(recipientAddress);
+        _removeFromPools(recipientAddress);
 
         emit RecipientRemoved(recipientAddress, recipientId);
 
         recipients[recipientId].removed = true;
         activeRecipientCount--;
+    }
+
+    /**
+     * @notice Resets the flow distribution after removing a recipient
+     * @dev This function should be called after removing a recipient to ensure proper flow rate distribution
+     * @param recipientAddress The address of the removed recipient
+     */
+    function _removeFromPools(address recipientAddress) internal {
+        // Set member units to 0
+        _updateBonusMemberUnits(recipientAddress, 0);
+        _updateBaselineMemberUnits(recipientAddress, 0);
+
+        // limitation of superfluid means that when total member units decrease, you must call `distributeFlow` again
+        _setFlowRate(getTotalFlowRate());
     }
 
     /**
@@ -449,15 +461,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _initializeBaselineMemberUnits(address member) internal {
         _updateBaselineMemberUnits(member, BASELINE_MEMBER_UNITS);
-    }
-
-    /**
-     * @notice Removes the baseline member units for a given member
-     * @param member The address of the member whose baseline units are to be removed
-     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
-     */
-    function _removeBaselineMemberUnits(address member) internal {
-        _updateBaselineMemberUnits(member, 0);
     }
 
     /**
