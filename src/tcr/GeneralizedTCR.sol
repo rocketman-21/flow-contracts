@@ -439,7 +439,7 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
             emit ItemSubmitted(itemID, msg.sender, evidenceGroupID, item.data);
         }
 
-        Request storage request = item.requests[item.requests.length++];
+        Request storage request = item.requests.push();
         if (item.status == Status.Absent) {
             item.status = Status.RegistrationRequested;
             request.metaEvidenceID = 2 * metaEvidenceUpdates;
