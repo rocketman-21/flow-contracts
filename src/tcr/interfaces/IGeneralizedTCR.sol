@@ -34,6 +34,9 @@ interface IGeneralizedTCR {
     /// @notice The request must be resolved before executing the ruling.
     error REQUEST_MUST_BE_RESOLVED();
 
+    /// @notice The request must not be already resolved.
+    error REQUEST_MUST_NOT_BE_RESOLVED();
+
     /// @notice The time to challenge the request must pass before execution.
     error CHALLENGE_PERIOD_MUST_PASS();
 
@@ -45,6 +48,12 @@ interface IGeneralizedTCR {
 
     /// @notice The caller must be the governor.
     error MUST_BE_GOVERNOR();
+
+    /// @notice The ruling option provided is invalid.
+    error INVALID_RULING_OPTION();
+
+    /// @notice Only the arbitrator can give a ruling.
+    error ONLY_ARBITRATOR_CAN_RULE();
 
     /* Enums */
 

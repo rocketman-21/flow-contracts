@@ -298,9 +298,9 @@ contract GeneralizedTCR is
 
         Request storage request = item.requests[item.requests.length - 1];
         Round storage round = request.rounds[request.rounds.length - 1];
-        require(_ruling <= RULING_OPTIONS, "Invalid ruling option");
-        require(address(request.arbitrator) == msg.sender, "Only the arbitrator can give a ruling");
-        require(!request.resolved, "The request must not be resolved.");
+        if (_ruling > RULING_OPTIONS) revert INVALID_RULING_OPTION();
+        if (address(request.arbitrator) != msg.sender) revert ONLY_ARBITRATOR_CAN_RULE();
+        if (request.resolved) revert REQUEST_MUST_NOT_BE_RESOLVED();
 
         // The ruling is inverted if the loser paid its fees.
         if (round.hasPaid[uint(Party.Requester)] == true)
