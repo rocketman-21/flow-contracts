@@ -26,7 +26,6 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
      *  @dev Deploy the arbitrable curated registry.
      *  @param _arbitrator Arbitrator to resolve potential disputes. The arbitrator is trusted to support appeal periods and not reenter.
      *  @param _arbitratorExtraData Extra data for the trusted arbitrator contract.
-     *  @param _connectedTCR The address of the TCR that stores related TCR addresses. This parameter can be left empty.
      *  @param _registrationMetaEvidence The URI of the meta evidence object for registration requests.
      *  @param _clearingMetaEvidence The URI of the meta evidence object for clearing requests.
      *  @param _governor The trusted governor of this contract.
@@ -44,7 +43,6 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
     constructor(
         IArbitrator _arbitrator,
         bytes memory _arbitratorExtraData,
-        address _connectedTCR,
         string memory _registrationMetaEvidence,
         string memory _clearingMetaEvidence,
         address _governor,
@@ -58,7 +56,6 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
     ) {
         emit MetaEvidence(0, _registrationMetaEvidence);
         emit MetaEvidence(1, _clearingMetaEvidence);
-        emit ConnectedTCRSet(_connectedTCR);
 
         arbitrator = _arbitrator;
         arbitratorExtraData = _arbitratorExtraData;
@@ -397,13 +394,6 @@ contract GeneralizedTCR is IArbitrable, IEvidence, IGeneralizedTCR, GeneralizedT
     function changeArbitrator(IArbitrator _arbitrator, bytes calldata _arbitratorExtraData) external onlyGovernor {
         arbitrator = _arbitrator;
         arbitratorExtraData = _arbitratorExtraData;
-    }
-
-    /** @dev Change the address of connectedTCR, the Generalized TCR instance that stores addresses of TCRs related to this one.
-     *  @param _connectedTCR The address of the connectedTCR contract to use.
-     */
-    function changeConnectedTCR(address _connectedTCR) external onlyGovernor {
-        emit ConnectedTCRSet(_connectedTCR);
     }
 
     /** @dev Update the meta evidence used for disputes.

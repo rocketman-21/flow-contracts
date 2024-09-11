@@ -95,10 +95,4 @@ interface IGeneralizedTCR {
      * @param _side The side that is fully funded
      */
     event HasPaidAppealFee(bytes32 indexed _itemID, uint indexed _request, uint indexed _round, Party _side);
-
-    /**
-     * @notice Emitted when the address of the connected TCR is set. The connected TCR is an instance of the Generalized TCR contract where each item is the address of a TCR related to this one
-     * @param _connectedTCR The address of the connected TCR
-     */
-    event ConnectedTCRSet(address indexed _connectedTCR);
 }
