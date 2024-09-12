@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IArbitrator } from "./interfaces/IArbitrator.sol";
+import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { IArbitrable } from "./interfaces/IArbitrable.sol";
 import { ArbitratorStorageV1 } from "./storage/ArbitratorStorageV1.sol";
 
@@ -10,59 +10,29 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 contract PrivateERC20VotesArbitrator is
-    IArbitrator,
+    IERC20VotesArbitrator,
     ArbitratorStorageV1,
     UUPSUpgradeable,
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable
 {
-    /// @notice The name of this contract
-    string public constant name = "Nouns DAO";
-
-    /// @notice The minimum setable voting period
-    uint256 public constant MIN_VOTING_PERIOD = 5_760; // About 24 hours
-
-    /// @notice The max setable voting period
-    uint256 public constant MAX_VOTING_PERIOD = 80_640; // About 2 weeks
-
-    /// @notice The min setable voting delay
-    uint256 public constant MIN_VOTING_DELAY = 1;
-
-    /// @notice The max setable voting delay
-    uint256 public constant MAX_VOTING_DELAY = 40_320; // About 1 week
-
-    /// @notice The maximum number of actions that can be included in a proposal
-    uint256 public constant proposalMaxOperations = 10; // 10 actions
-
-    /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 public constant DOMAIN_TYPEHASH =
-        keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
-
-    /// @notice The EIP-712 typehash for the ballot struct used by the contract
-    bytes32 public constant BALLOT_TYPEHASH = keccak256("Ballot(uint256 proposalId,uint8 support)");
-
     /**
-     * @notice Used to initialize the contract during delegator contructor
-     * @param nouns_ The address of the NOUN tokens
+     * @notice Used to initialize the contract
+     * @param votingToken_ The address of the ERC20 voting token
      * @param votingPeriod_ The initial voting period
      * @param votingDelay_ The initial voting delay
      */
-    function initialize(address nouns_, uint256 votingPeriod_, uint256 votingDelay_) public virtual {
-        require(msg.sender == admin, "NounsDAO::initialize: admin only");
-        require(nouns_ != address(0), "NounsDAO::initialize: invalid nouns address");
-        require(
-            votingPeriod_ >= MIN_VOTING_PERIOD && votingPeriod_ <= MAX_VOTING_PERIOD,
-            "NounsDAO::initialize: invalid voting period"
-        );
-        require(
-            votingDelay_ >= MIN_VOTING_DELAY && votingDelay_ <= MAX_VOTING_DELAY,
-            "NounsDAO::initialize: invalid voting delay"
-        );
+    function initialize(address votingToken_, uint256 votingPeriod_, uint256 votingDelay_) public initializer {
+        __Ownable_init();
+
+        if (votingToken_ == address(0)) revert INVALID_VOTING_TOKEN_ADDRESS();
+        if (votingPeriod_ < MIN_VOTING_PERIOD || votingPeriod_ > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
+        if (votingDelay_ < MIN_VOTING_DELAY || votingDelay_ > MAX_VOTING_DELAY) revert INVALID_VOTING_DELAY();
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
 
-        nouns = NounsTokenLike(nouns_);
+        votingToken = votingToken_;
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
     }
@@ -374,16 +344,6 @@ contract PrivateERC20VotesArbitrator is
     }
 
     constructor() payable initializer {}
-
-    /**
-     * @notice Initializes the PrivateERC20VotesArbitrator contract
-     * @dev This function can only be called once due to the initializer modifier
-     * @param _paymentToken The address of the ERC20 token used for payments
-     */
-    function initialize(address _paymentToken) public initializer {
-        __Ownable_init();
-        paymentToken = _paymentToken;
-    }
 
     function createDispute(uint256 _choices, bytes calldata _extraData) external override returns (uint256 disputeID) {
         // TODO: Implement createDispute logic
