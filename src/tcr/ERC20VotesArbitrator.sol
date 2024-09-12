@@ -9,7 +9,7 @@ import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-contract PrivateERC20VotesArbitrator is
+contract ERC20VotesArbitrator is
     IERC20VotesArbitrator,
     ArbitratorStorageV1,
     UUPSUpgradeable,
@@ -50,116 +50,116 @@ contract PrivateERC20VotesArbitrator is
     }
 
     /**
-     * @notice Function used to propose a new proposal.
-     * @param description String description of the proposal
-     * @return Proposal id of new proposal
+     * @notice Function used to create a new dispute.
+     * @param description String description of the dispute
+     * @return Dispute id of new dispute
      */
-    function propose(string memory description) public returns (uint256) {
-        proposalCount++;
-        Proposal storage newProposal = proposals[proposalCount];
+    function dispute(string memory description) public returns (uint256) {
+        disputeCount++;
+        Dispute storage newDispute = disputes[disputeCount];
 
-        newProposal.id = proposalCount;
-        newProposal.proposer = msg.sender;
-        newProposal.eta = 0;
-        newProposal.startBlock = block.number + votingDelay;
-        newProposal.endBlock = newProposal.startBlock + votingPeriod;
-        newProposal.forVotes = 0;
-        newProposal.againstVotes = 0;
-        newProposal.abstainVotes = 0;
-        newProposal.executed = false;
-        newProposal.creationBlock = block.number;
-        newProposal.quorumVotes = bps2Uint(quorumVotesBPS, votingToken.totalSupply());
-        newProposal.totalSupply = votingToken.totalSupply();
+        newDispute.id = disputeCount;
+        newDispute.disputer = msg.sender;
+        newDispute.eta = 0;
+        newDispute.startBlock = block.number + votingDelay;
+        newDispute.endBlock = newDispute.startBlock + votingPeriod;
+        newDispute.forVotes = 0;
+        newDispute.againstVotes = 0;
+        newDispute.abstainVotes = 0;
+        newDispute.executed = false;
+        newDispute.creationBlock = block.number;
+        newDispute.quorumVotes = quorumVotes();
+        newDispute.totalSupply = votingToken.totalSupply();
 
-        latestProposalIds[newProposal.proposer] = newProposal.id;
+        latestDisputeIds[newDispute.disputer] = newDispute.id;
 
         /// @notice Maintains backwards compatibility with GovernorBravo events
-        emit ProposalCreated(newProposal.id, msg.sender, newProposal.startBlock, newProposal.endBlock, description);
+        emit DisputeCreated(newDispute.id, msg.sender, newDispute.startBlock, newDispute.endBlock, description);
 
-        emit ProposalCreatedWithRequirements(
-            newProposal.id,
+        emit DisputeCreatedWithRequirements(
+            newDispute.id,
             msg.sender,
-            newProposal.startBlock,
-            newProposal.endBlock,
+            newDispute.startBlock,
+            newDispute.endBlock,
             description
         );
 
-        return newProposal.id;
+        return newDispute.id;
     }
 
     /**
-     * @notice Gets the receipt for a voter on a given proposal
-     * @param proposalId the id of proposal
+     * @notice Gets the receipt for a voter on a given dispute
+     * @param disputeId the id of dispute
      * @param voter The address of the voter
      * @return The voting receipt
      */
-    function getReceipt(uint256 proposalId, address voter) external view returns (Receipt memory) {
-        return proposals[proposalId].receipts[voter];
+    function getReceipt(uint256 disputeId, address voter) external view returns (Receipt memory) {
+        return disputes[disputeId].receipts[voter];
     }
 
     /**
-     * @notice Gets the state of a proposal
-     * @param proposalId The id of the proposal
-     * @return Proposal state
+     * @notice Gets the state of a dispute
+     * @param disputeId The id of the dispute
+     * @return Dispute state
      */
-    function state(uint256 proposalId) public view returns (ProposalState) {
-        require(proposalCount >= proposalId, "NounsDAO::state: invalid proposal id");
-        Proposal storage proposal = proposals[proposalId];
-        if (block.number <= proposal.startBlock) {
-            return ProposalState.Pending;
-        } else if (block.number <= proposal.endBlock) {
-            return ProposalState.Active;
-        } else if (proposal.forVotes <= proposal.againstVotes || proposal.forVotes < proposal.quorumVotes) {
-            return ProposalState.Defeated;
-        } else if (proposal.eta == 0) {
-            return ProposalState.Succeeded;
-        } else if (proposal.executed) {
-            return ProposalState.Executed;
+    function state(uint256 disputeId) public view returns (DisputeState) {
+        require(disputeCount >= disputeId, "NounsDAO::state: invalid dispute id");
+        Dispute storage dispute = disputes[disputeId];
+        if (block.number <= dispute.startBlock) {
+            return DisputeState.Pending;
+        } else if (block.number <= dispute.endBlock) {
+            return DisputeState.Active;
+        } else if (dispute.forVotes <= dispute.againstVotes || dispute.forVotes < dispute.quorumVotes) {
+            return DisputeState.Defeated;
+        } else if (dispute.eta == 0) {
+            return DisputeState.Succeeded;
+        } else if (dispute.executed) {
+            return DisputeState.Executed;
         }
     }
 
     /**
-     * @notice Cast a vote for a proposal
-     * @param proposalId The id of the proposal to vote on
+     * @notice Cast a vote for a dispute
+     * @param disputeId The id of the dispute to vote on
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
      */
-    function castVote(uint256 proposalId, uint8 support) external {
-        emit VoteCast(msg.sender, proposalId, support, castVoteInternal(msg.sender, proposalId, support), "");
+    function castVote(uint256 disputeId, uint8 support) external {
+        emit VoteCast(msg.sender, disputeId, support, castVoteInternal(msg.sender, disputeId, support), "");
     }
 
     /**
-     * @notice Cast a vote for a proposal with a reason
-     * @param proposalId The id of the proposal to vote on
+     * @notice Cast a vote for a dispute with a reason
+     * @param disputeId The id of the dispute to vote on
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
      * @param reason The reason given for the vote by the voter
      */
-    function castVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external {
-        emit VoteCast(msg.sender, proposalId, support, castVoteInternal(msg.sender, proposalId, support), reason);
+    function castVoteWithReason(uint256 disputeId, uint8 support, string calldata reason) external {
+        emit VoteCast(msg.sender, disputeId, support, castVoteInternal(msg.sender, disputeId, support), reason);
     }
 
     /**
      * @notice Internal function that caries out voting logic
      * @param voter The voter that is casting their vote
-     * @param proposalId The id of the proposal to vote on
+     * @param disputeId The id of the dispute to vote on
      * @param support The support value for the vote. 0=against, 1=for, 2=abstain
      * @return The number of votes cast
      */
-    function castVoteInternal(address voter, uint256 proposalId, uint8 support) internal returns (uint96) {
-        require(state(proposalId) == ProposalState.Active, "NounsDAO::castVoteInternal: voting is closed");
+    function castVoteInternal(address voter, uint256 disputeId, uint8 support) internal returns (uint96) {
+        require(state(disputeId) == DisputeState.Active, "NounsDAO::castVoteInternal: voting is closed");
         require(support <= 2, "NounsDAO::castVoteInternal: invalid vote type");
-        Proposal storage proposal = proposals[proposalId];
-        Receipt storage receipt = proposal.receipts[voter];
+        Dispute storage dispute = disputes[disputeId];
+        Receipt storage receipt = dispute.receipts[voter];
         require(receipt.hasVoted == false, "NounsDAO::castVoteInternal: voter already voted");
 
-        /// @notice: Unlike GovernerBravo, votes are considered from the block the proposal was created in order to normalize quorumVotes and proposalThreshold metrics
-        uint96 votes = nouns.getPriorVotes(voter, proposal.creationBlock);
+        /// @notice: Unlike GovernerBravo, votes are considered from the block the dispute was created in order to normalize quorumVotes and disputeThreshold metrics
+        uint96 votes = nouns.getPriorVotes(voter, dispute.creationBlock);
 
         if (support == 0) {
-            proposal.againstVotes = proposal.againstVotes + votes;
+            dispute.againstVotes = dispute.againstVotes + votes;
         } else if (support == 1) {
-            proposal.forVotes = proposal.forVotes + votes;
+            dispute.forVotes = dispute.forVotes + votes;
         } else if (support == 2) {
-            proposal.abstainVotes = proposal.abstainVotes + votes;
+            dispute.abstainVotes = dispute.abstainVotes + votes;
         }
 
         receipt.hasVoted = true;
@@ -184,7 +184,7 @@ contract PrivateERC20VotesArbitrator is
     /**
      * @notice Owner function for setting the quorum votes basis points
      * @dev newQuorumVotesBPS must be greater than the hardcoded min
-     * @param newQuorumVotesBPS new proposal threshold
+     * @param newQuorumVotesBPS new dispute threshold
      */
     function _setQuorumVotesBPS(uint256 newQuorumVotesBPS) external onlyOwner {
         if (newQuorumVotesBPS < MIN_QUORUM_VOTES_BPS || newQuorumVotesBPS > MAX_QUORUM_VOTES_BPS)
