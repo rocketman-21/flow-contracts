@@ -9,7 +9,7 @@ import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC2
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 
-import { ERC20VotesUpgradeable } from "../base/erc20/ERC20VotesUpgradeable.sol";
+import { ERC20VotesUpgradeable } from "./base/erc20/ERC20VotesUpgradeable.sol";
 
 import { IERC20Mintable } from "./interfaces/IERC20Mintable.sol";
 
