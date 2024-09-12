@@ -13,8 +13,9 @@ import { IEvidence } from "./interfaces/IEvidence.sol";
 import { IGeneralizedTCR } from "./interfaces/IGeneralizedTCR.sol";
 import { CappedMath } from "./utils/CappedMath.sol";
 import { GeneralizedTCRStorageV1 } from "./storage/GeneralizedTCRStorageV1.sol";
-import { IWETH } from "./interfaces/IWETH.sol";
 
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -33,7 +34,7 @@ contract GeneralizedTCR is
     GeneralizedTCRStorageV1
 {
     using CappedMath for uint256;
-
+    using SafeERC20 for IERC20;
     /**
      *  @dev Deploy the arbitrable curated registry.
      *  @param _arbitrator Arbitrator to resolve potential disputes. The arbitrator is trusted to support appeal periods and not reenter.
@@ -41,7 +42,7 @@ contract GeneralizedTCR is
      *  @param _registrationMetaEvidence The URI of the meta evidence object for registration requests.
      *  @param _clearingMetaEvidence The URI of the meta evidence object for clearing requests.
      *  @param _governor The trusted governor of this contract.
-     *  @param _WETH The address of the WETH contract.
+     *  @param _erc20 The address of the ERC20 token contract used for deposits.
      *  @param _submissionBaseDeposit The base deposit to submit an item.
      *  @param _removalBaseDeposit The base deposit to remove an item.
      *  @param _submissionChallengeBaseDeposit The base deposit to challenge a submission.
@@ -58,7 +59,7 @@ contract GeneralizedTCR is
         string memory _registrationMetaEvidence,
         string memory _clearingMetaEvidence,
         address _governor,
-        address _WETH,
+        IERC20 _erc20,
         uint _submissionBaseDeposit,
         uint _removalBaseDeposit,
         uint _submissionChallengeBaseDeposit,
@@ -68,11 +69,14 @@ contract GeneralizedTCR is
     ) {
         emit MetaEvidence(0, _registrationMetaEvidence);
         emit MetaEvidence(1, _clearingMetaEvidence);
+        if (address(_arbitrator) == address(0)) revert ADDRESS_ZERO();
+        if (address(_erc20) == address(0)) revert ADDRESS_ZERO();
+        if (_governor == address(0)) revert ADDRESS_ZERO();
 
         arbitrator = _arbitrator;
         arbitratorExtraData = _arbitratorExtraData;
         governor = _governor;
-        WETH = _WETH;
+        erc20 = _erc20;
         submissionBaseDeposit = _submissionBaseDeposit;
         removalBaseDeposit = _removalBaseDeposit;
         submissionChallengeBaseDeposit = _submissionChallengeBaseDeposit;
@@ -89,20 +93,20 @@ contract GeneralizedTCR is
     // *       Requests       * //
     // ************************ //
 
-    /** @dev Submit a request to register an item. Accepts enough ETH to cover the deposit, reimburses the rest.
+    /** @dev Submit a request to register an item. Must have approved this contract to transfer at least `submissionBaseDeposit` + `arbitrationCost` ERC20 tokens.
      *  @param _item The data describing the item.
      */
-    function addItem(bytes calldata _item) external payable nonReentrant {
+    function addItem(bytes calldata _item) external nonReentrant {
         bytes32 itemID = keccak256(_item);
         if (items[itemID].status != Status.Absent) revert MUST_BE_ABSENT_TO_BE_ADDED();
         _requestStatusChange(_item, submissionBaseDeposit);
     }
 
-    /** @dev Submit a request to remove an item from the list. Accepts enough ETH to cover the deposit, reimburses the rest.
+    /** @dev Submit a request to remove an item from the list. Must have approved this contract to transfer at least `removalBaseDeposit` + `arbitrationCost` ERC20 tokens.
      *  @param _itemID The ID of the item to remove.
      *  @param _evidence A link to an evidence using its URI. Ignored if not provided.
      */
-    function removeItem(bytes32 _itemID, string calldata _evidence) external payable nonReentrant {
+    function removeItem(bytes32 _itemID, string calldata _evidence) external nonReentrant {
         if (items[_itemID].status != Status.Registered) revert MUST_BE_REGISTERED_TO_BE_REMOVED();
         Item storage item = items[_itemID];
 
@@ -118,11 +122,11 @@ contract GeneralizedTCR is
         _requestStatusChange(item.data, removalBaseDeposit);
     }
 
-    /** @dev Challenges the request of the item. Accepts enough ETH to cover the deposit, reimburses the rest.
+    /** @dev Challenges the request of the item. Must have approved this contract to transfer at least `challengeBaseDeposit` + `arbitrationCost` ERC20 tokens.
      *  @param _itemID The ID of the item which request to challenge.
      *  @param _evidence A link to an evidence using its URI. Ignored if not provided.
      */
-    function challengeRequest(bytes32 _itemID, string calldata _evidence) external payable nonReentrant {
+    function challengeRequest(bytes32 _itemID, string calldata _evidence) external nonReentrant {
         Item storage item = items[_itemID];
 
         if (item.status != Status.RegistrationRequested && item.status != Status.ClearingRequested)
@@ -141,15 +145,19 @@ contract GeneralizedTCR is
             ? submissionChallengeBaseDeposit
             : removalChallengeBaseDeposit;
         uint totalCost = arbitrationCost.addCap(challengerBaseDeposit);
-        _contribute(round, Party.Challenger, msg.sender, msg.value, totalCost);
+        _contribute(round, Party.Challenger, msg.sender, totalCost, totalCost);
         if (round.amountPaid[uint(Party.Challenger)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Challenger)] = true;
 
         // Raise a dispute.
-        request.disputeID = request.arbitrator.createDispute{ value: arbitrationCost }(
-            RULING_OPTIONS,
-            request.arbitratorExtraData
-        );
+
+        // approve arbitrator to spend the ERC20 tokens for the arbitration cost only, not for the challenger base deposit
+        erc20.safeIncreaseAllowance(address(request.arbitrator), arbitrationCost);
+
+        // create dispute - arbitrator will transferFrom() the ERC20 tokens to itself
+        // changed from Kleros' GeneralizedTCR.sol to not send ETH to arbitrator
+        request.disputeID = request.arbitrator.createDispute(RULING_OPTIONS, request.arbitratorExtraData);
+
         arbitratorDisputeIDToItem[address(request.arbitrator)][request.disputeID] = _itemID;
         request.disputed = true;
         request.rounds.push(); // prepare for any new appeals given the new dispute
@@ -166,8 +174,9 @@ contract GeneralizedTCR is
     /** @dev Takes up to the total amount required to fund a side of an appeal. Reimburses the rest. Creates an appeal if both sides are fully funded.
      *  @param _itemID The ID of the item which request to fund.
      *  @param _side The recipient of the contribution.
+     *  @param _erc20Amount The amount of ERC20 tokens to use to fund the appeal.
      */
-    function fundAppeal(bytes32 _itemID, Party _side) external payable nonReentrant {
+    function fundAppeal(bytes32 _itemID, Party _side, uint _erc20Amount) external nonReentrant {
         if (_side != Party.Requester && _side != Party.Challenger) revert INVALID_SIDE();
         if (items[_itemID].status != Status.RegistrationRequested && items[_itemID].status != Status.ClearingRequested)
             revert ITEM_MUST_HAVE_PENDING_REQUEST();
@@ -195,7 +204,7 @@ contract GeneralizedTCR is
         Round storage round = request.rounds[request.rounds.length - 1];
         uint appealCost = request.arbitrator.appealCost(request.disputeID, request.arbitratorExtraData);
         uint totalCost = appealCost.addCap((appealCost.mulCap(multiplier)) / MULTIPLIER_DIVISOR);
-        uint contribution = _contribute(round, _side, msg.sender, msg.value, totalCost);
+        uint contribution = _contribute(round, _side, msg.sender, _erc20Amount, totalCost);
 
         emit AppealContribution(
             _itemID,
@@ -213,7 +222,12 @@ contract GeneralizedTCR is
 
         // Raise appeal if both sides are fully funded.
         if (round.hasPaid[uint(Party.Challenger)] && round.hasPaid[uint(Party.Requester)]) {
-            request.arbitrator.appeal{ value: appealCost }(request.disputeID, request.arbitratorExtraData);
+            // increase allowance for arbitrator to spend the ERC20 tokens
+            erc20.safeIncreaseAllowance(address(request.arbitrator), appealCost);
+
+            // appeal - arbitrator will transferFrom() the ERC20 tokens to itself
+            request.arbitrator.appeal(request.disputeID, request.arbitratorExtraData);
+
             request.rounds.push(); // if appeal is successfully funded, a new round is created
             round.feeRewards = round.feeRewards.subCap(appealCost);
         }
@@ -264,7 +278,8 @@ contract GeneralizedTCR is
         round.contributions[_beneficiary][uint(Party.Requester)] = 0;
         round.contributions[_beneficiary][uint(Party.Challenger)] = 0;
 
-        _safeTransferETHWithFallback(_beneficiary, reward);
+        // send ERC20 tokens to beneficiary
+        erc20.safeTransfer(_beneficiary, reward);
     }
 
     /** @dev Executes an unchallenged request if the challenge period has passed.
@@ -416,7 +431,7 @@ contract GeneralizedTCR is
 
     /* Internal */
 
-    /** @dev Submit a request to change item's status. Accepts enough ETH to cover the deposit, reimburses the rest.
+    /** @dev Submit a request to change item's status. Accepts enough ERC20 tokens to cover the deposit.
      *  @param _item The data describing the item.
      *  @param _baseDeposit The base deposit for the request.
      */
@@ -452,7 +467,7 @@ contract GeneralizedTCR is
 
         uint arbitrationCost = request.arbitrator.arbitrationCost(request.arbitratorExtraData);
         uint totalCost = arbitrationCost.addCap(_baseDeposit);
-        _contribute(round, Party.Requester, msg.sender, msg.value, totalCost);
+        _contribute(round, Party.Requester, msg.sender, totalCost, totalCost);
         if (round.amountPaid[uint(Party.Requester)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Requester)] = true;
 
@@ -461,18 +476,19 @@ contract GeneralizedTCR is
         emit RequestEvidenceGroupID(itemID, item.requests.length - 1, evidenceGroupID);
     }
 
-    /** @dev Returns the contribution value and remainder from available ETH and required amount.
-     *  @param _available The amount of ETH available for the contribution.
-     *  @param _requiredAmount The amount of ETH required for the contribution.
-     *  @return taken The amount of ETH taken.
-     *  @return remainder The amount of ETH left from the contribution.
+    /** @dev Returns the contribution value and remainder from available ERC20 tokens and required amount.
+     *  @param _available The amount of ERC20 tokens available for the contribution.
+     *  @param _requiredAmount The amount of ERC20 tokens required for the contribution.
+     *  @return taken The amount of ERC20 tokens taken.
+     *  @return remainder The amount of ERC20 tokens left from the contribution.
      */
     function _calculateContribution(
         uint _available,
         uint _requiredAmount
     ) internal pure returns (uint taken, uint remainder) {
+        // Take whatever is available, return 0 as leftover ERC20 tokens.
         if (_requiredAmount > _available) return (_available, 0);
-        // Take whatever is available, return 0 as leftover ETH.
+        // Take the required amount, return the remaining ERC20 tokens.
         else return (_requiredAmount, _available - _requiredAmount);
     }
 
@@ -493,8 +509,8 @@ contract GeneralizedTCR is
     ) internal returns (uint) {
         // Take up to the amount necessary to fund the current round at the current costs.
         uint contribution; // Amount contributed.
-        uint remainingETH; // Remaining ETH to send back.
-        (contribution, remainingETH) = _calculateContribution(
+        uint remainingERC20; // Remaining ERC20 tokens to send back.
+        (contribution, remainingERC20) = _calculateContribution(
             _amount,
             _totalRequired.subCap(_round.amountPaid[uint(_side)])
         );
@@ -502,8 +518,9 @@ contract GeneralizedTCR is
         _round.amountPaid[uint(_side)] += contribution;
         _round.feeRewards += contribution;
 
-        // Reimburse leftover ETH.
-        _safeTransferETHWithFallback(_contributor, remainingETH);
+        // deposit ERC20 tokens to contract
+        // Sender must approve this contract to transfer ERC20 tokens on their behalf.
+        erc20.safeTransferFrom(msg.sender, address(this), contribution);
 
         return contribution;
     }
@@ -651,37 +668,6 @@ contract GeneralizedTCR is
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
         return (_round != (request.rounds.length - 1), round.amountPaid, round.hasPaid, round.feeRewards);
-    }
-
-    /**
-     * @notice Transfer ETH/WETH from the contract
-     * @param _to The recipient address
-     * @param _amount The amount transferring
-     */
-    function _safeTransferETHWithFallback(address _to, uint256 _amount) private {
-        // Ensure the contract has enough ETH to transfer
-        if (address(this).balance < _amount) revert("Insufficient balance");
-
-        // Used to store if the transfer succeeded
-        bool success;
-
-        assembly {
-            // Transfer ETH to the recipient
-            // Limit the call to 30,000 gas
-            success := call(30000, _to, _amount, 0, 0, 0, 0)
-        }
-
-        // If the transfer failed:
-        if (!success) {
-            // Wrap as WETH
-            IWETH(WETH).deposit{ value: _amount }();
-
-            // Transfer WETH instead
-            bool wethSuccess = IWETH(WETH).transfer(_to, _amount);
-
-            // Ensure successful transfer
-            if (!wethSuccess) revert("WETH transfer failed");
-        }
     }
 
     /* Modifiers */

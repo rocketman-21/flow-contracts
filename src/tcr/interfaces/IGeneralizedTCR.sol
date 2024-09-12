@@ -66,6 +66,9 @@ interface IGeneralizedTCR {
     /// @notice The dispute must not already be resolved.
     error DISPUTE_MUST_NOT_BE_RESOLVED();
 
+    /// @notice If address 0 is passed as an argument, the function will revert.
+    error ADDRESS_ZERO();
+
     /* Enums */
 
     /**
