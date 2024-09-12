@@ -117,10 +117,12 @@ contract ERC20VotesArbitrator is
     function state(uint256 disputeId) public view returns (DisputeState) {
         require(disputeCount >= disputeId, "NounsDAO::state: invalid dispute id");
         Dispute storage dispute = disputes[disputeId];
-        if (block.number <= dispute.startBlock) {
+        if (block.number <= dispute.votingStartBlock) {
             return DisputeState.Pending;
-        } else if (block.number <= dispute.endBlock) {
+        } else if (block.number <= dispute.votingEndBlock) {
             return DisputeState.Active;
+        } else if (block.number <= dispute.revealPeriodEndBlock) {
+            return DisputeState.Reveal;
         } else if (dispute.votes < dispute.quorumVotes) {
             return DisputeState.QuorumNotReached;
         } else if (dispute.executed) {
