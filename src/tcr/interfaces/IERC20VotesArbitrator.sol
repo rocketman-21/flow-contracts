@@ -16,6 +16,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the quorum votes basis points are outside the allowed range
     error INVALID_QUORUM_VOTES_BPS();
 
+    /// @notice Error thrown when the function is called by an address other than the arbitrable address
+    error ONLY_ARBITRABLE();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period

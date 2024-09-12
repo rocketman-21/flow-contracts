@@ -31,6 +31,8 @@ contract ArbitratorStorageV1 {
     // ERC20 token used for voting
     IVotes public votingToken;
 
+    IArbitrable public arbitrable;
+
     /// @notice Ballot receipt record for a voter
     struct Receipt {
         /// @notice Whether or not a vote has been cast

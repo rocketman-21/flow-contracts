@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.27;
 
 import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { IArbitrable } from "./interfaces/IArbitrable.sol";
@@ -22,12 +22,14 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Used to initialize the contract
      * @param votingToken_ The address of the ERC20 voting token
+     * @param arbitrable_ The address of the arbitrable contract
      * @param votingPeriod_ The initial voting period
      * @param votingDelay_ The initial voting delay
      * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
     function initialize(
         address votingToken_,
+        address arbitrable_,
         uint256 votingPeriod_,
         uint256 votingDelay_,
         uint256 quorumVotesBPS_
@@ -45,41 +47,46 @@ contract ERC20VotesArbitrator is
         emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
 
         votingToken = IVotes(votingToken_);
+        arbitrable = IArbitrable(arbitrable_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
         quorumVotesBPS = quorumVotesBPS_;
     }
 
     /**
-     * @notice Function used to create a new dispute.
+     * @notice Function used to create a new dispute. Only callable by the arbitrable contract.
      * @param _choices The number of choices for the dispute
      * @param _extraData Additional data for the dispute
      * @return Dispute id of new dispute
      */
-    function createDispute(uint256 _choices, bytes calldata _extraData) external override returns (uint256 disputeID) {
+    function createDispute(
+        uint256 _choices,
+        bytes calldata _extraData
+    ) external onlyArbitrable returns (uint256 disputeID) {
         disputeCount++;
         Dispute storage newDispute = disputes[disputeCount];
 
         newDispute.id = disputeCount;
-        newDispute.disputer = msg.sender;
+        newDispute.arbitrable = address(arbitrable);
         newDispute.startBlock = block.number + votingDelay;
         newDispute.endBlock = newDispute.startBlock + votingPeriod;
-        newDispute.forVotes = 0;
-        newDispute.againstVotes = 0;
+        newDispute.choices = _choices;
+        newDispute.extraData = _extraData;
         newDispute.executed = false;
         newDispute.creationBlock = block.number;
         newDispute.quorumVotes = quorumVotes();
         newDispute.totalSupply = votingToken.totalSupply();
 
         /// @notice Maintains backwards compatibility with GovernorBravo events
-        emit DisputeCreated(newDispute.id, msg.sender, newDispute.startBlock, newDispute.endBlock, description);
-
-        emit DisputeCreatedWithRequirements(
+        emit DisputeCreated(
             newDispute.id,
-            msg.sender,
+            address(arbitrable),
             newDispute.startBlock,
             newDispute.endBlock,
-            description
+            newDispute.quorumVotes,
+            newDispute.totalSupply,
+            _extraData,
+            _choices
         );
 
         return newDispute.id;
@@ -204,6 +211,14 @@ contract ERC20VotesArbitrator is
 
     function bps2Uint(uint256 bps, uint256 number) internal pure returns (uint256) {
         return (number * bps) / 10000;
+    }
+
+    /**
+     * @notice Modifier to restrict function access to only the arbitrable contract
+     */
+    modifier onlyArbitrable() {
+        if (msg.sender != address(arbitrable)) revert ONLY_ARBITRABLE();
+        _;
     }
 
     /**
