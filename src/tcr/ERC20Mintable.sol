@@ -11,10 +11,10 @@ import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/acc
 
 import { ERC20VotesUpgradeable } from "../base/erc20/ERC20VotesUpgradeable.sol";
 
-import { ITCRToken } from "./interfaces/ITCRToken.sol";
+import { IERC20Mintable } from "./interfaces/IERC20Mintable.sol";
 
-contract TCRToken is
-    ITCRToken,
+contract ERC20Mintable is
+    IERC20Mintable,
     UUPSUpgradeable,
     Ownable2StepUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -57,19 +57,19 @@ contract TCRToken is
     ///                                                          ///
 
     /**
-     * @dev Initializes the TCRToken contract.
+     * @dev Initializes the ERC20Mintable contract.
      * @param _name The name of the token.
      * @param _symbol The symbol of the token.
      * @notice This function should only be called once during initialization.
      */
-    function __TCRToken_init(string calldata _name, string calldata _symbol) internal onlyInitializing {
+    function __ERC20Mintable_init(string calldata _name, string calldata _symbol) internal onlyInitializing {
         __ReentrancyGuard_init();
         __Ownable_init();
         __ERC20_init(_name, _symbol);
     }
 
     /**
-     * @notice Initializes an ERC-20 governance token contract
+     * @notice Initializes an ERC-20 mintable token contract
      * @param _initialOwner The address of the initial owner
      * @param _minter The address of the minter
      * @param _name The name of the token
@@ -86,7 +86,7 @@ contract TCRToken is
 
         minter = _minter;
 
-        __TCRToken_init(_name, _symbol);
+        __ERC20Mintable_init(_name, _symbol);
 
         emit MinterUpdated(_minter);
     }
@@ -104,7 +104,7 @@ contract TCRToken is
      * no way affects any of the arithmetic of the contract, including
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
-    function decimals() public view virtual override(ERC20Upgradeable, ITCRToken) returns (uint8) {
+    function decimals() public view virtual override(ERC20Upgradeable, IERC20Mintable) returns (uint8) {
         return 18;
     }
 
