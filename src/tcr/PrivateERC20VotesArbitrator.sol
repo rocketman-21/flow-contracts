@@ -43,15 +43,12 @@ contract PrivateERC20VotesArbitrator is
 
     /**
      * @notice Used to initialize the contract during delegator contructor
-     * @param timelock_ The address of the NounsDAOExecutor
      * @param nouns_ The address of the NOUN tokens
      * @param votingPeriod_ The initial voting period
      * @param votingDelay_ The initial voting delay
      */
-    function initialize(address timelock_, address nouns_, uint256 votingPeriod_, uint256 votingDelay_) public virtual {
-        require(address(timelock) == address(0), "NounsDAO::initialize: can only initialize once");
+    function initialize(address nouns_, uint256 votingPeriod_, uint256 votingDelay_) public virtual {
         require(msg.sender == admin, "NounsDAO::initialize: admin only");
-        require(timelock_ != address(0), "NounsDAO::initialize: invalid timelock address");
         require(nouns_ != address(0), "NounsDAO::initialize: invalid nouns address");
         require(
             votingPeriod_ >= MIN_VOTING_PERIOD && votingPeriod_ <= MAX_VOTING_PERIOD,
@@ -65,7 +62,6 @@ contract PrivateERC20VotesArbitrator is
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
 
-        timelock = INounsDAOExecutor(timelock_);
         nouns = NounsTokenLike(nouns_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
@@ -172,67 +168,6 @@ contract PrivateERC20VotesArbitrator is
     }
 
     /**
-     * @notice Queues a proposal of state succeeded
-     * @param proposalId The id of the proposal to queue
-     */
-    function queue(uint256 proposalId) external {
-        require(
-            state(proposalId) == ProposalState.Succeeded,
-            "NounsDAO::queue: proposal can only be queued if it is succeeded"
-        );
-        Proposal storage proposal = proposals[proposalId];
-        uint256 eta = block.timestamp + timelock.delay();
-        for (uint256 i = 0; i < proposal.targets.length; i++) {
-            queueOrRevertInternal(
-                proposal.targets[i],
-                proposal.values[i],
-                proposal.signatures[i],
-                proposal.calldatas[i],
-                eta
-            );
-        }
-        proposal.eta = eta;
-        emit ProposalQueued(proposalId, eta);
-    }
-
-    function queueOrRevertInternal(
-        address target,
-        uint256 value,
-        string memory signature,
-        bytes memory data,
-        uint256 eta
-    ) internal {
-        require(
-            !timelock.queuedTransactions(keccak256(abi.encode(target, value, signature, data, eta))),
-            "NounsDAO::queueOrRevertInternal: identical proposal action already queued at eta"
-        );
-        timelock.queueTransaction(target, value, signature, data, eta);
-    }
-
-    /**
-     * @notice Executes a queued proposal if eta has passed
-     * @param proposalId The id of the proposal to execute
-     */
-    function execute(uint256 proposalId) external {
-        require(
-            state(proposalId) == ProposalState.Queued,
-            "NounsDAO::execute: proposal can only be executed if it is queued"
-        );
-        Proposal storage proposal = proposals[proposalId];
-        proposal.executed = true;
-        for (uint256 i = 0; i < proposal.targets.length; i++) {
-            timelock.executeTransaction(
-                proposal.targets[i],
-                proposal.values[i],
-                proposal.signatures[i],
-                proposal.calldatas[i],
-                proposal.eta
-            );
-        }
-        emit ProposalExecuted(proposalId);
-    }
-
-    /**
      * @notice Gets actions of a proposal
      * @param proposalId the id of the proposal
      * @return targets
@@ -284,10 +219,6 @@ contract PrivateERC20VotesArbitrator is
             return ProposalState.Succeeded;
         } else if (proposal.executed) {
             return ProposalState.Executed;
-        } else if (block.timestamp >= proposal.eta + timelock.GRACE_PERIOD()) {
-            return ProposalState.Expired;
-        } else {
-            return ProposalState.Queued;
         }
     }
 
