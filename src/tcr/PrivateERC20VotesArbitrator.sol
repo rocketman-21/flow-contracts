@@ -138,8 +138,8 @@ contract PrivateERC20VotesArbitrator is
         newProposal.forVotes = 0;
         newProposal.againstVotes = 0;
         newProposal.abstainVotes = 0;
-        newProposal.canceled = false;
         newProposal.executed = false;
+        newProposal.creationBlock = block.number;
 
         latestProposalIds[newProposal.proposer] = newProposal.id;
 
@@ -274,9 +274,7 @@ contract PrivateERC20VotesArbitrator is
     function state(uint256 proposalId) public view returns (ProposalState) {
         require(proposalCount >= proposalId, "NounsDAO::state: invalid proposal id");
         Proposal storage proposal = proposals[proposalId];
-        if (proposal.canceled) {
-            return ProposalState.Canceled;
-        } else if (block.number <= proposal.startBlock) {
+        if (block.number <= proposal.startBlock) {
             return ProposalState.Pending;
         } else if (block.number <= proposal.endBlock) {
             return ProposalState.Active;
@@ -342,7 +340,7 @@ contract PrivateERC20VotesArbitrator is
         require(receipt.hasVoted == false, "NounsDAO::castVoteInternal: voter already voted");
 
         /// @notice: Unlike GovernerBravo, votes are considered from the block the proposal was created in order to normalize quorumVotes and proposalThreshold metrics
-        uint96 votes = nouns.getPriorVotes(voter, proposal.startBlock - votingDelay);
+        uint96 votes = nouns.getPriorVotes(voter, proposal.creationBlock);
 
         if (support == 0) {
             proposal.againstVotes = proposal.againstVotes + votes;
