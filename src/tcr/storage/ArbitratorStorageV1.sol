@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import { IArbitrator } from "../interfaces/IArbitrator.sol";
 import { IArbitrable } from "../interfaces/IArbitrable.sol";
 
+import { IERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Votes.sol";
+
 /**
  * @title ArbitratorStorageV1
  * @notice Storage contract for the Arbitrator implementation
@@ -28,5 +30,5 @@ contract ArbitratorStorageV1 {
     uint256 public constant MAX_QUORUM_VOTES_BPS = 2_000; // 2,000 basis points or 20%
 
     // ERC20 token used for voting
-    address public votingToken;
+    IERC20Votes public votingToken;
 }

@@ -5,6 +5,7 @@ import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { IArbitrable } from "./interfaces/IArbitrable.sol";
 import { ArbitratorStorageV1 } from "./storage/ArbitratorStorageV1.sol";
 
+import { IERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Votes.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -43,7 +44,7 @@ contract ERC20VotesArbitrator is
         emit VotingDelaySet(votingDelay, votingDelay_);
         emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
 
-        votingToken = votingToken_;
+        votingToken = IERC20Votes(votingToken_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
         quorumVotesBPS = quorumVotesBPS_;
@@ -70,8 +71,6 @@ contract ERC20VotesArbitrator is
         newDispute.creationBlock = block.number;
         newDispute.quorumVotes = quorumVotes();
         newDispute.totalSupply = votingToken.totalSupply();
-
-        latestDisputeIds[newDispute.disputer] = newDispute.id;
 
         /// @notice Maintains backwards compatibility with GovernorBravo events
         emit DisputeCreated(newDispute.id, msg.sender, newDispute.startBlock, newDispute.endBlock, description);
@@ -121,45 +120,41 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Cast a vote for a dispute
      * @param disputeId The id of the dispute to vote on
-     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param support The support value for the vote. 0=against, 1=for
      */
     function castVote(uint256 disputeId, uint8 support) external {
-        emit VoteCast(msg.sender, disputeId, support, castVoteInternal(msg.sender, disputeId, support), "");
+        emit VoteCast(msg.sender, disputeId, support, _castVoteInternal(msg.sender, disputeId, support), "");
     }
 
     /**
      * @notice Cast a vote for a dispute with a reason
      * @param disputeId The id of the dispute to vote on
-     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param support The support value for the vote. 0=against, 1=for
      * @param reason The reason given for the vote by the voter
      */
     function castVoteWithReason(uint256 disputeId, uint8 support, string calldata reason) external {
-        emit VoteCast(msg.sender, disputeId, support, castVoteInternal(msg.sender, disputeId, support), reason);
+        emit VoteCast(msg.sender, disputeId, support, _castVoteInternal(msg.sender, disputeId, support), reason);
     }
 
     /**
      * @notice Internal function that caries out voting logic
      * @param voter The voter that is casting their vote
      * @param disputeId The id of the dispute to vote on
-     * @param support The support value for the vote. 0=against, 1=for, 2=abstain
+     * @param support The support value for the vote. 0=against, 1=for
      * @return The number of votes cast
      */
-    function castVoteInternal(address voter, uint256 disputeId, uint8 support) internal returns (uint96) {
+    function _castVoteInternal(address voter, uint256 disputeId, uint8 support) internal returns (uint96) {
         require(state(disputeId) == DisputeState.Active, "NounsDAO::castVoteInternal: voting is closed");
         require(support <= 2, "NounsDAO::castVoteInternal: invalid vote type");
         Dispute storage dispute = disputes[disputeId];
         Receipt storage receipt = dispute.receipts[voter];
         require(receipt.hasVoted == false, "NounsDAO::castVoteInternal: voter already voted");
-
-        /// @notice: Unlike GovernerBravo, votes are considered from the block the dispute was created in order to normalize quorumVotes and disputeThreshold metrics
-        uint96 votes = nouns.getPriorVotes(voter, dispute.creationBlock);
+        uint96 votes = votingToken.getPastVotes(voter, dispute.creationBlock);
 
         if (support == 0) {
             dispute.againstVotes = dispute.againstVotes + votes;
         } else if (support == 1) {
             dispute.forVotes = dispute.forVotes + votes;
-        } else if (support == 2) {
-            dispute.abstainVotes = dispute.abstainVotes + votes;
         }
 
         receipt.hasVoted = true;
