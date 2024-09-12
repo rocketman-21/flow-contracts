@@ -5,7 +5,7 @@ import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { IArbitrable } from "./interfaces/IArbitrable.sol";
 import { ArbitratorStorageV1 } from "./storage/ArbitratorStorageV1.sol";
 
-import { IERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Votes.sol";
+import { IVotes } from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -44,7 +44,7 @@ contract ERC20VotesArbitrator is
         emit VotingDelaySet(votingDelay, votingDelay_);
         emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
 
-        votingToken = IERC20Votes(votingToken_);
+        votingToken = IVotes(votingToken_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
         quorumVotesBPS = quorumVotesBPS_;
@@ -52,21 +52,20 @@ contract ERC20VotesArbitrator is
 
     /**
      * @notice Function used to create a new dispute.
-     * @param description String description of the dispute
+     * @param _choices The number of choices for the dispute
+     * @param _extraData Additional data for the dispute
      * @return Dispute id of new dispute
      */
-    function dispute(string memory description) public returns (uint256) {
+    function createDispute(uint256 _choices, bytes calldata _extraData) external override returns (uint256 disputeID) {
         disputeCount++;
         Dispute storage newDispute = disputes[disputeCount];
 
         newDispute.id = disputeCount;
         newDispute.disputer = msg.sender;
-        newDispute.eta = 0;
         newDispute.startBlock = block.number + votingDelay;
         newDispute.endBlock = newDispute.startBlock + votingPeriod;
         newDispute.forVotes = 0;
         newDispute.againstVotes = 0;
-        newDispute.abstainVotes = 0;
         newDispute.executed = false;
         newDispute.creationBlock = block.number;
         newDispute.quorumVotes = quorumVotes();
@@ -110,10 +109,10 @@ contract ERC20VotesArbitrator is
             return DisputeState.Active;
         } else if (dispute.forVotes <= dispute.againstVotes || dispute.forVotes < dispute.quorumVotes) {
             return DisputeState.Defeated;
-        } else if (dispute.eta == 0) {
-            return DisputeState.Succeeded;
         } else if (dispute.executed) {
             return DisputeState.Executed;
+        } else {
+            return DisputeState.Succeeded;
         }
     }
 
@@ -213,10 +212,6 @@ contract ERC20VotesArbitrator is
      */
     function quorumVotes() public view returns (uint256) {
         return bps2Uint(quorumVotesBPS, votingToken.totalSupply());
-    }
-
-    function createDispute(uint256 _choices, bytes calldata _extraData) external override returns (uint256 disputeID) {
-        // TODO: Implement createDispute logic
     }
 
     function appeal(uint256 _disputeID, bytes calldata _extraData) external payable override {

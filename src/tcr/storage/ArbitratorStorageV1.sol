@@ -3,8 +3,7 @@ pragma solidity ^0.8.0;
 
 import { IArbitrator } from "../interfaces/IArbitrator.sol";
 import { IArbitrable } from "../interfaces/IArbitrable.sol";
-
-import { IERC20Votes } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Votes.sol";
+import { IVotes } from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 
 /**
  * @title ArbitratorStorageV1
@@ -30,5 +29,15 @@ contract ArbitratorStorageV1 {
     uint256 public constant MAX_QUORUM_VOTES_BPS = 2_000; // 2,000 basis points or 20%
 
     // ERC20 token used for voting
-    IERC20Votes public votingToken;
+    IVotes public votingToken;
+
+    /// @notice Ballot receipt record for a voter
+    struct Receipt {
+        /// @notice Whether or not a vote has been cast
+        bool hasVoted;
+        /// @notice Whether or not the voter supports the proposal or abstains
+        uint256 choices;
+        /// @notice The number of votes the voter had, which were cast
+        uint96 votes;
+    }
 }
