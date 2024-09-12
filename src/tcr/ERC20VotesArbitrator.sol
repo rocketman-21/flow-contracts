@@ -61,7 +61,7 @@ contract ERC20VotesArbitrator is
      * @notice Function used to create a new dispute. Only callable by the arbitrable contract.
      * @param _choices The number of choices for the dispute
      * @param _extraData Additional data for the dispute
-     * @return Dispute id of new dispute
+     * @return disputeID The ID of the new dispute
      */
     function createDispute(
         uint256 _choices,
