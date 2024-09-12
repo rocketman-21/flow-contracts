@@ -19,12 +19,6 @@ contract PrivateERC20VotesArbitrator is
     /// @notice The name of this contract
     string public constant name = "Nouns DAO";
 
-    /// @notice The minimum setable proposal threshold
-    uint256 public constant MIN_PROPOSAL_THRESHOLD_BPS = 1; // 1 basis point or 0.01%
-
-    /// @notice The maximum setable proposal threshold
-    uint256 public constant MAX_PROPOSAL_THRESHOLD_BPS = 1_000; // 1,000 basis points or 10%
-
     /// @notice The minimum setable voting period
     uint256 public constant MIN_VOTING_PERIOD = 5_760; // About 24 hours
 
@@ -59,7 +53,6 @@ contract PrivateERC20VotesArbitrator is
      * @param nouns_ The address of the NOUN tokens
      * @param votingPeriod_ The initial voting period
      * @param votingDelay_ The initial voting delay
-     * @param proposalThresholdBPS_ The initial proposal threshold in basis points
      * * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
     function initialize(
@@ -67,7 +60,6 @@ contract PrivateERC20VotesArbitrator is
         address nouns_,
         uint256 votingPeriod_,
         uint256 votingDelay_,
-        uint256 proposalThresholdBPS_,
         uint256 quorumVotesBPS_
     ) public virtual {
         require(address(timelock) == address(0), "NounsDAO::initialize: can only initialize once");
@@ -83,37 +75,30 @@ contract PrivateERC20VotesArbitrator is
             "NounsDAO::initialize: invalid voting delay"
         );
         require(
-            proposalThresholdBPS_ >= MIN_PROPOSAL_THRESHOLD_BPS && proposalThresholdBPS_ <= MAX_PROPOSAL_THRESHOLD_BPS,
-            "NounsDAO::initialize: invalid proposal threshold"
-        );
-        require(
             quorumVotesBPS_ >= MIN_QUORUM_VOTES_BPS && quorumVotesBPS_ <= MAX_QUORUM_VOTES_BPS,
             "NounsDAO::initialize: invalid proposal threshold"
         );
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
-        emit ProposalThresholdBPSSet(proposalThresholdBPS, proposalThresholdBPS_);
         emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
 
         timelock = INounsDAOExecutor(timelock_);
         nouns = NounsTokenLike(nouns_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
-        proposalThresholdBPS = proposalThresholdBPS_;
         quorumVotesBPS = quorumVotesBPS_;
     }
 
     struct ProposalTemp {
         uint256 totalSupply;
-        uint256 proposalThreshold;
         uint256 latestProposalId;
         uint256 startBlock;
         uint256 endBlock;
     }
 
     /**
-     * @notice Function used to propose a new proposal. Sender must have delegates above the proposal threshold
+     * @notice Function used to propose a new proposal.
      * @param targets Target addresses for proposal calls
      * @param values Eth values for proposal calls
      * @param signatures Function signatures for proposal calls
@@ -132,12 +117,6 @@ contract PrivateERC20VotesArbitrator is
 
         temp.totalSupply = nouns.totalSupply();
 
-        temp.proposalThreshold = bps2Uint(proposalThresholdBPS, temp.totalSupply);
-
-        require(
-            nouns.getPriorVotes(msg.sender, block.number - 1) > temp.proposalThreshold,
-            "NounsDAO::propose: proposer votes below proposal threshold"
-        );
         require(
             targets.length == values.length &&
                 targets.length == signatures.length &&
@@ -168,7 +147,6 @@ contract PrivateERC20VotesArbitrator is
 
         newProposal.id = proposalCount;
         newProposal.proposer = msg.sender;
-        newProposal.proposalThreshold = temp.proposalThreshold;
         newProposal.quorumVotes = bps2Uint(quorumVotesBPS, temp.totalSupply);
         newProposal.eta = 0;
         newProposal.targets = targets;
@@ -208,7 +186,6 @@ contract PrivateERC20VotesArbitrator is
             calldatas,
             newProposal.startBlock,
             newProposal.endBlock,
-            newProposal.proposalThreshold,
             newProposal.quorumVotes,
             description
         );
@@ -275,34 +252,6 @@ contract PrivateERC20VotesArbitrator is
             );
         }
         emit ProposalExecuted(proposalId);
-    }
-
-    /**
-     * @notice Cancels a proposal only if sender is the proposer, or proposer delegates dropped below proposal threshold
-     * @param proposalId The id of the proposal to cancel
-     */
-    function cancel(uint256 proposalId) external {
-        require(state(proposalId) != ProposalState.Executed, "NounsDAO::cancel: cannot cancel executed proposal");
-
-        Proposal storage proposal = proposals[proposalId];
-        require(
-            msg.sender == proposal.proposer ||
-                nouns.getPriorVotes(proposal.proposer, block.number - 1) < proposal.proposalThreshold,
-            "NounsDAO::cancel: proposer above threshold"
-        );
-
-        proposal.canceled = true;
-        for (uint256 i = 0; i < proposal.targets.length; i++) {
-            timelock.cancelTransaction(
-                proposal.targets[i],
-                proposal.values[i],
-                proposal.signatures[i],
-                proposal.calldatas[i],
-                proposal.eta
-            );
-        }
-
-        emit ProposalCanceled(proposalId);
     }
 
     /**
@@ -465,24 +414,6 @@ contract PrivateERC20VotesArbitrator is
     }
 
     /**
-     * @notice Admin function for setting the proposal threshold basis points
-     * @dev newProposalThresholdBPS must be greater than the hardcoded min
-     * @param newProposalThresholdBPS new proposal threshold
-     */
-    function _setProposalThresholdBPS(uint256 newProposalThresholdBPS) external {
-        require(msg.sender == admin, "NounsDAO::_setProposalThresholdBPS: admin only");
-        require(
-            newProposalThresholdBPS >= MIN_PROPOSAL_THRESHOLD_BPS &&
-                newProposalThresholdBPS <= MAX_PROPOSAL_THRESHOLD_BPS,
-            "NounsDAO::_setProposalThreshold: invalid proposal threshold"
-        );
-        uint256 oldProposalThresholdBPS = proposalThresholdBPS;
-        proposalThresholdBPS = newProposalThresholdBPS;
-
-        emit ProposalThresholdBPSSet(oldProposalThresholdBPS, proposalThresholdBPS);
-    }
-
-    /**
      * @notice Admin function for setting the quorum votes basis points
      * @dev newQuorumVotesBPS must be greater than the hardcoded min
      * @param newQuorumVotesBPS new proposal threshold
@@ -538,14 +469,6 @@ contract PrivateERC20VotesArbitrator is
 
         emit NewAdmin(oldAdmin, admin);
         emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
-    }
-
-    /**
-     * @notice Current proposal threshold using Noun Total Supply
-     * Differs from `GovernerBravo` which uses fixed amount
-     */
-    function proposalThreshold() public view returns (uint256) {
-        return bps2Uint(proposalThresholdBPS, nouns.totalSupply());
     }
 
     /**
