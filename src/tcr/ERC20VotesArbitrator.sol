@@ -5,7 +5,8 @@ import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { IArbitrable } from "./interfaces/IArbitrable.sol";
 import { ArbitratorStorageV1 } from "./storage/ArbitratorStorageV1.sol";
 
-import { IVotes } from "@openzeppelin/contracts/governance/utils/IVotes.sol";
+import { ERC20VotesMintable } from "../ERC20VotesMintable.sol";
+
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -49,7 +50,7 @@ contract ERC20VotesArbitrator is
         emit VotingDelaySet(votingDelay, votingDelay_);
         emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
 
-        votingToken = IVotes(votingToken_);
+        votingToken = ERC20VotesMintable(votingToken_);
         arbitrable = IArbitrable(arbitrable_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
@@ -158,13 +159,13 @@ contract ERC20VotesArbitrator is
      * @param choice The support value for the vote. Based on the choices provided in the createDispute function
      * @return The number of votes cast
      */
-    function _castVoteInternal(address voter, uint256 disputeId, uint8 choice) internal returns (uint96) {
+    function _castVoteInternal(address voter, uint256 disputeId, uint8 choice) internal returns (uint256) {
         require(state(disputeId) == DisputeState.Active, "NounsDAO::castVoteInternal: voting is closed");
         require(choice <= disputes[disputeId].choices, "NounsDAO::castVoteInternal: invalid vote type");
         Dispute storage dispute = disputes[disputeId];
         Receipt storage receipt = dispute.receipts[voter];
         require(receipt.hasVoted == false, "NounsDAO::castVoteInternal: voter already voted");
-        uint96 votes = votingToken.getPastVotes(voter, dispute.creationBlock);
+        uint256 votes = votingToken.getPastVotes(voter, dispute.creationBlock);
 
         dispute.votes += votes;
 

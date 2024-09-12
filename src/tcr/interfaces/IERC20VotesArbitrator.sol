@@ -51,7 +51,7 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param votes The number of votes cast
      * @param reason The reason given for the vote by the voter
      */
-    event VoteCast(address indexed voter, uint256 disputeId, uint8 choice, uint96 votes, string reason);
+    event VoteCast(address indexed voter, uint256 disputeId, uint256 choice, uint256 votes, string reason);
 
     /**
      * @notice Emitted when a new dispute is created
