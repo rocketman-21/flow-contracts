@@ -71,6 +71,7 @@ contract ERC20VotesArbitrator is
         newDispute.startBlock = block.number + votingDelay;
         newDispute.endBlock = newDispute.startBlock + votingPeriod;
         newDispute.choices = _choices;
+        newDispute.votes = 0; // total votes cast
         newDispute.extraData = _extraData;
         newDispute.executed = false;
         newDispute.creationBlock = block.number;
@@ -114,57 +115,53 @@ contract ERC20VotesArbitrator is
             return DisputeState.Pending;
         } else if (block.number <= dispute.endBlock) {
             return DisputeState.Active;
-        } else if (dispute.forVotes <= dispute.againstVotes || dispute.forVotes < dispute.quorumVotes) {
-            return DisputeState.Defeated;
+        } else if (dispute.votes < dispute.quorumVotes) {
+            return DisputeState.QuorumNotReached;
         } else if (dispute.executed) {
             return DisputeState.Executed;
         } else {
-            return DisputeState.Succeeded;
+            return DisputeState.Solved;
         }
     }
 
     /**
      * @notice Cast a vote for a dispute
      * @param disputeId The id of the dispute to vote on
-     * @param support The support value for the vote. 0=against, 1=for
+     * @param choice The support value for the vote. Based on the choices provided in the createDispute function
      */
-    function castVote(uint256 disputeId, uint8 support) external {
-        emit VoteCast(msg.sender, disputeId, support, _castVoteInternal(msg.sender, disputeId, support), "");
+    function castVote(uint256 disputeId, uint8 choice) external {
+        emit VoteCast(msg.sender, disputeId, choice, _castVoteInternal(msg.sender, disputeId, choice), "");
     }
 
     /**
      * @notice Cast a vote for a dispute with a reason
      * @param disputeId The id of the dispute to vote on
-     * @param support The support value for the vote. 0=against, 1=for
+     * @param choice The support value for the vote. Based on the choices provided in the createDispute function
      * @param reason The reason given for the vote by the voter
      */
-    function castVoteWithReason(uint256 disputeId, uint8 support, string calldata reason) external {
-        emit VoteCast(msg.sender, disputeId, support, _castVoteInternal(msg.sender, disputeId, support), reason);
+    function castVoteWithReason(uint256 disputeId, uint8 choice, string calldata reason) external {
+        emit VoteCast(msg.sender, disputeId, choice, _castVoteInternal(msg.sender, disputeId, choice), reason);
     }
 
     /**
      * @notice Internal function that caries out voting logic
      * @param voter The voter that is casting their vote
      * @param disputeId The id of the dispute to vote on
-     * @param support The support value for the vote. 0=against, 1=for
+     * @param choice The support value for the vote. Based on the choices provided in the createDispute function
      * @return The number of votes cast
      */
-    function _castVoteInternal(address voter, uint256 disputeId, uint8 support) internal returns (uint96) {
+    function _castVoteInternal(address voter, uint256 disputeId, uint8 choice) internal returns (uint96) {
         require(state(disputeId) == DisputeState.Active, "NounsDAO::castVoteInternal: voting is closed");
-        require(support <= 2, "NounsDAO::castVoteInternal: invalid vote type");
+        require(choice <= disputes[disputeId].choices, "NounsDAO::castVoteInternal: invalid vote type");
         Dispute storage dispute = disputes[disputeId];
         Receipt storage receipt = dispute.receipts[voter];
         require(receipt.hasVoted == false, "NounsDAO::castVoteInternal: voter already voted");
         uint96 votes = votingToken.getPastVotes(voter, dispute.creationBlock);
 
-        if (support == 0) {
-            dispute.againstVotes = dispute.againstVotes + votes;
-        } else if (support == 1) {
-            dispute.forVotes = dispute.forVotes + votes;
-        }
+        dispute.votes += votes;
 
         receipt.hasVoted = true;
-        receipt.support = support;
+        receipt.choice = choice;
         receipt.votes = votes;
 
         return votes;
