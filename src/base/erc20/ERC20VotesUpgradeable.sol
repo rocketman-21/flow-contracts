@@ -35,6 +35,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
  * - `_delegate` is a private function that does not allow delegating to the zero address.
  *   This prevents a delegatee from draining all voting units from delegator as a result of the change in default
  *   behavior of `delegates` function.
+ *
+ * For more details on these modifications and vulnerabilities, see:
+ * https://mirror.xyz/verbsteam.eth/TP917T6vm6gXuVAxbQ34ZCn7dNiHabu3UW-ninwalVc
  */
 
 abstract contract ERC20VotesUpgradeable is Initializable, ERC20PermitUpgradeable, IERC5805Upgradeable {

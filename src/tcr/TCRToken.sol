@@ -56,17 +56,25 @@ contract TCRToken is
     ///                         INITIALIZER                      ///
     ///                                                          ///
 
+    /**
+     * @dev Initializes the TCRToken contract.
+     * @param _name The name of the token.
+     * @param _symbol The symbol of the token.
+     * @notice This function should only be called once during initialization.
+     */
     function __TCRToken_init(string calldata _name, string calldata _symbol) internal onlyInitializing {
         __ReentrancyGuard_init();
         __Ownable_init();
         __ERC20_init(_name, _symbol);
     }
 
-    /// @notice Initializes a DAO's ERC-20 governance token contract
-    /// @param _initialOwner The address of the initial owner
-    /// @param _minter The address of the minter
-    /// @param _name The name of the token
-    /// @param _symbol The symbol of the token
+    /**
+     * @notice Initializes an ERC-20 governance token contract
+     * @param _initialOwner The address of the initial owner
+     * @param _minter The address of the minter
+     * @param _name The name of the token
+     * @param _symbol The symbol of the token
+     */
     function initialize(
         address _initialOwner,
         address _minter,
@@ -100,6 +108,12 @@ contract TCRToken is
         return 18;
     }
 
+    /**
+     * @notice Mints new tokens and assigns them to the specified account
+     * @dev Only callable by the minter role and protected against reentrancy
+     * @param account The address that will receive the minted tokens
+     * @param amount The amount of tokens to mint
+     */
     function mint(address account, uint256 amount) public nonReentrant onlyMinter {
         _mint(account, amount);
     }
