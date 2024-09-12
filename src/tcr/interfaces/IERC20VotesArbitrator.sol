@@ -19,6 +19,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the function is called by an address other than the arbitrable address
     error ONLY_ARBITRABLE();
 
+    /// @notice Error thrown when the reveal period is outside the allowed range
+    error INVALID_REVEAL_PERIOD();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period

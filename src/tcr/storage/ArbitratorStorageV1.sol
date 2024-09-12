@@ -22,6 +22,12 @@ contract ArbitratorStorageV1 {
     /// @notice The max setable voting delay
     uint256 public constant MAX_VOTING_DELAY = 40_320; // About 1 week
 
+    /// @notice The minimum setable reveal period
+    uint256 public constant MIN_REVEAL_PERIOD = 5_760; // 24 hours
+
+    /// @notice The maximum setable reveal period
+    uint256 public constant MAX_REVEAL_PERIOD = 40_320; // 1 week
+
     /// @notice The minimum setable quorum votes basis points
     uint256 public constant MIN_QUORUM_VOTES_BPS = 200; // 200 basis points or 2%
 
@@ -37,8 +43,8 @@ contract ArbitratorStorageV1 {
     struct Receipt {
         /// @notice Whether or not a vote has been cast
         bool hasVoted;
-        /// @notice Whether or not the voter supports the proposal or abstains
-        uint256 choices;
+        /// @notice The choice of the voter
+        uint256 choice;
         /// @notice The number of votes the voter had, which were cast
         uint96 votes;
     }

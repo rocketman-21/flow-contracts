@@ -25,6 +25,7 @@ contract ERC20VotesArbitrator is
      * @param arbitrable_ The address of the arbitrable contract
      * @param votingPeriod_ The initial voting period
      * @param votingDelay_ The initial voting delay
+     * @param revealPeriod_ The initial reveal period to reveal committed votes
      * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
     function initialize(
@@ -32,6 +33,7 @@ contract ERC20VotesArbitrator is
         address arbitrable_,
         uint256 votingPeriod_,
         uint256 votingDelay_,
+        uint256 revealPeriod_,
         uint256 quorumVotesBPS_
     ) public initializer {
         __Ownable_init();
@@ -41,6 +43,7 @@ contract ERC20VotesArbitrator is
         if (votingDelay_ < MIN_VOTING_DELAY || votingDelay_ > MAX_VOTING_DELAY) revert INVALID_VOTING_DELAY();
         if (quorumVotesBPS_ < MIN_QUORUM_VOTES_BPS || quorumVotesBPS_ > MAX_QUORUM_VOTES_BPS)
             revert INVALID_QUORUM_VOTES_BPS();
+        if (revealPeriod_ < MIN_REVEAL_PERIOD || revealPeriod_ > MAX_REVEAL_PERIOD) revert INVALID_REVEAL_PERIOD();
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
@@ -51,6 +54,7 @@ contract ERC20VotesArbitrator is
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
         quorumVotesBPS = quorumVotesBPS_;
+        revealPeriod = revealPeriod_;
     }
 
     /**
@@ -68,8 +72,9 @@ contract ERC20VotesArbitrator is
 
         newDispute.id = disputeCount;
         newDispute.arbitrable = address(arbitrable);
-        newDispute.startBlock = block.number + votingDelay;
-        newDispute.endBlock = newDispute.startBlock + votingPeriod;
+        newDispute.votingStartBlock = block.number + votingDelay;
+        newDispute.votingEndBlock = newDispute.votingStartBlock + votingPeriod;
+        newDispute.revealPeriodEndBlock = newDispute.votingEndBlock + revealPeriod;
         newDispute.choices = _choices;
         newDispute.votes = 0; // total votes cast
         newDispute.extraData = _extraData;
@@ -82,8 +87,9 @@ contract ERC20VotesArbitrator is
         emit DisputeCreated(
             newDispute.id,
             address(arbitrable),
-            newDispute.startBlock,
-            newDispute.endBlock,
+            newDispute.votingStartBlock,
+            newDispute.votingEndBlock,
+            newDispute.revealPeriodEndBlock,
             newDispute.quorumVotes,
             newDispute.totalSupply,
             _extraData,
