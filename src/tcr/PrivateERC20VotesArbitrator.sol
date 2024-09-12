@@ -31,12 +31,6 @@ contract PrivateERC20VotesArbitrator is
     /// @notice The max setable voting delay
     uint256 public constant MAX_VOTING_DELAY = 40_320; // About 1 week
 
-    /// @notice The minimum setable quorum votes basis points
-    uint256 public constant MIN_QUORUM_VOTES_BPS = 200; // 200 basis points or 2%
-
-    /// @notice The maximum setable quorum votes basis points
-    uint256 public constant MAX_QUORUM_VOTES_BPS = 2_000; // 2,000 basis points or 20%
-
     /// @notice The maximum number of actions that can be included in a proposal
     uint256 public constant proposalMaxOperations = 10; // 10 actions
 
@@ -53,15 +47,8 @@ contract PrivateERC20VotesArbitrator is
      * @param nouns_ The address of the NOUN tokens
      * @param votingPeriod_ The initial voting period
      * @param votingDelay_ The initial voting delay
-     * * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
-    function initialize(
-        address timelock_,
-        address nouns_,
-        uint256 votingPeriod_,
-        uint256 votingDelay_,
-        uint256 quorumVotesBPS_
-    ) public virtual {
+    function initialize(address timelock_, address nouns_, uint256 votingPeriod_, uint256 votingDelay_) public virtual {
         require(address(timelock) == address(0), "NounsDAO::initialize: can only initialize once");
         require(msg.sender == admin, "NounsDAO::initialize: admin only");
         require(timelock_ != address(0), "NounsDAO::initialize: invalid timelock address");
@@ -74,20 +61,14 @@ contract PrivateERC20VotesArbitrator is
             votingDelay_ >= MIN_VOTING_DELAY && votingDelay_ <= MAX_VOTING_DELAY,
             "NounsDAO::initialize: invalid voting delay"
         );
-        require(
-            quorumVotesBPS_ >= MIN_QUORUM_VOTES_BPS && quorumVotesBPS_ <= MAX_QUORUM_VOTES_BPS,
-            "NounsDAO::initialize: invalid proposal threshold"
-        );
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
-        emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
 
         timelock = INounsDAOExecutor(timelock_);
         nouns = NounsTokenLike(nouns_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
-        quorumVotesBPS = quorumVotesBPS_;
     }
 
     struct ProposalTemp {
@@ -147,7 +128,6 @@ contract PrivateERC20VotesArbitrator is
 
         newProposal.id = proposalCount;
         newProposal.proposer = msg.sender;
-        newProposal.quorumVotes = bps2Uint(quorumVotesBPS, temp.totalSupply);
         newProposal.eta = 0;
         newProposal.targets = targets;
         newProposal.values = values;
@@ -176,7 +156,6 @@ contract PrivateERC20VotesArbitrator is
             description
         );
 
-        /// @notice Updated event with `proposalThreshold` and `quorumVotes`
         emit ProposalCreatedWithRequirements(
             newProposal.id,
             msg.sender,
@@ -186,7 +165,6 @@ contract PrivateERC20VotesArbitrator is
             calldatas,
             newProposal.startBlock,
             newProposal.endBlock,
-            newProposal.quorumVotes,
             description
         );
 
@@ -302,7 +280,7 @@ contract PrivateERC20VotesArbitrator is
             return ProposalState.Pending;
         } else if (block.number <= proposal.endBlock) {
             return ProposalState.Active;
-        } else if (proposal.forVotes <= proposal.againstVotes || proposal.forVotes < proposal.quorumVotes) {
+        } else if (proposal.forVotes <= proposal.againstVotes) {
             return ProposalState.Defeated;
         } else if (proposal.eta == 0) {
             return ProposalState.Succeeded;
@@ -414,23 +392,6 @@ contract PrivateERC20VotesArbitrator is
     }
 
     /**
-     * @notice Admin function for setting the quorum votes basis points
-     * @dev newQuorumVotesBPS must be greater than the hardcoded min
-     * @param newQuorumVotesBPS new proposal threshold
-     */
-    function _setQuorumVotesBPS(uint256 newQuorumVotesBPS) external {
-        require(msg.sender == admin, "NounsDAO::_setQuorumVotesBPS: admin only");
-        require(
-            newQuorumVotesBPS >= MIN_QUORUM_VOTES_BPS && newQuorumVotesBPS <= MAX_QUORUM_VOTES_BPS,
-            "NounsDAO::_setProposalThreshold: invalid proposal threshold"
-        );
-        uint256 oldQuorumVotesBPS = quorumVotesBPS;
-        quorumVotesBPS = newQuorumVotesBPS;
-
-        emit QuorumVotesBPSSet(oldQuorumVotesBPS, quorumVotesBPS);
-    }
-
-    /**
      * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
      * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
      * @param newPendingAdmin New pending admin.
@@ -469,14 +430,6 @@ contract PrivateERC20VotesArbitrator is
 
         emit NewAdmin(oldAdmin, admin);
         emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
-    }
-
-    /**
-     * @notice Current quorum votes using Noun Total Supply
-     * Differs from `GovernerBravo` which uses fixed amount
-     */
-    function quorumVotes() public view returns (uint256) {
-        return bps2Uint(quorumVotesBPS, nouns.totalSupply());
     }
 
     function bps2Uint(uint256 bps, uint256 number) internal pure returns (uint256) {
