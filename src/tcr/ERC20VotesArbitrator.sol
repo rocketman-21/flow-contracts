@@ -23,20 +23,30 @@ contract PrivateERC20VotesArbitrator is
      * @param votingToken_ The address of the ERC20 voting token
      * @param votingPeriod_ The initial voting period
      * @param votingDelay_ The initial voting delay
+     * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
-    function initialize(address votingToken_, uint256 votingPeriod_, uint256 votingDelay_) public initializer {
+    function initialize(
+        address votingToken_,
+        uint256 votingPeriod_,
+        uint256 votingDelay_,
+        uint256 quorumVotesBPS_
+    ) public initializer {
         __Ownable_init();
 
         if (votingToken_ == address(0)) revert INVALID_VOTING_TOKEN_ADDRESS();
         if (votingPeriod_ < MIN_VOTING_PERIOD || votingPeriod_ > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
         if (votingDelay_ < MIN_VOTING_DELAY || votingDelay_ > MAX_VOTING_DELAY) revert INVALID_VOTING_DELAY();
+        if (quorumVotesBPS_ < MIN_QUORUM_VOTES_BPS || quorumVotesBPS_ > MAX_QUORUM_VOTES_BPS)
+            revert INVALID_QUORUM_VOTES_BPS();
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
+        emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
 
         votingToken = votingToken_;
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
+        quorumVotesBPS = quorumVotesBPS_;
     }
 
     /**
@@ -58,6 +68,7 @@ contract PrivateERC20VotesArbitrator is
         newProposal.abstainVotes = 0;
         newProposal.executed = false;
         newProposal.creationBlock = block.number;
+        newProposal.quorumVotes = bps2Uint(quorumVotesBPS, votingToken.totalSupply());
         newProposal.totalSupply = votingToken.totalSupply();
 
         latestProposalIds[newProposal.proposer] = newProposal.id;
@@ -98,7 +109,7 @@ contract PrivateERC20VotesArbitrator is
             return ProposalState.Pending;
         } else if (block.number <= proposal.endBlock) {
             return ProposalState.Active;
-        } else if (proposal.forVotes <= proposal.againstVotes) {
+        } else if (proposal.forVotes <= proposal.againstVotes || proposal.forVotes < proposal.quorumVotes) {
             return ProposalState.Defeated;
         } else if (proposal.eta == 0) {
             return ProposalState.Succeeded;
@@ -159,15 +170,11 @@ contract PrivateERC20VotesArbitrator is
     }
 
     /**
-     * @notice Admin function for setting the voting delay
+     * @notice Owner function for setting the voting delay
      * @param newVotingDelay new voting delay, in blocks
      */
-    function _setVotingDelay(uint256 newVotingDelay) external {
-        require(msg.sender == admin, "NounsDAO::_setVotingDelay: admin only");
-        require(
-            newVotingDelay >= MIN_VOTING_DELAY && newVotingDelay <= MAX_VOTING_DELAY,
-            "NounsDAO::_setVotingDelay: invalid voting delay"
-        );
+    function _setVotingDelay(uint256 newVotingDelay) external onlyOwner {
+        if (newVotingDelay < MIN_VOTING_DELAY || newVotingDelay > MAX_VOTING_DELAY) revert INVALID_VOTING_DELAY();
         uint256 oldVotingDelay = votingDelay;
         votingDelay = newVotingDelay;
 
@@ -175,15 +182,26 @@ contract PrivateERC20VotesArbitrator is
     }
 
     /**
-     * @notice Admin function for setting the voting period
+     * @notice Owner function for setting the quorum votes basis points
+     * @dev newQuorumVotesBPS must be greater than the hardcoded min
+     * @param newQuorumVotesBPS new proposal threshold
+     */
+    function _setQuorumVotesBPS(uint256 newQuorumVotesBPS) external onlyOwner {
+        if (newQuorumVotesBPS < MIN_QUORUM_VOTES_BPS || newQuorumVotesBPS > MAX_QUORUM_VOTES_BPS)
+            revert INVALID_QUORUM_VOTES_BPS();
+        uint256 oldQuorumVotesBPS = quorumVotesBPS;
+        quorumVotesBPS = newQuorumVotesBPS;
+
+        emit QuorumVotesBPSSet(oldQuorumVotesBPS, quorumVotesBPS);
+    }
+
+    /**
+     * @notice Owner function for setting the voting period
      * @param newVotingPeriod new voting period, in blocks
      */
-    function _setVotingPeriod(uint256 newVotingPeriod) external {
-        require(msg.sender == admin, "NounsDAO::_setVotingPeriod: admin only");
-        require(
-            newVotingPeriod >= MIN_VOTING_PERIOD && newVotingPeriod <= MAX_VOTING_PERIOD,
-            "NounsDAO::_setVotingPeriod: invalid voting period"
-        );
+    function _setVotingPeriod(uint256 newVotingPeriod) external onlyOwner {
+        if (newVotingPeriod < MIN_VOTING_PERIOD || newVotingPeriod > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
+
         uint256 oldVotingPeriod = votingPeriod;
         votingPeriod = newVotingPeriod;
 
@@ -192,6 +210,14 @@ contract PrivateERC20VotesArbitrator is
 
     function bps2Uint(uint256 bps, uint256 number) internal pure returns (uint256) {
         return (number * bps) / 10000;
+    }
+
+    /**
+     * @notice Current quorum votes using Noun Total Supply
+     * Differs from `GovernerBravo` which uses fixed amount
+     */
+    function quorumVotes() public view returns (uint256) {
+        return bps2Uint(quorumVotesBPS, votingToken.totalSupply());
     }
 
     function createDispute(uint256 _choices, bytes calldata _extraData) external override returns (uint256 disputeID) {

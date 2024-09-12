@@ -13,6 +13,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the voting delay is outside the allowed range
     error INVALID_VOTING_DELAY();
 
+    /// @notice Error thrown when the quorum votes basis points are outside the allowed range
+    error INVALID_QUORUM_VOTES_BPS();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
@@ -26,4 +29,11 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param newVotingDelay The new voting delay
      */
     event VotingDelaySet(uint256 oldVotingDelay, uint256 newVotingDelay);
+
+    /**
+     * @notice Emitted when the quorum votes basis points are set
+     * @param oldQuorumVotesBPS The previous quorum votes basis points
+     * @param newQuorumVotesBPS The new quorum votes basis points
+     */
+    event QuorumVotesBPSSet(uint256 oldQuorumVotesBPS, uint256 newQuorumVotesBPS);
 }
