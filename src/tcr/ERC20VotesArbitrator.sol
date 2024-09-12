@@ -16,6 +16,8 @@ contract PrivateERC20VotesArbitrator is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable
 {
+    constructor() payable initializer {}
+
     /**
      * @notice Used to initialize the contract
      * @param votingToken_ The address of the ERC20 voting token
@@ -37,128 +39,41 @@ contract PrivateERC20VotesArbitrator is
         votingDelay = votingDelay_;
     }
 
-    struct ProposalTemp {
-        uint256 totalSupply;
-        uint256 latestProposalId;
-        uint256 startBlock;
-        uint256 endBlock;
-    }
-
     /**
      * @notice Function used to propose a new proposal.
-     * @param targets Target addresses for proposal calls
-     * @param values Eth values for proposal calls
-     * @param signatures Function signatures for proposal calls
-     * @param calldatas Calldatas for proposal calls
      * @param description String description of the proposal
      * @return Proposal id of new proposal
      */
-    function propose(
-        address[] memory targets,
-        uint256[] memory values,
-        string[] memory signatures,
-        bytes[] memory calldatas,
-        string memory description
-    ) public returns (uint256) {
-        ProposalTemp memory temp;
-
-        temp.totalSupply = nouns.totalSupply();
-
-        require(
-            targets.length == values.length &&
-                targets.length == signatures.length &&
-                targets.length == calldatas.length,
-            "NounsDAO::propose: proposal function information arity mismatch"
-        );
-        require(targets.length != 0, "NounsDAO::propose: must provide actions");
-        require(targets.length <= proposalMaxOperations, "NounsDAO::propose: too many actions");
-
-        temp.latestProposalId = latestProposalIds[msg.sender];
-        if (temp.latestProposalId != 0) {
-            ProposalState proposersLatestProposalState = state(temp.latestProposalId);
-            require(
-                proposersLatestProposalState != ProposalState.Active,
-                "NounsDAO::propose: one live proposal per proposer, found an already active proposal"
-            );
-            require(
-                proposersLatestProposalState != ProposalState.Pending,
-                "NounsDAO::propose: one live proposal per proposer, found an already pending proposal"
-            );
-        }
-
-        temp.startBlock = block.number + votingDelay;
-        temp.endBlock = temp.startBlock + votingPeriod;
-
+    function propose(string memory description) public returns (uint256) {
         proposalCount++;
         Proposal storage newProposal = proposals[proposalCount];
 
         newProposal.id = proposalCount;
         newProposal.proposer = msg.sender;
         newProposal.eta = 0;
-        newProposal.targets = targets;
-        newProposal.values = values;
-        newProposal.signatures = signatures;
-        newProposal.calldatas = calldatas;
-        newProposal.startBlock = temp.startBlock;
-        newProposal.endBlock = temp.endBlock;
+        newProposal.startBlock = block.number + votingDelay;
+        newProposal.endBlock = newProposal.startBlock + votingPeriod;
         newProposal.forVotes = 0;
         newProposal.againstVotes = 0;
         newProposal.abstainVotes = 0;
         newProposal.executed = false;
         newProposal.creationBlock = block.number;
+        newProposal.totalSupply = votingToken.totalSupply();
 
         latestProposalIds[newProposal.proposer] = newProposal.id;
 
         /// @notice Maintains backwards compatibility with GovernorBravo events
-        emit ProposalCreated(
-            newProposal.id,
-            msg.sender,
-            targets,
-            values,
-            signatures,
-            calldatas,
-            newProposal.startBlock,
-            newProposal.endBlock,
-            description
-        );
+        emit ProposalCreated(newProposal.id, msg.sender, newProposal.startBlock, newProposal.endBlock, description);
 
         emit ProposalCreatedWithRequirements(
             newProposal.id,
             msg.sender,
-            targets,
-            values,
-            signatures,
-            calldatas,
             newProposal.startBlock,
             newProposal.endBlock,
             description
         );
 
         return newProposal.id;
-    }
-
-    /**
-     * @notice Gets actions of a proposal
-     * @param proposalId the id of the proposal
-     * @return targets
-     * @return values
-     * @return signatures
-     * @return calldatas
-     */
-    function getActions(
-        uint256 proposalId
-    )
-        external
-        view
-        returns (
-            address[] memory targets,
-            uint256[] memory values,
-            string[] memory signatures,
-            bytes[] memory calldatas
-        )
-    {
-        Proposal storage p = proposals[proposalId];
-        return (p.targets, p.values, p.signatures, p.calldatas);
     }
 
     /**
@@ -209,21 +124,6 @@ contract PrivateERC20VotesArbitrator is
      */
     function castVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external {
         emit VoteCast(msg.sender, proposalId, support, castVoteInternal(msg.sender, proposalId, support), reason);
-    }
-
-    /**
-     * @notice Cast a vote for a proposal by signature
-     * @dev External function that accepts EIP-712 signatures for voting on proposals.
-     */
-    function castVoteBySig(uint256 proposalId, uint8 support, uint8 v, bytes32 r, bytes32 s) external {
-        bytes32 domainSeparator = keccak256(
-            abi.encode(DOMAIN_TYPEHASH, keccak256(bytes(name)), getChainIdInternal(), address(this))
-        );
-        bytes32 structHash = keccak256(abi.encode(BALLOT_TYPEHASH, proposalId, support));
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", domainSeparator, structHash));
-        address signatory = ecrecover(digest, v, r, s);
-        require(signatory != address(0), "NounsDAO::castVoteBySig: invalid signature");
-        emit VoteCast(signatory, proposalId, support, castVoteInternal(signatory, proposalId, support), "");
     }
 
     /**
@@ -290,60 +190,9 @@ contract PrivateERC20VotesArbitrator is
         emit VotingPeriodSet(oldVotingPeriod, votingPeriod);
     }
 
-    /**
-     * @notice Begins transfer of admin rights. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
-     * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
-     * @param newPendingAdmin New pending admin.
-     */
-    function _setPendingAdmin(address newPendingAdmin) external {
-        // Check caller = admin
-        require(msg.sender == admin, "NounsDAO::_setPendingAdmin: admin only");
-
-        // Save current value, if any, for inclusion in log
-        address oldPendingAdmin = pendingAdmin;
-
-        // Store pendingAdmin with value newPendingAdmin
-        pendingAdmin = newPendingAdmin;
-
-        // Emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin)
-        emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin);
-    }
-
-    /**
-     * @notice Accepts transfer of admin rights. msg.sender must be pendingAdmin
-     * @dev Admin function for pending admin to accept role and update admin
-     */
-    function _acceptAdmin() external {
-        // Check caller is pendingAdmin and pendingAdmin ≠ address(0)
-        require(msg.sender == pendingAdmin && msg.sender != address(0), "NounsDAO::_acceptAdmin: pending admin only");
-
-        // Save current values for inclusion in log
-        address oldAdmin = admin;
-        address oldPendingAdmin = pendingAdmin;
-
-        // Store admin with value pendingAdmin
-        admin = pendingAdmin;
-
-        // Clear the pending value
-        pendingAdmin = address(0);
-
-        emit NewAdmin(oldAdmin, admin);
-        emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
-    }
-
     function bps2Uint(uint256 bps, uint256 number) internal pure returns (uint256) {
         return (number * bps) / 10000;
     }
-
-    function getChainIdInternal() internal view returns (uint256) {
-        uint256 chainId;
-        assembly {
-            chainId := chainid()
-        }
-        return chainId;
-    }
-
-    constructor() payable initializer {}
 
     function createDispute(uint256 _choices, bytes calldata _extraData) external override returns (uint256 disputeID) {
         // TODO: Implement createDispute logic
