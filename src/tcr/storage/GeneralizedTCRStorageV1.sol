@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { IArbitrator } from "../interfaces/IArbitrator.sol";
 import { IGeneralizedTCR } from "../interfaces/IGeneralizedTCR.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title GeneralizedTCRStorageV1
@@ -67,10 +68,12 @@ contract GeneralizedTCRStorageV1 {
      * @notice The address that can make changes to the parameters of the contract
      */
     address public governor;
+
     /**
-     * @notice The address of the WETH contract
+     * @notice The address of the ERC20 contract used for deposits
      */
-    address public WETH;
+    IERC20 public erc20;
+
     /**
      * @notice The base deposit to submit an item
      */

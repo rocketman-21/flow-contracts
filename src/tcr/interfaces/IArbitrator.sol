@@ -47,12 +47,13 @@ interface IArbitrator {
 
     /**
      * @dev Create a dispute. Must be called by the arbitrable contract.
-     * Must be paid at least arbitrationCost(_extraData).
+     * Must be paid at least arbitrationCost(_extraData) in ERC20 tokens.
+     * Arbitrator must transferFrom() the ERC20 tokens to itself.
      * @param _choices Amount of choices the arbitrator can make in this dispute.
      * @param _extraData Can be used to give additional info on the dispute to be created.
      * @return disputeID ID of the dispute created.
      */
-    function createDispute(uint256 _choices, bytes calldata _extraData) external payable returns (uint256 disputeID);
+    function createDispute(uint256 _choices, bytes calldata _extraData) external returns (uint256 disputeID);
 
     /**
      * @dev Compute the cost of arbitration. It is recommended not to increase it often, as it can be highly time and gas consuming for the arbitrated contracts to cope with fee augmentation.
@@ -63,6 +64,7 @@ interface IArbitrator {
 
     /**
      * @dev Appeal a ruling. Note that it has to be called before the arbitrator contract calls rule.
+     * Arbitrator must transferFrom() the ERC20 tokens required for appeal to itself.
      * @param _disputeID ID of the dispute to be appealed.
      * @param _extraData Can be used to give extra info on the appeal.
      */
