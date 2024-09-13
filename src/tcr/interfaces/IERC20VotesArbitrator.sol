@@ -37,6 +37,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the appeal cost is outside the allowed range
     error INVALID_APPEAL_COST();
 
+    /// @notice Error thrown when the arbitration cost is outside the allowed range
+    error INVALID_ARBITRATION_COST();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
@@ -57,6 +60,13 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param newAppealCost The new appeal cost
      */
     event AppealCostSet(uint256 oldAppealCost, uint256 newAppealCost);
+
+    /**
+     * @notice Emitted when the arbitration cost is set
+     * @param oldArbitrationCost The previous arbitration cost
+     * @param newArbitrationCost The new arbitration cost
+     */
+    event ArbitrationCostSet(uint256 oldArbitrationCost, uint256 newArbitrationCost);
 
     /**
      * @notice Emitted when the quorum votes basis points are set

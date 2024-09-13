@@ -29,6 +29,7 @@ contract ERC20VotesArbitrator is
      * @param revealPeriod_ The initial reveal period to reveal committed votes
      * @param appealPeriod_ The initial appeal period
      * @param appealCost_ The initial appeal cost
+     * @param arbitrationCost_ The initial arbitration cost
      * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
     function initialize(
@@ -39,7 +40,8 @@ contract ERC20VotesArbitrator is
         uint256 revealPeriod_,
         uint256 appealPeriod_,
         uint256 appealCost_,
-        uint256 quorumVotesBPS_
+        uint256 quorumVotesBPS_,
+        uint256 arbitrationCost_
     ) public initializer {
         __Ownable_init();
         __ReentrancyGuard_init();
@@ -52,12 +54,15 @@ contract ERC20VotesArbitrator is
         if (revealPeriod_ < MIN_REVEAL_PERIOD || revealPeriod_ > MAX_REVEAL_PERIOD) revert INVALID_REVEAL_PERIOD();
         if (appealPeriod_ < MIN_APPEAL_PERIOD || appealPeriod_ > MAX_APPEAL_PERIOD) revert INVALID_APPEAL_PERIOD();
         if (appealCost_ < MIN_APPEAL_COST || appealCost_ > MAX_APPEAL_COST) revert INVALID_APPEAL_COST();
+        if (arbitrationCost_ < MIN_ARBITRATION_COST || arbitrationCost_ > MAX_ARBITRATION_COST)
+            revert INVALID_ARBITRATION_COST();
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
         emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
-        emit AppealPeriodSet(appealPeriodDuration, appealPeriod_);
-        emit AppealCostSet(baseAppealCost, appealCost_);
+        emit AppealPeriodSet(_appealPeriod, appealPeriod_);
+        emit AppealCostSet(_appealCost, appealCost_);
+        emit ArbitrationCostSet(_arbitrationCost, arbitrationCost_);
 
         votingToken = ERC20VotesMintable(votingToken_);
         arbitrable = IArbitrable(arbitrable_);
@@ -65,8 +70,9 @@ contract ERC20VotesArbitrator is
         votingDelay = votingDelay_;
         quorumVotesBPS = quorumVotesBPS_;
         revealPeriod = revealPeriod_;
-        appealPeriodDuration = appealPeriod_;
-        baseAppealCost = appealCost_;
+        _appealPeriod = appealPeriod_;
+        _appealCost = appealCost_;
+        _arbitrationCost = arbitrationCost_;
     }
 
     /**
@@ -87,7 +93,7 @@ contract ERC20VotesArbitrator is
         newDispute.votingStartTime = block.timestamp + votingDelay;
         newDispute.votingEndTime = newDispute.votingStartTime + votingPeriod;
         newDispute.revealPeriodEndTime = newDispute.votingEndTime + revealPeriod;
-        newDispute.appealPeriodEndTime = newDispute.revealPeriodEndTime + appealPeriodDuration;
+        newDispute.appealPeriodEndTime = newDispute.revealPeriodEndTime + _appealPeriod;
         newDispute.choices = _choices;
         newDispute.votes = 0; // total votes cast
         newDispute.ruling = IArbitrable.Party.None; // winning choice
@@ -341,7 +347,7 @@ contract ERC20VotesArbitrator is
     }
 
     function arbitrationCost(bytes calldata _extraData) external view override returns (uint256 cost) {
-        // TODO: Implement arbitrationCost logic
+        return _arbitrationCost;
     }
 
     /**
@@ -352,7 +358,7 @@ contract ERC20VotesArbitrator is
      * @dev TODO: Implement logic to adjust cost based on disputeID and number of appeal rounds
      */
     function appealCost(uint256 _disputeID, bytes calldata _extraData) external view returns (uint256 cost) {
-        return baseAppealCost;
+        return _appealCost;
     }
 
     /**

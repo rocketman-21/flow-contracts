@@ -46,6 +46,12 @@ contract ArbitratorStorageV1 {
     /** @notice The maximum setable appeal cost */
     uint256 public constant MAX_APPEAL_COST = 1e18 * 1_000_000; // 1 million tokens
 
+    /** @notice The minimum setable arbitration cost */
+    uint256 public constant MIN_ARBITRATION_COST = 1e18 / 10_000; // 1 ten-thousandth of a token
+
+    /** @notice The maximum setable arbitration cost */
+    uint256 public constant MAX_ARBITRATION_COST = 1e18 * 1_000_000; // 1 million tokens
+
     /** @notice ERC20 token used for voting */
     ERC20VotesMintable public votingToken;
 
@@ -56,7 +62,7 @@ contract ArbitratorStorageV1 {
     uint256 public votingPeriod;
 
     /** @notice The number of seconds after a dispute is executed that a party can appeal the decision */
-    uint256 public appealPeriodDuration;
+    uint256 public _appealPeriod;
 
     /** @notice The number of seconds between the proposal creation and the vote start */
     uint256 public votingDelay;
@@ -71,7 +77,10 @@ contract ArbitratorStorageV1 {
     uint256 public disputeCount;
 
     /** @notice The cost of appealing a dispute */
-    uint256 public baseAppealCost;
+    uint256 public _appealCost;
+
+    /** @notice The cost of arbitration */
+    uint256 public _arbitrationCost;
 
     /** @notice Ballot receipt record for a voter */
     struct Receipt {
