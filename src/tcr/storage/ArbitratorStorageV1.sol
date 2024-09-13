@@ -116,6 +116,8 @@ contract ArbitratorStorageV1 {
         uint256 currentRound;
         /** @notice The number of choices available for voting */
         uint256 choices;
+        /** @notice The winning choice in the dispute */
+        uint256 winningChoice;
     }
 
     struct VotingRound {
@@ -145,6 +147,8 @@ contract ArbitratorStorageV1 {
         uint256 totalSupply;
         /** @notice Mapping of voter addresses to their voting receipts */
         mapping(address => Receipt) receipts;
+        /** @notice Tracks whether a voter has claimed their reward */
+        mapping(address => bool) rewardsClaimed;
     }
 
     /** @notice Mapping of dispute IDs to Dispute structs */
