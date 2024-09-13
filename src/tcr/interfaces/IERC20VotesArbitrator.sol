@@ -31,6 +31,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when trying to execute a dispute that has already been executed
     error DISPUTE_ALREADY_EXECUTED();
 
+    /// @notice Error thrown when the appeal period is outside the allowed range
+    error INVALID_APPEAL_PERIOD();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
@@ -53,6 +56,13 @@ interface IERC20VotesArbitrator is IArbitrator {
     event QuorumVotesBPSSet(uint256 oldQuorumVotesBPS, uint256 newQuorumVotesBPS);
 
     /**
+     * @notice Emitted when the appeal period is set
+     * @param oldAppealPeriod The previous appeal period
+     * @param newAppealPeriod The new appeal period
+     */
+    event AppealPeriodSet(uint256 oldAppealPeriod, uint256 newAppealPeriod);
+
+    /**
      * @notice Emitted when a vote has been cast on a dispute
      * @param voter The address of the voter
      * @param disputeId The ID of the dispute
@@ -73,9 +83,10 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @notice Emitted when a new dispute is created
      * @param id The ID of the newly created dispute
      * @param arbitrable The address of the arbitrable contract
-     * @param votingStartBlock The block number when voting starts
-     * @param votingEndBlock The block number when voting ends
-     * @param revealPeriodEndBlock The block number when the reveal period ends
+     * @param votingStartTime The timestamp when voting starts
+     * @param votingEndTime The timestamp when voting ends
+     * @param revealPeriodEndTime The timestamp when the reveal period ends
+     * @param appealPeriodEndTime The timestamp when the appeal period ends
      * @param quorumVotes The number of votes required for quorum
      * @param totalSupply The total supply of voting tokens at dispute creation
      * @param extraData Additional data related to the dispute
@@ -84,9 +95,10 @@ interface IERC20VotesArbitrator is IArbitrator {
     event DisputeCreated(
         uint256 id,
         address indexed arbitrable,
-        uint256 votingStartBlock,
-        uint256 votingEndBlock,
-        uint256 revealPeriodEndBlock,
+        uint256 votingStartTime,
+        uint256 votingEndTime,
+        uint256 revealPeriodEndTime,
+        uint256 appealPeriodEndTime,
         uint256 quorumVotes,
         uint256 totalSupply,
         bytes extraData,

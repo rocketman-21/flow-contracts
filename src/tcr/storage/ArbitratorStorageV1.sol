@@ -11,22 +11,22 @@ import { ERC20VotesMintable } from "../../ERC20VotesMintable.sol";
  */
 contract ArbitratorStorageV1 {
     /** @notice The minimum setable voting period */
-    uint256 public constant MIN_VOTING_PERIOD = 5_760; // About 24 hours
+    uint256 public constant MIN_VOTING_PERIOD = 86_400; // 24 hours
 
     /** @notice The max setable voting period */
-    uint256 public constant MAX_VOTING_PERIOD = 80_640; // About 2 weeks
+    uint256 public constant MAX_VOTING_PERIOD = 1_209_600; // 2 weeks
 
     /** @notice The min setable voting delay */
     uint256 public constant MIN_VOTING_DELAY = 1;
 
     /** @notice The max setable voting delay */
-    uint256 public constant MAX_VOTING_DELAY = 40_320; // About 1 week
+    uint256 public constant MAX_VOTING_DELAY = 604_800; // 1 week
 
     /** @notice The minimum setable reveal period */
-    uint256 public constant MIN_REVEAL_PERIOD = 5_760; // 24 hours
+    uint256 public constant MIN_REVEAL_PERIOD = 86_400; // 24 hours
 
     /** @notice The maximum setable reveal period */
-    uint256 public constant MAX_REVEAL_PERIOD = 40_320; // 1 week
+    uint256 public constant MAX_REVEAL_PERIOD = 604_800; // 7 days
 
     /** @notice The minimum setable quorum votes basis points */
     uint256 public constant MIN_QUORUM_VOTES_BPS = 200; // 200 basis points or 2%
@@ -34,22 +34,31 @@ contract ArbitratorStorageV1 {
     /** @notice The maximum setable quorum votes basis points */
     uint256 public constant MAX_QUORUM_VOTES_BPS = 2_000; // 2,000 basis points or 20%
 
+    /** @notice The minimum setable appeal period */
+    uint256 public constant MIN_APPEAL_PERIOD = 21_600; // 6 hours
+
+    /** @notice The maximum setable appeal period */
+    uint256 public constant MAX_APPEAL_PERIOD = 604_800; // 7 days
+
     /** @notice ERC20 token used for voting */
     ERC20VotesMintable public votingToken;
 
     /** @notice The arbitrable contract associated with this arbitrator */
     IArbitrable public arbitrable;
 
-    /** @notice The number of blocks between the vote start and the vote end */
+    /** @notice The number of seconds between the vote start and the vote end */
     uint256 public votingPeriod;
 
-    /** @notice The number of blocks between the proposal creation and the vote start */
+    /** @notice The number of seconds after a dispute is executed that a party can appeal the decision */
+    uint256 public appealPeriodDuration;
+
+    /** @notice The number of seconds between the proposal creation and the vote start */
     uint256 public votingDelay;
 
     /** @notice The number of votes required to reach quorum, in basis points */
     uint256 public quorumVotesBPS;
 
-    /** @notice The number of blocks for the reveal period after voting ends */
+    /** @notice The number of seconds for the reveal period after voting ends */
     uint256 public revealPeriod;
 
     /** @notice The total number of disputes created */
@@ -81,12 +90,14 @@ contract ArbitratorStorageV1 {
         uint256 id;
         /** @notice Address of the arbitrable contract that created this dispute */
         address arbitrable;
-        /** @notice Block number when voting commit period starts */
-        uint256 votingStartBlock;
-        /** @notice Block number when voting commit period ends */
-        uint256 votingEndBlock;
-        /** @notice Block number when the reveal period ends */
-        uint256 revealPeriodEndBlock;
+        /** @notice Timestamp when voting commit period starts */
+        uint256 votingStartTime;
+        /** @notice Timestamp when voting commit period ends */
+        uint256 votingEndTime;
+        /** @notice Timestamp when the reveal period ends */
+        uint256 revealPeriodEndTime;
+        /** @notice Timestamp when the appeal period ends */
+        uint256 appealPeriodEndTime;
         /** @notice Number of choices available for voting */
         uint256 choices;
         /** @notice Total number of votes cast */

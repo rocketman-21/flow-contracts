@@ -27,6 +27,7 @@ contract ERC20VotesArbitrator is
      * @param votingPeriod_ The initial voting period
      * @param votingDelay_ The initial voting delay
      * @param revealPeriod_ The initial reveal period to reveal committed votes
+     * @param appealPeriod_ The initial appeal period
      * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
     function initialize(
@@ -35,6 +36,7 @@ contract ERC20VotesArbitrator is
         uint256 votingPeriod_,
         uint256 votingDelay_,
         uint256 revealPeriod_,
+        uint256 appealPeriod_,
         uint256 quorumVotesBPS_
     ) public initializer {
         __Ownable_init();
@@ -46,10 +48,12 @@ contract ERC20VotesArbitrator is
         if (quorumVotesBPS_ < MIN_QUORUM_VOTES_BPS || quorumVotesBPS_ > MAX_QUORUM_VOTES_BPS)
             revert INVALID_QUORUM_VOTES_BPS();
         if (revealPeriod_ < MIN_REVEAL_PERIOD || revealPeriod_ > MAX_REVEAL_PERIOD) revert INVALID_REVEAL_PERIOD();
+        if (appealPeriod_ < MIN_APPEAL_PERIOD || appealPeriod_ > MAX_APPEAL_PERIOD) revert INVALID_APPEAL_PERIOD();
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
         emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
+        emit AppealPeriodSet(appealPeriodDuration, appealPeriod_);
 
         votingToken = ERC20VotesMintable(votingToken_);
         arbitrable = IArbitrable(arbitrable_);
@@ -57,6 +61,7 @@ contract ERC20VotesArbitrator is
         votingDelay = votingDelay_;
         quorumVotesBPS = quorumVotesBPS_;
         revealPeriod = revealPeriod_;
+        appealPeriodDuration = appealPeriod_;
     }
 
     /**
@@ -74,9 +79,10 @@ contract ERC20VotesArbitrator is
 
         newDispute.id = disputeCount;
         newDispute.arbitrable = address(arbitrable);
-        newDispute.votingStartBlock = block.number + votingDelay;
-        newDispute.votingEndBlock = newDispute.votingStartBlock + votingPeriod;
-        newDispute.revealPeriodEndBlock = newDispute.votingEndBlock + revealPeriod;
+        newDispute.votingStartTime = block.timestamp + votingDelay;
+        newDispute.votingEndTime = newDispute.votingStartTime + votingPeriod;
+        newDispute.revealPeriodEndTime = newDispute.votingEndTime + revealPeriod;
+        newDispute.appealPeriodEndTime = newDispute.revealPeriodEndTime + appealPeriodDuration;
         newDispute.choices = _choices;
         newDispute.votes = 0; // total votes cast
         newDispute.ruling = IArbitrable.Party.None; // winning choice
@@ -90,9 +96,10 @@ contract ERC20VotesArbitrator is
         emit DisputeCreated(
             newDispute.id,
             address(arbitrable),
-            newDispute.votingStartBlock,
-            newDispute.votingEndBlock,
-            newDispute.revealPeriodEndBlock,
+            newDispute.votingStartTime,
+            newDispute.votingEndTime,
+            newDispute.revealPeriodEndTime,
+            newDispute.appealPeriodEndTime,
             newDispute.quorumVotes,
             newDispute.totalSupply,
             _extraData,
@@ -119,11 +126,11 @@ contract ERC20VotesArbitrator is
      */
     function state(uint256 disputeId) public view validDisputeID(disputeId) returns (DisputeState) {
         Dispute storage dispute = disputes[disputeId];
-        if (block.number <= dispute.votingStartBlock) {
+        if (block.timestamp <= dispute.votingStartTime) {
             return DisputeState.Pending;
-        } else if (block.number <= dispute.votingEndBlock) {
+        } else if (block.timestamp <= dispute.votingEndTime) {
             return DisputeState.Active;
-        } else if (block.number <= dispute.revealPeriodEndBlock) {
+        } else if (block.timestamp <= dispute.revealPeriodEndTime) {
             return DisputeState.Reveal;
         } else if (dispute.votes < dispute.quorumVotes) {
             return DisputeState.QuorumNotReached;
@@ -295,6 +302,10 @@ contract ERC20VotesArbitrator is
         return (number * bps) / 10000;
     }
 
+    function appealPeriod(uint256 _disputeID) external view override returns (uint256 start, uint256 end) {
+        return (disputes[_disputeID].revealPeriodEndTime, disputes[_disputeID].appealPeriodEndTime);
+    }
+
     /**
      * @notice Modifier to restrict function access to only the arbitrable contract
      */
@@ -330,10 +341,6 @@ contract ERC20VotesArbitrator is
 
     function appealCost(uint256 _disputeID, bytes calldata _extraData) external view override returns (uint256 cost) {
         // TODO: Implement appealCost logic
-    }
-
-    function appealPeriod(uint256 _disputeID) external view override returns (uint256 start, uint256 end) {
-        // TODO: Implement appealPeriod logic
     }
 
     /**
