@@ -103,7 +103,6 @@ contract ERC20VotesArbitrator is
         newDispute.quorumVotes = quorumVotes();
         newDispute.totalSupply = votingToken.totalSupply();
 
-        /// @notice Maintains backwards compatibility with GovernorBravo events
         emit DisputeCreated(
             newDispute.id,
             address(arbitrable),
@@ -116,6 +115,7 @@ contract ERC20VotesArbitrator is
             _extraData,
             _choices
         );
+        emit DisputeCreation(newDispute.id, address(arbitrable));
 
         return newDispute.id;
     }
@@ -213,11 +213,11 @@ contract ERC20VotesArbitrator is
      * @return The number of votes cast
      */
     function _castVoteInternal(address voter, uint256 disputeId, uint256 choice) internal returns (uint256) {
-        require(state(disputeId) == DisputeState.Active, "NounsDAO::castVoteInternal: voting is closed");
-        require(choice <= disputes[disputeId].choices, "NounsDAO::castVoteInternal: invalid vote type");
+        if (state(disputeId) != DisputeState.Active) revert VOTING_CLOSED();
+        if (choice > disputes[disputeId].choices) revert INVALID_VOTE_CHOICE();
         Dispute storage dispute = disputes[disputeId];
         Receipt storage receipt = dispute.receipts[voter];
-        require(receipt.hasVoted == false, "NounsDAO::castVoteInternal: voter already voted");
+        if (receipt.hasVoted) revert VOTER_ALREADY_VOTED();
         uint256 votes = votingToken.getPastVotes(voter, dispute.creationBlock);
 
         dispute.votes += votes;
@@ -335,8 +335,7 @@ contract ERC20VotesArbitrator is
     }
 
     /**
-     * @notice Current quorum votes using Noun Total Supply
-     * Differs from `GovernerBravo` which uses fixed amount
+     * @notice Current quorum votes using Voting Token Total Supply
      */
     function quorumVotes() public view returns (uint256) {
         return bps2Uint(quorumVotesBPS, votingToken.totalSupply());

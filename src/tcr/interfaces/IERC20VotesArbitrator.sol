@@ -40,6 +40,15 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the arbitration cost is outside the allowed range
     error INVALID_ARBITRATION_COST();
 
+    /// @notice Error thrown when the voting is closed for a dispute
+    error VOTING_CLOSED();
+
+    /// @notice Error thrown when an invalid vote choice is selected
+    error INVALID_VOTE_CHOICE();
+
+    /// @notice Error thrown when a voter attempts to vote more than once on a dispute
+    error VOTER_ALREADY_VOTED();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
