@@ -90,32 +90,34 @@ contract ERC20VotesArbitrator is
 
         newDispute.id = disputeCount;
         newDispute.arbitrable = address(arbitrable);
-        newDispute.votingStartTime = block.timestamp + votingDelay;
-        newDispute.votingEndTime = newDispute.votingStartTime + votingPeriod;
-        newDispute.revealPeriodEndTime = newDispute.votingEndTime + revealPeriod;
-        newDispute.appealPeriodEndTime = newDispute.revealPeriodEndTime + _appealPeriod;
+        newDispute.currentRound = 0;
         newDispute.choices = _choices;
-        newDispute.votes = 0; // total votes cast
-        newDispute.ruling = IArbitrable.Party.None; // winning choice
-        newDispute.extraData = _extraData;
         newDispute.executed = false;
-        newDispute.creationBlock = block.number;
-        newDispute.quorumVotes = quorumVotes();
-        newDispute.totalSupply = votingToken.totalSupply();
+
+        newDispute.rounds[0].votingStartTime = block.timestamp + votingDelay;
+        newDispute.rounds[0].votingEndTime = newDispute.rounds[0].votingStartTime + votingPeriod;
+        newDispute.rounds[0].revealPeriodEndTime = newDispute.rounds[0].votingEndTime + revealPeriod;
+        newDispute.rounds[0].appealPeriodEndTime = newDispute.rounds[0].revealPeriodEndTime + _appealPeriod;
+        newDispute.rounds[0].votes = 0; // total votes cast
+        newDispute.rounds[0].ruling = IArbitrable.Party.None; // winning choice
+        newDispute.rounds[0].extraData = _extraData;
+        newDispute.rounds[0].creationBlock = block.number;
+        newDispute.rounds[0].quorumVotes = quorumVotes();
+        newDispute.rounds[0].totalSupply = votingToken.totalSupply();
 
         emit DisputeCreated(
             newDispute.id,
             address(arbitrable),
-            newDispute.votingStartTime,
-            newDispute.votingEndTime,
-            newDispute.revealPeriodEndTime,
-            newDispute.appealPeriodEndTime,
-            newDispute.quorumVotes,
-            newDispute.totalSupply,
+            newDispute.rounds[0].votingStartTime,
+            newDispute.rounds[0].votingEndTime,
+            newDispute.rounds[0].revealPeriodEndTime,
+            newDispute.rounds[0].appealPeriodEndTime,
+            newDispute.rounds[0].quorumVotes,
+            newDispute.rounds[0].totalSupply,
             _extraData,
             _choices
         );
-        emit DisputeCreation(newDispute.id, address(arbitrable));
+        emit DisputeCreation(newDispute.id, arbitrable);
 
         return newDispute.id;
     }
@@ -127,7 +129,8 @@ contract ERC20VotesArbitrator is
      * @return The voting receipt
      */
     function getReceipt(uint256 disputeId, address voter) external view returns (Receipt memory) {
-        return disputes[disputeId].receipts[voter];
+        uint256 round = disputes[disputeId].currentRound;
+        return disputes[disputeId].rounds[round].receipts[voter];
     }
 
     /**
@@ -137,13 +140,14 @@ contract ERC20VotesArbitrator is
      */
     function state(uint256 disputeId) public view validDisputeID(disputeId) returns (DisputeState) {
         Dispute storage dispute = disputes[disputeId];
-        if (block.timestamp <= dispute.votingStartTime) {
+        uint256 round = dispute.currentRound;
+        if (block.timestamp <= dispute.rounds[round].votingStartTime) {
             return DisputeState.Pending;
-        } else if (block.timestamp <= dispute.votingEndTime) {
+        } else if (block.timestamp <= dispute.rounds[round].votingEndTime) {
             return DisputeState.Active;
-        } else if (block.timestamp <= dispute.revealPeriodEndTime) {
+        } else if (block.timestamp <= dispute.rounds[round].revealPeriodEndTime) {
             return DisputeState.Reveal;
-        } else if (dispute.votes < dispute.quorumVotes) {
+        } else if (dispute.rounds[round].votes < dispute.rounds[round].quorumVotes) {
             return DisputeState.QuorumNotReached;
         } else if (dispute.executed) {
             return DisputeState.Executed;
@@ -183,7 +187,8 @@ contract ERC20VotesArbitrator is
     function currentRuling(
         uint256 disputeId
     ) external view override validDisputeID(disputeId) returns (IArbitrable.Party) {
-        return disputes[disputeId].ruling;
+        uint256 round = disputes[disputeId].currentRound;
+        return disputes[disputeId].rounds[round].ruling;
     }
 
     /**
@@ -216,19 +221,80 @@ contract ERC20VotesArbitrator is
         if (state(disputeId) != DisputeState.Active) revert VOTING_CLOSED();
         if (choice > disputes[disputeId].choices) revert INVALID_VOTE_CHOICE();
         Dispute storage dispute = disputes[disputeId];
-        Receipt storage receipt = dispute.receipts[voter];
+        uint256 round = dispute.currentRound;
+        Receipt storage receipt = dispute.rounds[round].receipts[voter];
         if (receipt.hasVoted) revert VOTER_ALREADY_VOTED();
-        uint256 votes = votingToken.getPastVotes(voter, dispute.creationBlock);
+        uint256 votes = votingToken.getPastVotes(voter, dispute.rounds[round].creationBlock);
 
-        dispute.votes += votes;
+        dispute.rounds[round].votes += votes;
 
-        dispute.choiceVotes[choice] += votes;
+        dispute.rounds[round].choiceVotes[choice] += votes;
 
         receipt.hasVoted = true;
         receipt.choice = choice;
         receipt.votes = votes;
 
         return votes;
+    }
+
+    /**
+     * @notice Implements the appeal process for disputes within the ERC20VotesArbitrator.
+     * @param _disputeID The ID of the dispute to appeal.
+     */
+    function appeal(uint256 _disputeID, bytes calldata) external payable override onlyArbitrable nonReentrant {
+        Dispute storage dispute = disputes[_disputeID];
+
+        // Ensure the dispute exists and is in a state that allows appeals
+        if (state(_disputeID) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
+        if (block.timestamp >= dispute.rounds[dispute.currentRound].appealPeriodEndTime) revert APPEAL_PERIOD_ENDED();
+
+        // Calculate the appeal cost
+        uint256 newRound = dispute.currentRound + 1;
+        uint256 costToAppeal = _calculateAppealCost(newRound);
+
+        emit AppealRaised(_disputeID, newRound, msg.sender, costToAppeal);
+
+        emit DisputeReset(
+            _disputeID,
+            dispute.rounds[newRound].votingStartTime,
+            dispute.rounds[newRound].votingEndTime,
+            dispute.rounds[newRound].revealPeriodEndTime,
+            dispute.rounds[newRound].appealPeriodEndTime,
+            dispute.rounds[newRound].quorumVotes,
+            dispute.rounds[newRound].totalSupply,
+            dispute.rounds[newRound].extraData
+        );
+
+        dispute.rounds[newRound].votingStartTime = block.timestamp + votingDelay;
+        dispute.rounds[newRound].votingEndTime = dispute.rounds[newRound].votingStartTime + votingPeriod;
+        dispute.rounds[newRound].revealPeriodEndTime = dispute.rounds[newRound].votingEndTime + revealPeriod;
+        dispute.rounds[newRound].appealPeriodEndTime = dispute.rounds[newRound].revealPeriodEndTime + _appealPeriod;
+        dispute.rounds[newRound].votes = 0;
+        dispute.rounds[newRound].ruling = IArbitrable.Party.None;
+        dispute.rounds[newRound].creationBlock = block.number;
+        dispute.rounds[newRound].quorumVotes = quorumVotes();
+        dispute.rounds[newRound].totalSupply = votingToken.totalSupply();
+        dispute.currentRound = newRound;
+
+        dispute.appeals.push(
+            Appeal({
+                roundNumber: newRound,
+                arbitrable: dispute.arbitrable,
+                disputeID: _disputeID,
+                appealCost: costToAppeal,
+                appealedAt: block.timestamp
+            })
+        );
+    }
+
+    /**
+     * @notice Calculates the cost required to appeal a specific dispute.
+     * @param _currentRound The current round number of the dispute.
+     * @return The calculated appeal cost.
+     */
+    function _calculateAppealCost(uint256 _currentRound) internal view returns (uint256) {
+        // Increase the appeal cost quadratically with each round
+        return _appealCost ** (_currentRound + 1);
     }
 
     /**
@@ -240,34 +306,54 @@ contract ERC20VotesArbitrator is
         if (state(disputeId) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
         if (dispute.executed) revert DISPUTE_ALREADY_EXECUTED();
 
-        uint256 winningChoice = 0;
-        uint256 winningVotes = 0;
-
-        // Determine the winning choice
-        for (uint256 i = 1; i <= dispute.choices; i++) {
-            if (dispute.choiceVotes[i] > winningVotes) {
-                winningChoice = i;
-                winningVotes = dispute.choiceVotes[i];
-            }
-        }
+        uint256 winningChoice = _determineWinningChoice(disputeId);
 
         // Convert winning choice to Party enum
-        IArbitrable.Party ruling;
-        if (winningChoice == 1) {
-            ruling = IArbitrable.Party.Requester;
-        } else if (winningChoice == 2) {
-            ruling = IArbitrable.Party.Challenger;
-        } else {
-            ruling = IArbitrable.Party.None;
-        }
+        IArbitrable.Party ruling = _convertChoiceToParty(winningChoice);
 
-        dispute.ruling = ruling;
+        dispute.rounds[dispute.currentRound].ruling = ruling;
         dispute.executed = true;
 
         // Call the rule function on the arbitrable contract
         arbitrable.rule(disputeId, uint256(ruling));
 
         emit DisputeExecuted(disputeId, ruling);
+    }
+
+    /**
+     * @notice Determines the winning choice based on the votes.
+     * @param _disputeID The ID of the dispute.
+     * @return The choice with the highest votes.
+     */
+    function _determineWinningChoice(uint256 _disputeID) internal view returns (uint256) {
+        Dispute storage dispute = disputes[_disputeID];
+        uint256 winningChoice = 0;
+        uint256 highestVotes = 0;
+        uint256 round = dispute.currentRound;
+
+        for (uint256 i = 1; i <= dispute.choices; i++) {
+            if (dispute.rounds[round].choiceVotes[i] > highestVotes) {
+                highestVotes = dispute.rounds[round].choiceVotes[i];
+                winningChoice = i;
+            }
+        }
+
+        return winningChoice;
+    }
+
+    /**
+     * @notice Converts a choice number to the corresponding Party enum.
+     * @param _choice The choice number.
+     * @return The corresponding Party.
+     */
+    function _convertChoiceToParty(uint256 _choice) internal pure returns (IArbitrable.Party) {
+        if (_choice == 1) {
+            return IArbitrable.Party.Requester;
+        } else if (_choice == 2) {
+            return IArbitrable.Party.Challenger;
+        } else {
+            return IArbitrable.Party.None;
+        }
     }
 
     /**
@@ -314,7 +400,11 @@ contract ERC20VotesArbitrator is
     }
 
     function appealPeriod(uint256 _disputeID) external view override returns (uint256 start, uint256 end) {
-        return (disputes[_disputeID].revealPeriodEndTime, disputes[_disputeID].appealPeriodEndTime);
+        uint256 round = disputes[_disputeID].currentRound;
+        return (
+            disputes[_disputeID].rounds[round].revealPeriodEndTime,
+            disputes[_disputeID].rounds[round].appealPeriodEndTime
+        );
     }
 
     /**
@@ -341,22 +431,20 @@ contract ERC20VotesArbitrator is
         return bps2Uint(quorumVotesBPS, votingToken.totalSupply());
     }
 
-    function appeal(uint256 _disputeID, bytes calldata _extraData) external payable override {
-        // TODO: Implement appeal logic
-    }
-
-    function arbitrationCost(bytes calldata _extraData) external view override returns (uint256 cost) {
+    /**
+     * @notice Returns the cost of arbitration
+     * @return cost The cost of arbitration
+     */
+    function arbitrationCost(bytes calldata) external view override returns (uint256 cost) {
         return _arbitrationCost;
     }
 
     /**
      * @notice Returns the cost of appealing a dispute
-     * @param _disputeID The ID of the dispute to appeal
-     * @param _extraData Additional data for the appeal (unused in current implementation)
      * @return cost The cost of the appeal
      * @dev TODO: Implement logic to adjust cost based on disputeID and number of appeal rounds
      */
-    function appealCost(uint256 _disputeID, bytes calldata _extraData) external view returns (uint256 cost) {
+    function appealCost(uint256, bytes calldata) external view returns (uint256 cost) {
         return _appealCost;
     }
 

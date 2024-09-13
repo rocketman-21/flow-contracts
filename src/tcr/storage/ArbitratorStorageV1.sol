@@ -108,6 +108,32 @@ contract ArbitratorStorageV1 {
         uint256 id;
         /** @notice Address of the arbitrable contract that created this dispute */
         address arbitrable;
+        /** @notice Whether the dispute has been executed */
+        bool executed;
+        /** @notice Mapping of round numbers to VotingRound structs */
+        mapping(uint256 => VotingRound) rounds;
+        /** @notice The current round number of the dispute */
+        uint256 currentRound;
+        /** @notice The number of choices available for voting */
+        uint256 choices;
+        /** @notice Array of appeals for this dispute */
+        Appeal[] appeals;
+    }
+
+    struct Appeal {
+        /** @notice The round number of the appeal */
+        uint256 roundNumber;
+        /** @notice The arbitrable contract that created this dispute */
+        address arbitrable;
+        /** @notice The dispute ID that this appeal is for */
+        uint256 disputeID;
+        /** @notice The cost of appealing a dispute */
+        uint256 appealCost;
+        /** @notice The timestamp when the appeal was created */
+        uint256 appealedAt;
+    }
+
+    struct VotingRound {
         /** @notice Timestamp when voting commit period starts */
         uint256 votingStartTime;
         /** @notice Timestamp when voting commit period ends */
@@ -116,8 +142,6 @@ contract ArbitratorStorageV1 {
         uint256 revealPeriodEndTime;
         /** @notice Timestamp when the appeal period ends */
         uint256 appealPeriodEndTime;
-        /** @notice Number of choices available for voting */
-        uint256 choices;
         /** @notice Total number of votes cast */
         uint256 votes;
         /** @notice The winning choice in the dispute */
@@ -126,8 +150,6 @@ contract ArbitratorStorageV1 {
         mapping(uint256 => uint256) choiceVotes;
         /** @notice Additional data related to the dispute */
         bytes extraData;
-        /** @notice Whether the dispute has been executed */
-        bool executed;
         /** @notice Block number when the dispute was created */
         uint256 creationBlock;
         /** @notice Number of votes required to reach quorum */

@@ -40,6 +40,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the arbitration cost is outside the allowed range
     error INVALID_ARBITRATION_COST();
 
+    /// @notice Error thrown when the appeal period is ended
+    error APPEAL_PERIOD_ENDED();
+
     /// @notice Error thrown when the voting is closed for a dispute
     error VOTING_CLOSED();
 
@@ -55,6 +58,37 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param newVotingPeriod The new voting period
      */
     event VotingPeriodSet(uint256 oldVotingPeriod, uint256 newVotingPeriod);
+
+    /**
+     * @notice Emitted when a dispute is reset
+     * @param disputeId The ID of the dispute that was reset
+     * @param votingStartTime The timestamp when voting starts
+     * @param votingEndTime The timestamp when voting ends
+     * @param revealPeriodEndTime The timestamp when the reveal period ends
+     * @param appealPeriodEndTime The timestamp when the appeal period ends
+     * @param quorumVotes The number of votes required for quorum
+     * @param totalSupply The total supply of voting tokens at dispute creation
+     * @param extraData Additional data related to the dispute
+     */
+    event DisputeReset(
+        uint256 disputeId,
+        uint256 votingStartTime,
+        uint256 votingEndTime,
+        uint256 revealPeriodEndTime,
+        uint256 appealPeriodEndTime,
+        uint256 quorumVotes,
+        uint256 totalSupply,
+        bytes extraData
+    );
+
+    /**
+     * @notice Emitted when an appeal is raised
+     * @param disputeId The ID of the dispute
+     * @param roundNumber The round number of the appeal
+     * @param appealer The address of the appealer
+     * @param appealCost The cost of the appeal
+     */
+    event AppealRaised(uint256 disputeId, uint256 roundNumber, address appealer, uint256 appealCost);
 
     /**
      * @notice Emitted when the voting delay is set
