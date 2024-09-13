@@ -91,6 +91,10 @@ contract ArbitratorStorageV1 {
         uint256 choices;
         /** @notice Total number of votes cast */
         uint256 votes;
+        /** @notice The winning choice in the dispute */
+        IArbitrable.Party ruling;
+        /** @notice The votes for each choice */
+        mapping(uint256 => uint256) choiceVotes;
         /** @notice Additional data related to the dispute */
         bytes extraData;
         /** @notice Whether the dispute has been executed */

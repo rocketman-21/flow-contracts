@@ -79,6 +79,7 @@ contract ERC20VotesArbitrator is
         newDispute.revealPeriodEndBlock = newDispute.votingEndBlock + revealPeriod;
         newDispute.choices = _choices;
         newDispute.votes = 0; // total votes cast
+        newDispute.ruling = IArbitrable.Party.None; // winning choice
         newDispute.extraData = _extraData;
         newDispute.executed = false;
         newDispute.creationBlock = block.number;
@@ -116,8 +117,7 @@ contract ERC20VotesArbitrator is
      * @param disputeId The id of the dispute
      * @return Dispute state
      */
-    function state(uint256 disputeId) public view returns (DisputeState) {
-        require(disputeCount >= disputeId, "NounsDAO::state: invalid dispute id");
+    function state(uint256 disputeId) public view validDisputeID(disputeId) returns (DisputeState) {
         Dispute storage dispute = disputes[disputeId];
         if (block.number <= dispute.votingStartBlock) {
             return DisputeState.Pending;
@@ -139,17 +139,33 @@ contract ERC20VotesArbitrator is
      * @dev This function maps the DisputeState to the IArbitrator.DisputeStatus
      * @param disputeId The ID of the dispute to check
      * @return The status of the dispute as defined in IArbitrator.DisputeStatus
+     * @dev checks for valid dispute ID first in the state function
      */
     function disputeStatus(uint256 disputeId) public view returns (DisputeStatus) {
-        DisputeState memory state = state(disputeId);
+        DisputeState disputeState = state(disputeId);
 
-        if (state == DisputeState.Pending || state == DisputeState.Active || state == DisputeState.Reveal) {
+        if (
+            disputeState == DisputeState.Pending ||
+            disputeState == DisputeState.Active ||
+            disputeState == DisputeState.Reveal
+        ) {
             return DisputeStatus.Waiting;
-        } else if (state == DisputeState.Executed || state == DisputeState.Solved) {
+        } else if (disputeState == DisputeState.Executed || disputeState == DisputeState.Solved) {
             return DisputeStatus.Solved;
         } else {
             return DisputeStatus.Appealable;
         }
+    }
+
+    /**
+     * @notice Returns the current ruling for a dispute.
+     * @param disputeId The ID of the dispute.
+     * @return ruling The current ruling of the dispute.
+     */
+    function currentRuling(
+        uint256 disputeId
+    ) external view override validDisputeID(disputeId) returns (IArbitrable.Party) {
+        return disputes[disputeId].ruling;
     }
 
     /**
@@ -178,7 +194,7 @@ contract ERC20VotesArbitrator is
      * @param choice The support value for the vote. Based on the choices provided in the createDispute function
      * @return The number of votes cast
      */
-    function _castVoteInternal(address voter, uint256 disputeId, uint8 choice) internal returns (uint256) {
+    function _castVoteInternal(address voter, uint256 disputeId, uint256 choice) internal returns (uint256) {
         require(state(disputeId) == DisputeState.Active, "NounsDAO::castVoteInternal: voting is closed");
         require(choice <= disputes[disputeId].choices, "NounsDAO::castVoteInternal: invalid vote type");
         Dispute storage dispute = disputes[disputeId];
@@ -188,11 +204,52 @@ contract ERC20VotesArbitrator is
 
         dispute.votes += votes;
 
+        dispute.choiceVotes[choice] += votes;
+
         receipt.hasVoted = true;
         receipt.choice = choice;
         receipt.votes = votes;
 
         return votes;
+    }
+
+    /**
+     * @notice Execute a dispute and set the ruling
+     * @param disputeId The ID of the dispute to execute
+     */
+    function executeRuling(uint256 disputeId) external {
+        Dispute storage dispute = disputes[disputeId];
+        if (state(disputeId) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
+        if (dispute.executed) revert DISPUTE_ALREADY_EXECUTED();
+
+        uint256 winningChoice = 0;
+        uint256 winningVotes = 0;
+
+        // Determine the winning choice
+        for (uint256 i = 1; i <= dispute.choices; i++) {
+            if (dispute.choiceVotes[i] > winningVotes) {
+                winningChoice = i;
+                winningVotes = dispute.choiceVotes[i];
+            }
+        }
+
+        // Convert winning choice to Party enum
+        IArbitrable.Party ruling;
+        if (winningChoice == 1) {
+            ruling = IArbitrable.Party.Requester;
+        } else if (winningChoice == 2) {
+            ruling = IArbitrable.Party.Challenger;
+        } else {
+            ruling = IArbitrable.Party.None;
+        }
+
+        dispute.ruling = ruling;
+        dispute.executed = true;
+
+        // Call the rule function on the arbitrable contract
+        arbitrable.rule(disputeId, uint256(ruling));
+
+        emit DisputeExecuted(disputeId, ruling);
     }
 
     /**
@@ -247,6 +304,15 @@ contract ERC20VotesArbitrator is
     }
 
     /**
+     * @notice Modifier to check if a dispute ID is valid
+     * @param _disputeID The ID of the dispute to check
+     */
+    modifier validDisputeID(uint256 _disputeID) {
+        if (_disputeID == 0 || _disputeID > disputeCount) revert INVALID_DISPUTE_ID();
+        _;
+    }
+
+    /**
      * @notice Current quorum votes using Noun Total Supply
      * Differs from `GovernerBravo` which uses fixed amount
      */
@@ -268,14 +334,6 @@ contract ERC20VotesArbitrator is
 
     function appealPeriod(uint256 _disputeID) external view override returns (uint256 start, uint256 end) {
         // TODO: Implement appealPeriod logic
-    }
-
-    function disputeStatus(uint256 _disputeID) external view override returns (DisputeStatus status) {
-        // TODO: Implement disputeStatus logic
-    }
-
-    function currentRuling(uint256 _disputeID) external view override returns (uint256 ruling) {
-        // TODO: Implement currentRuling logic
     }
 
     /**

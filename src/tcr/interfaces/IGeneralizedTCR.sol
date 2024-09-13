@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
+import { IArbitrable } from "./IArbitrable.sol";
 
 interface IGeneralizedTCR {
     /* Errors */
@@ -82,15 +83,6 @@ interface IGeneralizedTCR {
     }
 
     /**
-     * @notice Enum representing the parties involved in a dispute
-     */
-    enum Party {
-        None, // Party per default when there is no challenger or requester. Also used for inconclusive ruling.
-        Requester, // Party that made the request to change a status.
-        Challenger // Party that challenges the request to change a status.
-    }
-
-    /**
      * @notice Emitted when a party makes a request, raises a dispute or when a request is resolved
      * @param _itemID The ID of the affected item
      * @param _requestIndex The index of the request
@@ -151,7 +143,7 @@ interface IGeneralizedTCR {
         uint indexed _request,
         uint _round,
         uint _amount,
-        Party _side
+        IArbitrable.Party _side
     );
 
     /**
@@ -161,5 +153,10 @@ interface IGeneralizedTCR {
      * @param _round The index of the round
      * @param _side The side that is fully funded
      */
-    event HasPaidAppealFee(bytes32 indexed _itemID, uint indexed _request, uint indexed _round, Party _side);
+    event HasPaidAppealFee(
+        bytes32 indexed _itemID,
+        uint indexed _request,
+        uint indexed _round,
+        IArbitrable.Party _side
+    );
 }

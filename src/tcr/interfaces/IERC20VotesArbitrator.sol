@@ -22,6 +22,15 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the reveal period is outside the allowed range
     error INVALID_REVEAL_PERIOD();
 
+    /// @notice Error thrown when the dispute ID is invalid
+    error INVALID_DISPUTE_ID();
+
+    /// @notice Error thrown when trying to execute a dispute that is not in the Solved state
+    error DISPUTE_NOT_SOLVED();
+
+    /// @notice Error thrown when trying to execute a dispute that has already been executed
+    error DISPUTE_ALREADY_EXECUTED();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
@@ -52,6 +61,13 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param reason The reason given for the vote by the voter
      */
     event VoteCast(address indexed voter, uint256 disputeId, uint256 choice, uint256 votes, string reason);
+
+    /**
+     * @dev Emitted when a dispute is executed and a ruling is set
+     * @param disputeId The ID of the executed dispute
+     * @param ruling The final ruling for the dispute
+     */
+    event DisputeExecuted(uint256 indexed disputeId, IArbitrable.Party ruling);
 
     /**
      * @notice Emitted when a new dispute is created
