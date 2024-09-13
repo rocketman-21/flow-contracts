@@ -99,7 +99,8 @@ contract ArbitratorStorageV1 {
         Reveal, // Voting has ended, and votes can be revealed
         QuorumNotReached, // Voting and reveal periods have ended, but quorum was not met
         Solved, // Dispute has been solved but not yet executed
-        Executed // Dispute has been executed
+        Executed, // Dispute has been executed
+        Appealable // Dispute is appealable
     }
 
     /** @notice Struct containing dispute data */

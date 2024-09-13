@@ -28,6 +28,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when trying to execute a dispute that is not in the Solved state
     error DISPUTE_NOT_SOLVED();
 
+    /// @notice Error thrown when trying to execute a dispute that is not in the Appealable state
+    error DISPUTE_NOT_APPEALABLE();
+
     /// @notice Error thrown when trying to execute a dispute that has already been executed
     error DISPUTE_ALREADY_EXECUTED();
 

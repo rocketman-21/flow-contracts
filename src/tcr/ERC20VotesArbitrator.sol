@@ -147,6 +147,8 @@ contract ERC20VotesArbitrator is
             return DisputeState.Active;
         } else if (block.timestamp <= dispute.rounds[round].revealPeriodEndTime) {
             return DisputeState.Reveal;
+        } else if (block.timestamp <= dispute.rounds[round].appealPeriodEndTime) {
+            return DisputeState.Appealable;
         } else if (dispute.rounds[round].votes < dispute.rounds[round].quorumVotes) {
             return DisputeState.QuorumNotReached;
         } else if (dispute.executed) {
@@ -163,7 +165,7 @@ contract ERC20VotesArbitrator is
      * @return The status of the dispute as defined in IArbitrator.DisputeStatus
      * @dev checks for valid dispute ID first in the state function
      */
-    function disputeStatus(uint256 disputeId) public view returns (DisputeStatus) {
+    function disputeStatus(uint256 disputeId) external view returns (DisputeStatus) {
         DisputeState disputeState = state(disputeId);
 
         if (
@@ -245,13 +247,16 @@ contract ERC20VotesArbitrator is
         Dispute storage dispute = disputes[_disputeID];
 
         // Ensure the dispute exists and is in a state that allows appeals
-        if (state(_disputeID) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
+        if (state(_disputeID) != DisputeState.Appealable) revert DISPUTE_NOT_APPEALABLE();
         if (block.timestamp >= dispute.rounds[dispute.currentRound].appealPeriodEndTime) revert APPEAL_PERIOD_ENDED();
 
         // Calculate the appeal cost
         uint256 newRound = dispute.currentRound + 1;
         uint256 costToAppeal = _calculateAppealCost(newRound);
 
+        // todo transfer erc20 tokens to address(this)
+
+        emit AppealDecision(_disputeID, arbitrable);
         emit AppealRaised(_disputeID, newRound, msg.sender, costToAppeal);
 
         emit DisputeReset(
@@ -293,8 +298,8 @@ contract ERC20VotesArbitrator is
      * @return The calculated appeal cost.
      */
     function _calculateAppealCost(uint256 _currentRound) internal view returns (uint256) {
-        // Increase the appeal cost quadratically with each round
-        return _appealCost ** (_currentRound + 1);
+        // Increase the appeal cost with each round
+        return _appealCost * (2 ** (_currentRound));
     }
 
     /**
@@ -445,8 +450,7 @@ contract ERC20VotesArbitrator is
      * @return cost The cost of the appeal
      */
     function appealCost(uint256 disputeID, bytes calldata) external view returns (uint256 cost) {
-        uint256 round = disputes[disputeID].currentRound;
-        return _calculateAppealCost(round);
+        return _calculateAppealCost(disputes[disputeID].currentRound + 1);
     }
 
     /**
