@@ -28,6 +28,7 @@ contract ERC20VotesArbitrator is
      * @param votingDelay_ The initial voting delay
      * @param revealPeriod_ The initial reveal period to reveal committed votes
      * @param appealPeriod_ The initial appeal period
+     * @param appealCost_ The initial appeal cost
      * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
     function initialize(
@@ -37,6 +38,7 @@ contract ERC20VotesArbitrator is
         uint256 votingDelay_,
         uint256 revealPeriod_,
         uint256 appealPeriod_,
+        uint256 appealCost_,
         uint256 quorumVotesBPS_
     ) public initializer {
         __Ownable_init();
@@ -49,11 +51,13 @@ contract ERC20VotesArbitrator is
             revert INVALID_QUORUM_VOTES_BPS();
         if (revealPeriod_ < MIN_REVEAL_PERIOD || revealPeriod_ > MAX_REVEAL_PERIOD) revert INVALID_REVEAL_PERIOD();
         if (appealPeriod_ < MIN_APPEAL_PERIOD || appealPeriod_ > MAX_APPEAL_PERIOD) revert INVALID_APPEAL_PERIOD();
+        if (appealCost_ < MIN_APPEAL_COST || appealCost_ > MAX_APPEAL_COST) revert INVALID_APPEAL_COST();
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
         emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
         emit AppealPeriodSet(appealPeriodDuration, appealPeriod_);
+        emit AppealCostSet(baseAppealCost, appealCost_);
 
         votingToken = ERC20VotesMintable(votingToken_);
         arbitrable = IArbitrable(arbitrable_);
@@ -62,6 +66,7 @@ contract ERC20VotesArbitrator is
         quorumVotesBPS = quorumVotesBPS_;
         revealPeriod = revealPeriod_;
         appealPeriodDuration = appealPeriod_;
+        baseAppealCost = appealCost_;
     }
 
     /**
@@ -339,8 +344,15 @@ contract ERC20VotesArbitrator is
         // TODO: Implement arbitrationCost logic
     }
 
-    function appealCost(uint256 _disputeID, bytes calldata _extraData) external view override returns (uint256 cost) {
-        // TODO: Implement appealCost logic
+    /**
+     * @notice Returns the cost of appealing a dispute
+     * @param _disputeID The ID of the dispute to appeal
+     * @param _extraData Additional data for the appeal (unused in current implementation)
+     * @return cost The cost of the appeal
+     * @dev TODO: Implement logic to adjust cost based on disputeID and number of appeal rounds
+     */
+    function appealCost(uint256 _disputeID, bytes calldata _extraData) external view returns (uint256 cost) {
+        return baseAppealCost;
     }
 
     /**

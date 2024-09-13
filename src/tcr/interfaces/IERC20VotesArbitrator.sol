@@ -34,6 +34,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the appeal period is outside the allowed range
     error INVALID_APPEAL_PERIOD();
 
+    /// @notice Error thrown when the appeal cost is outside the allowed range
+    error INVALID_APPEAL_COST();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
@@ -47,6 +50,13 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param newVotingDelay The new voting delay
      */
     event VotingDelaySet(uint256 oldVotingDelay, uint256 newVotingDelay);
+
+    /**
+     * @notice Emitted when the appeal cost is set
+     * @param oldAppealCost The previous appeal cost
+     * @param newAppealCost The new appeal cost
+     */
+    event AppealCostSet(uint256 oldAppealCost, uint256 newAppealCost);
 
     /**
      * @notice Emitted when the quorum votes basis points are set
