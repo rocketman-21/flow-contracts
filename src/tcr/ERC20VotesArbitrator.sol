@@ -336,6 +336,64 @@ contract ERC20VotesArbitrator is
     }
 
     /**
+     * @notice Allows voters to withdraw their proportional share of the cost for a voting round if they voted on the correct side of the ruling.
+     * @param disputeId The ID of the dispute.
+     * @param round The round number.
+     * @param voter The address of the voter.
+     */
+    function withdrawVoterRewards(uint256 disputeId, uint256 round, address voter) external nonReentrant {
+        Dispute storage dispute = disputes[disputeId];
+
+        // Ensure the dispute is executed
+        if (!dispute.executed) {
+            revert DISPUTE_NOT_EXECUTED();
+        }
+
+        // Get the voting round
+        VotingRound storage votingRound = dispute.rounds[round];
+
+        // Check that the voter hasn't already claimed
+        if (votingRound.rewardsClaimed[voter]) {
+            revert REWARD_ALREADY_CLAIMED();
+        }
+
+        // Get the receipt for the voter
+        Receipt storage receipt = votingRound.receipts[voter];
+
+        // Check that the voter has voted
+        if (!receipt.hasVoted) {
+            revert VOTER_HAS_NOT_VOTED();
+        }
+
+        uint256 winningChoice = dispute.winningChoice;
+
+        uint256 amount = 0;
+        uint256 totalRewards = votingRound.cost; // Total amount to distribute among voters
+
+        if (winningChoice == 0) {
+            // Ruling is 0 or Party.None, both sides can withdraw proportional share
+            amount = (receipt.votes * totalRewards) / votingRound.votes;
+        } else {
+            // Ruling is not 0, only winning voters can withdraw
+            if (receipt.choice != winningChoice) {
+                revert VOTER_ON_LOSING_SIDE();
+            }
+            uint256 totalWinningVotes = votingRound.choiceVotes[winningChoice];
+
+            // Calculate voter's share
+            amount = (receipt.votes * totalRewards) / totalWinningVotes;
+        }
+
+        // Mark as claimed
+        votingRound.rewardsClaimed[voter] = true;
+
+        // Transfer tokens to voter
+        IERC20(address(votingToken)).safeTransfer(voter, amount);
+
+        emit RewardWithdrawn(disputeId, round, voter, amount);
+    }
+
+    /**
      * @notice Determines the winning choice based on the votes.
      * @param _disputeID The ID of the dispute.
      * @return The choice with the highest votes.
@@ -484,62 +542,4 @@ contract ERC20VotesArbitrator is
      * @param _newImpl The new implementation address
      */
     function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
-
-    /**
-     * @notice Allows voters to withdraw their proportional share of the cost for a voting round if they voted on the correct side of the ruling.
-     * @param disputeId The ID of the dispute.
-     * @param round The round number.
-     * @param voter The address of the voter.
-     */
-    function withdrawVoterRewards(uint256 disputeId, uint256 round, address voter) external nonReentrant {
-        Dispute storage dispute = disputes[disputeId];
-
-        // Ensure the dispute is executed
-        if (!dispute.executed) {
-            revert DISPUTE_NOT_EXECUTED();
-        }
-
-        // Get the voting round
-        VotingRound storage votingRound = dispute.rounds[round];
-
-        // Check that the voter hasn't already claimed
-        if (votingRound.rewardsClaimed[voter]) {
-            revert REWARD_ALREADY_CLAIMED();
-        }
-
-        // Get the receipt for the voter
-        Receipt storage receipt = votingRound.receipts[voter];
-
-        // Check that the voter has voted
-        if (!receipt.hasVoted) {
-            revert VOTER_HAS_NOT_VOTED();
-        }
-
-        uint256 winningChoice = dispute.winningChoice;
-
-        uint256 amount = 0;
-        uint256 totalRewards = votingRound.cost; // Total amount to distribute among voters
-
-        if (winningChoice == 0) {
-            // Ruling is 0 or Party.None, both sides can withdraw proportional share
-            amount = (receipt.votes * totalRewards) / votingRound.votes;
-        } else {
-            // Ruling is not 0, only winning voters can withdraw
-            if (receipt.choice != winningChoice) {
-                revert VOTER_ON_LOSING_SIDE();
-            }
-            uint256 totalWinningVotes = votingRound.choiceVotes[winningChoice];
-
-            // Calculate voter's share
-            amount = (receipt.votes * totalRewards) / totalWinningVotes;
-        }
-
-        // Mark as claimed
-        votingRound.rewardsClaimed[voter] = true;
-
-        // Transfer tokens to voter
-        IERC20(address(votingToken)).safeTransfer(voter, amount);
-
-        emit RewardWithdrawn(disputeId, round, voter, amount);
-    }
 }
