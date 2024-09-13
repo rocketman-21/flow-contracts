@@ -38,6 +38,7 @@ contract ERC20VotesArbitrator is
         uint256 quorumVotesBPS_
     ) public initializer {
         __Ownable_init();
+        __ReentrancyGuard_init();
 
         if (votingToken_ == address(0)) revert INVALID_VOTING_TOKEN_ADDRESS();
         if (votingPeriod_ < MIN_VOTING_PERIOD || votingPeriod_ > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
@@ -130,6 +131,24 @@ contract ERC20VotesArbitrator is
             return DisputeState.Executed;
         } else {
             return DisputeState.Solved;
+        }
+    }
+
+    /**
+     * @notice Get the status of a dispute
+     * @dev This function maps the DisputeState to the IArbitrator.DisputeStatus
+     * @param disputeId The ID of the dispute to check
+     * @return The status of the dispute as defined in IArbitrator.DisputeStatus
+     */
+    function disputeStatus(uint256 disputeId) public view returns (DisputeStatus) {
+        DisputeState memory state = state(disputeId);
+
+        if (state == DisputeState.Pending || state == DisputeState.Active || state == DisputeState.Reveal) {
+            return DisputeStatus.Waiting;
+        } else if (state == DisputeState.Executed || state == DisputeState.Solved) {
+            return DisputeStatus.Solved;
+        } else {
+            return DisputeStatus.Appealable;
         }
     }
 
