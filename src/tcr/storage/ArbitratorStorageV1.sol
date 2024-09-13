@@ -97,7 +97,6 @@ contract ArbitratorStorageV1 {
         Pending, // Dispute is pending and not yet active for voting
         Active, // Dispute is active and open for voting
         Reveal, // Voting has ended, and votes can be revealed
-        QuorumNotReached, // Voting and reveal periods have ended, but quorum was not met
         Solved, // Dispute has been solved but not yet executed
         Executed, // Dispute has been executed
         Appealable // Dispute is appealable
