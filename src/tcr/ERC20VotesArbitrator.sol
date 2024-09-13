@@ -165,19 +165,17 @@ contract ERC20VotesArbitrator is
      * @return The status of the dispute as defined in IArbitrator.DisputeStatus
      * @dev checks for valid dispute ID first in the state function
      */
-    function disputeStatus(uint256 disputeId) external view returns (DisputeStatus) {
+    function disputeStatus(uint256 disputeId) public view returns (DisputeStatus) {
         DisputeState disputeState = state(disputeId);
 
-        if (
-            disputeState == DisputeState.Pending ||
-            disputeState == DisputeState.Active ||
-            disputeState == DisputeState.Reveal
-        ) {
-            return DisputeStatus.Waiting;
+        if (disputeState == DisputeState.Appealable || disputeState == DisputeState.QuorumNotReached) {
+            return DisputeStatus.Appealable;
         } else if (disputeState == DisputeState.Executed || disputeState == DisputeState.Solved) {
+            // executed or solved
             return DisputeStatus.Solved;
         } else {
-            return DisputeStatus.Appealable;
+            // pending, active, reveal voting states
+            return DisputeStatus.Waiting;
         }
     }
 
@@ -247,7 +245,7 @@ contract ERC20VotesArbitrator is
         Dispute storage dispute = disputes[_disputeID];
 
         // Ensure the dispute exists and is in a state that allows appeals
-        if (state(_disputeID) != DisputeState.Appealable) revert DISPUTE_NOT_APPEALABLE();
+        if (disputeStatus(_disputeID) != DisputeStatus.Appealable) revert DISPUTE_NOT_APPEALABLE();
         if (block.timestamp >= dispute.rounds[dispute.currentRound].appealPeriodEndTime) revert APPEAL_PERIOD_ENDED();
 
         // Calculate the appeal cost
