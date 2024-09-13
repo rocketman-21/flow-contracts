@@ -273,17 +273,6 @@ contract ERC20VotesArbitrator is
         emit AppealDecision(_disputeID, arbitrable);
         emit AppealRaised(_disputeID, newRound, msg.sender, costToAppeal);
 
-        emit DisputeReset(
-            _disputeID,
-            dispute.rounds[newRound].votingStartTime,
-            dispute.rounds[newRound].votingEndTime,
-            dispute.rounds[newRound].revealPeriodEndTime,
-            dispute.rounds[newRound].appealPeriodEndTime,
-            dispute.rounds[newRound].quorumVotes,
-            dispute.rounds[newRound].totalSupply,
-            dispute.rounds[newRound].extraData
-        );
-
         dispute.rounds[newRound].votingStartTime = block.timestamp + votingDelay;
         dispute.rounds[newRound].votingEndTime = dispute.rounds[newRound].votingStartTime + votingPeriod;
         dispute.rounds[newRound].revealPeriodEndTime = dispute.rounds[newRound].votingEndTime + revealPeriod;
@@ -294,6 +283,17 @@ contract ERC20VotesArbitrator is
         dispute.rounds[newRound].quorumVotes = quorumVotes();
         dispute.rounds[newRound].totalSupply = votingToken.totalSupply();
         dispute.currentRound = newRound;
+
+        emit DisputeReset(
+            _disputeID,
+            dispute.rounds[newRound].votingStartTime,
+            dispute.rounds[newRound].votingEndTime,
+            dispute.rounds[newRound].revealPeriodEndTime,
+            dispute.rounds[newRound].appealPeriodEndTime,
+            dispute.rounds[newRound].quorumVotes,
+            dispute.rounds[newRound].totalSupply,
+            dispute.rounds[newRound].extraData
+        );
 
         dispute.appeals.push(
             Appeal({
