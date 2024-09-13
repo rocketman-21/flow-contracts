@@ -10,6 +10,8 @@ import { ERC20VotesMintable } from "../ERC20VotesMintable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ERC20VotesArbitrator is
     IERC20VotesArbitrator,
@@ -18,6 +20,7 @@ contract ERC20VotesArbitrator is
     OwnableUpgradeable,
     ReentrancyGuardUpgradeable
 {
+    using SafeERC20 for IERC20;
     constructor() payable initializer {}
 
     /**
@@ -85,6 +88,13 @@ contract ERC20VotesArbitrator is
         uint256 _choices,
         bytes calldata _extraData
     ) external onlyArbitrable returns (uint256 disputeID) {
+        // get tokens from arbitrable
+        // arbitrable must have approved the arbitrator to transfer the tokens
+        // fails otherwise
+        IERC20(address(votingToken)).safeTransferFrom(msg.sender, address(this), _arbitrationCost);
+
+        // todo give a share of the tokens to the voters
+
         disputeCount++;
         Dispute storage newDispute = disputes[disputeCount];
 
@@ -240,6 +250,7 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Implements the appeal process for disputes within the ERC20VotesArbitrator.
      * @param _disputeID The ID of the dispute to appeal.
+     * @dev Any party involved in the dispute can appeal via the arbitrable contract by calling fundAppeal()
      */
     function appeal(uint256 _disputeID, bytes calldata) external payable override onlyArbitrable nonReentrant {
         Dispute storage dispute = disputes[_disputeID];
@@ -252,7 +263,12 @@ contract ERC20VotesArbitrator is
         uint256 newRound = dispute.currentRound + 1;
         uint256 costToAppeal = _calculateAppealCost(newRound);
 
-        // todo transfer erc20 tokens to address(this)
+        // transfer erc20 tokens from arbitrable to arbitrator (this contract)
+        // assumes that the arbitrable contract has approved the arbitrator to transfer the tokens
+        // fails otherwise
+        IERC20(address(votingToken)).safeTransferFrom(msg.sender, address(this), costToAppeal);
+
+        // todo give winning voters tokens somehow
 
         emit AppealDecision(_disputeID, arbitrable);
         emit AppealRaised(_disputeID, newRound, msg.sender, costToAppeal);
@@ -304,7 +320,7 @@ contract ERC20VotesArbitrator is
      * @notice Execute a dispute and set the ruling
      * @param disputeId The ID of the dispute to execute
      */
-    function executeRuling(uint256 disputeId) external {
+    function executeRuling(uint256 disputeId) external nonReentrant {
         Dispute storage dispute = disputes[disputeId];
         if (state(disputeId) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
         if (dispute.executed) revert DISPUTE_ALREADY_EXECUTED();
