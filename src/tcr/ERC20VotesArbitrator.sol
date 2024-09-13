@@ -441,11 +441,12 @@ contract ERC20VotesArbitrator is
 
     /**
      * @notice Returns the cost of appealing a dispute
+     * @param disputeID The ID of the dispute
      * @return cost The cost of the appeal
-     * @dev TODO: Implement logic to adjust cost based on disputeID and number of appeal rounds
      */
-    function appealCost(uint256, bytes calldata) external view returns (uint256 cost) {
-        return _appealCost;
+    function appealCost(uint256 disputeID, bytes calldata) external view returns (uint256 cost) {
+        uint256 round = disputes[disputeID].currentRound;
+        return _calculateAppealCost(round);
     }
 
     /**
