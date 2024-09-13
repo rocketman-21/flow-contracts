@@ -94,7 +94,7 @@ contract ERC20VotesArbitrator is
         // get tokens from arbitrable
         // arbitrable must have approved the arbitrator to transfer the tokens
         // fails otherwise
-        IERC20(address(votingToken)).safeTransferFrom(msg.sender, address(this), _arbitrationCost);
+        IERC20(address(votingToken)).safeTransferFrom(address(arbitrable), address(this), _arbitrationCost);
 
         // todo give a share of the tokens to the voters
 
@@ -267,7 +267,7 @@ contract ERC20VotesArbitrator is
         // transfer erc20 tokens from arbitrable to arbitrator (this contract)
         // assumes that the arbitrable contract has approved the arbitrator to transfer the tokens
         // fails otherwise
-        IERC20(address(votingToken)).safeTransferFrom(msg.sender, address(this), costToAppeal);
+        IERC20(address(votingToken)).safeTransferFrom(address(arbitrable), address(this), costToAppeal);
 
         // todo give winning voters tokens somehow
 
