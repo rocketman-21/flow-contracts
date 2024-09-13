@@ -116,24 +116,11 @@ contract ArbitratorStorageV1 {
         uint256 currentRound;
         /** @notice The number of choices available for voting */
         uint256 choices;
-        /** @notice Array of appeals for this dispute */
-        Appeal[] appeals;
-    }
-
-    struct Appeal {
-        /** @notice The round number of the appeal */
-        uint256 roundNumber;
-        /** @notice The arbitrable contract that created this dispute */
-        address arbitrable;
-        /** @notice The dispute ID that this appeal is for */
-        uint256 disputeID;
-        /** @notice The cost of appealing a dispute */
-        uint256 appealCost;
-        /** @notice The timestamp when the appeal was created */
-        uint256 appealedAt;
     }
 
     struct VotingRound {
+        /** @notice The cost paid by the arbitrable contract for this voting round. Either arbitrationCost or appealCost */
+        uint256 cost;
         /** @notice Timestamp when voting commit period starts */
         uint256 votingStartTime;
         /** @notice Timestamp when voting commit period ends */

@@ -117,6 +117,7 @@ contract ERC20VotesArbitrator is
         newDispute.rounds[0].creationBlock = block.number;
         newDispute.rounds[0].quorumVotes = quorumVotes();
         newDispute.rounds[0].totalSupply = votingToken.totalSupply();
+        newDispute.rounds[0].cost = _arbitrationCost;
 
         emit DisputeCreated(
             newDispute.id,
@@ -283,6 +284,8 @@ contract ERC20VotesArbitrator is
         dispute.rounds[newRound].creationBlock = block.number;
         dispute.rounds[newRound].quorumVotes = quorumVotes();
         dispute.rounds[newRound].totalSupply = votingToken.totalSupply();
+        dispute.rounds[newRound].cost = costToAppeal;
+
         dispute.currentRound = newRound;
 
         emit DisputeReset(
@@ -293,17 +296,8 @@ contract ERC20VotesArbitrator is
             dispute.rounds[newRound].appealPeriodEndTime,
             dispute.rounds[newRound].quorumVotes,
             dispute.rounds[newRound].totalSupply,
+            dispute.rounds[newRound].cost,
             dispute.rounds[newRound].extraData
-        );
-
-        dispute.appeals.push(
-            Appeal({
-                roundNumber: newRound,
-                arbitrable: dispute.arbitrable,
-                disputeID: _disputeID,
-                appealCost: costToAppeal,
-                appealedAt: block.timestamp
-            })
         );
     }
 

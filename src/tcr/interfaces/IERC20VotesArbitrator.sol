@@ -74,6 +74,7 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param appealPeriodEndTime The timestamp when the appeal period ends
      * @param quorumVotes The number of votes required for quorum
      * @param totalSupply The total supply of voting tokens at dispute creation
+     * @param cost The cost paid by the arbitrable contract for this voting round. Either arbitrationCost or appealCost
      * @param extraData Additional data related to the dispute
      */
     event DisputeReset(
@@ -84,6 +85,7 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 appealPeriodEndTime,
         uint256 quorumVotes,
         uint256 totalSupply,
+        uint256 cost,
         bytes extraData
     );
 
