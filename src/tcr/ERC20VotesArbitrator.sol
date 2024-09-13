@@ -347,6 +347,7 @@ contract ERC20VotesArbitrator is
      */
     function _determineWinningChoice(uint256 _disputeID) internal view returns (uint256) {
         Dispute storage dispute = disputes[_disputeID];
+        uint256 round = dispute.currentRound;
 
         // check for quorum
         if (dispute.rounds[round].votes < dispute.rounds[round].quorumVotes) {
@@ -355,13 +356,20 @@ contract ERC20VotesArbitrator is
 
         uint256 winningChoice = 0;
         uint256 highestVotes = 0;
-        uint256 round = dispute.currentRound;
+        bool tie = false;
 
         for (uint256 i = 1; i <= dispute.choices; i++) {
-            if (dispute.rounds[round].choiceVotes[i] > highestVotes) {
-                highestVotes = dispute.rounds[round].choiceVotes[i];
+            uint256 votesForChoice = dispute.rounds[round].choiceVotes[i];
+            if (votesForChoice > highestVotes) {
+                highestVotes = votesForChoice;
                 winningChoice = i;
+            } else if (votesForChoice == highestVotes && votesForChoice != 0) {
+                tie = true;
             }
+        }
+
+        if (tie) {
+            return 0;
         }
 
         return winningChoice;

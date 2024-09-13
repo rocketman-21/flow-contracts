@@ -55,6 +55,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when a voter attempts to vote more than once on a dispute
     error VOTER_ALREADY_VOTED();
 
+    /// @notice Error thrown when the number of choices for a dispute is invalid
+    error INVALID_DISPUTE_CHOICES();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
