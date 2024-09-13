@@ -13,7 +13,7 @@ import { ERC20VotesUpgradeable } from "./base/erc20/ERC20VotesUpgradeable.sol";
 
 import { IERC20Mintable } from "./interfaces/IERC20Mintable.sol";
 
-contract ERC20Mintable is
+contract ERC20VotesMintable is
     IERC20Mintable,
     UUPSUpgradeable,
     Ownable2StepUpgradeable,

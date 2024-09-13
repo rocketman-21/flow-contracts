@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { IArbitrator } from "../interfaces/IArbitrator.sol";
 import { IGeneralizedTCR } from "../interfaces/IGeneralizedTCR.sol";
+import { IArbitrable } from "../interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
@@ -32,7 +33,7 @@ contract GeneralizedTCRStorageV1 {
         bool resolved; // True if the request was executed and/or any raised disputes were resolved.
         address[3] parties; // Address of requester and challenger, if any, in the form parties[party].
         Round[] rounds; // Tracks each round of a dispute in the form rounds[roundID].
-        IGeneralizedTCR.Party ruling; // The final ruling given, if any.
+        IArbitrable.Party ruling; // The final ruling given, if any.
         IArbitrator arbitrator; // The arbitrator trusted to solve disputes for this request.
         bytes arbitratorExtraData; // The extra data for the trusted arbitrator of this request.
         uint256 metaEvidenceID; // The meta evidence to be used in a dispute for this case.

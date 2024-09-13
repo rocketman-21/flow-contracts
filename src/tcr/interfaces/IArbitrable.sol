@@ -31,4 +31,13 @@ interface IArbitrable {
      * @param _ruling Ruling given by the arbitrator. Note that 0 is reserved for "Not able/wanting to make a decision".
      */
     function rule(uint256 _disputeID, uint256 _ruling) external;
+
+    /**
+     * @notice Enum representing the parties involved in a dispute
+     */
+    enum Party {
+        None, // Party per default when there is no challenger or requester. Also used for inconclusive ruling.
+        Requester, // Party that made the request to change a status.
+        Challenger // Party that challenges the request to change a status.
+    }
 }

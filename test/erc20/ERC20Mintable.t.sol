@@ -2,12 +2,12 @@
 pragma solidity ^0.8.27;
 
 import { Test } from "forge-std/Test.sol";
-import { ERC20Mintable } from "../../src/ERC20Mintable.sol";
+import { ERC20VotesMintable } from "../../src/ERC20VotesMintable.sol";
 import { IERC20Mintable } from "../../src/interfaces/IERC20Mintable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ERC20MintableTest is Test {
-    ERC20Mintable public token;
+    ERC20VotesMintable public token;
     address public tokenImpl;
     address public owner = address(0x1);
     address public minter = address(0x2);
@@ -15,7 +15,7 @@ contract ERC20MintableTest is Test {
 
     function setUp() public {
         // Deploy the implementation contract
-        tokenImpl = address(new ERC20Mintable());
+        tokenImpl = address(new ERC20VotesMintable());
 
         // Deploy the proxy contract
         address tokenProxy = address(new ERC1967Proxy(tokenImpl, ""));
@@ -25,7 +25,7 @@ contract ERC20MintableTest is Test {
         IERC20Mintable(tokenProxy).initialize(owner, minter, "Test Token", "TST");
 
         // Set the token variable to the proxy address
-        token = ERC20Mintable(tokenProxy);
+        token = ERC20VotesMintable(tokenProxy);
     }
 
     function testDecimals() public view {
