@@ -88,6 +88,9 @@ contract ERC20VotesArbitrator is
         uint256 _choices,
         bytes calldata _extraData
     ) external onlyArbitrable returns (uint256 disputeID) {
+        // only support 2 choices for now
+        if (_choices != 2) revert INVALID_DISPUTE_CHOICES();
+
         // get tokens from arbitrable
         // arbitrable must have approved the arbitrator to transfer the tokens
         // fails otherwise
@@ -159,8 +162,6 @@ contract ERC20VotesArbitrator is
             return DisputeState.Reveal;
         } else if (block.timestamp <= dispute.rounds[round].appealPeriodEndTime) {
             return DisputeState.Appealable;
-        } else if (dispute.rounds[round].votes < dispute.rounds[round].quorumVotes) {
-            return DisputeState.QuorumNotReached;
         } else if (dispute.executed) {
             return DisputeState.Executed;
         } else {
@@ -178,7 +179,7 @@ contract ERC20VotesArbitrator is
     function disputeStatus(uint256 disputeId) public view returns (DisputeStatus) {
         DisputeState disputeState = state(disputeId);
 
-        if (disputeState == DisputeState.Appealable || disputeState == DisputeState.QuorumNotReached) {
+        if (disputeState == DisputeState.Appealable) {
             return DisputeStatus.Appealable;
         } else if (disputeState == DisputeState.Executed || disputeState == DisputeState.Solved) {
             // executed or solved
@@ -229,7 +230,7 @@ contract ERC20VotesArbitrator is
      */
     function _castVoteInternal(address voter, uint256 disputeId, uint256 choice) internal returns (uint256) {
         if (state(disputeId) != DisputeState.Active) revert VOTING_CLOSED();
-        if (choice > disputes[disputeId].choices) revert INVALID_VOTE_CHOICE();
+        if (choice == 0 || choice > disputes[disputeId].choices) revert INVALID_VOTE_CHOICE();
         Dispute storage dispute = disputes[disputeId];
         uint256 round = dispute.currentRound;
         Receipt storage receipt = dispute.rounds[round].receipts[voter];
@@ -346,6 +347,12 @@ contract ERC20VotesArbitrator is
      */
     function _determineWinningChoice(uint256 _disputeID) internal view returns (uint256) {
         Dispute storage dispute = disputes[_disputeID];
+
+        // check for quorum
+        if (dispute.rounds[round].votes < dispute.rounds[round].quorumVotes) {
+            return 0;
+        }
+
         uint256 winningChoice = 0;
         uint256 highestVotes = 0;
         uint256 round = dispute.currentRound;
@@ -366,7 +373,9 @@ contract ERC20VotesArbitrator is
      * @return The corresponding Party.
      */
     function _convertChoiceToParty(uint256 _choice) internal pure returns (IArbitrable.Party) {
-        if (_choice == 1) {
+        if (_choice == 0) {
+            return IArbitrable.Party.None;
+        } else if (_choice == 1) {
             return IArbitrable.Party.Requester;
         } else if (_choice == 2) {
             return IArbitrable.Party.Challenger;
@@ -379,7 +388,7 @@ contract ERC20VotesArbitrator is
      * @notice Owner function for setting the voting delay
      * @param newVotingDelay new voting delay, in blocks
      */
-    function _setVotingDelay(uint256 newVotingDelay) external onlyOwner {
+    function setVotingDelay(uint256 newVotingDelay) external onlyOwner {
         if (newVotingDelay < MIN_VOTING_DELAY || newVotingDelay > MAX_VOTING_DELAY) revert INVALID_VOTING_DELAY();
         uint256 oldVotingDelay = votingDelay;
         votingDelay = newVotingDelay;
@@ -392,7 +401,7 @@ contract ERC20VotesArbitrator is
      * @dev newQuorumVotesBPS must be greater than the hardcoded min
      * @param newQuorumVotesBPS new dispute threshold
      */
-    function _setQuorumVotesBPS(uint256 newQuorumVotesBPS) external onlyOwner {
+    function setQuorumVotesBPS(uint256 newQuorumVotesBPS) external onlyOwner {
         if (newQuorumVotesBPS < MIN_QUORUM_VOTES_BPS || newQuorumVotesBPS > MAX_QUORUM_VOTES_BPS)
             revert INVALID_QUORUM_VOTES_BPS();
         uint256 oldQuorumVotesBPS = quorumVotesBPS;
@@ -405,7 +414,7 @@ contract ERC20VotesArbitrator is
      * @notice Owner function for setting the voting period
      * @param newVotingPeriod new voting period, in blocks
      */
-    function _setVotingPeriod(uint256 newVotingPeriod) external onlyOwner {
+    function setVotingPeriod(uint256 newVotingPeriod) external onlyOwner {
         if (newVotingPeriod < MIN_VOTING_PERIOD || newVotingPeriod > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
 
         uint256 oldVotingPeriod = votingPeriod;
