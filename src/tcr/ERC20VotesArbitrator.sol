@@ -117,6 +117,7 @@ contract ERC20VotesArbitrator is
         newDispute.rounds[0].creationBlock = block.number;
         newDispute.rounds[0].quorumVotes = quorumVotes();
         newDispute.rounds[0].totalSupply = votingToken.totalSupply();
+        newDispute.rounds[0].cost = _arbitrationCost;
 
         emit DisputeCreated(
             newDispute.id,
@@ -283,6 +284,8 @@ contract ERC20VotesArbitrator is
         dispute.rounds[newRound].creationBlock = block.number;
         dispute.rounds[newRound].quorumVotes = quorumVotes();
         dispute.rounds[newRound].totalSupply = votingToken.totalSupply();
+        dispute.rounds[newRound].cost = costToAppeal;
+
         dispute.currentRound = newRound;
 
         emit DisputeReset(
@@ -293,17 +296,8 @@ contract ERC20VotesArbitrator is
             dispute.rounds[newRound].appealPeriodEndTime,
             dispute.rounds[newRound].quorumVotes,
             dispute.rounds[newRound].totalSupply,
+            dispute.rounds[newRound].cost,
             dispute.rounds[newRound].extraData
-        );
-
-        dispute.appeals.push(
-            Appeal({
-                roundNumber: newRound,
-                arbitrable: dispute.arbitrable,
-                disputeID: _disputeID,
-                appealCost: costToAppeal,
-                appealedAt: block.timestamp
-            })
         );
     }
 
@@ -323,8 +317,8 @@ contract ERC20VotesArbitrator is
      */
     function executeRuling(uint256 disputeId) external nonReentrant {
         Dispute storage dispute = disputes[disputeId];
-        if (state(disputeId) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
         if (dispute.executed) revert DISPUTE_ALREADY_EXECUTED();
+        if (state(disputeId) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
 
         uint256 winningChoice = _determineWinningChoice(disputeId);
 
@@ -333,11 +327,70 @@ contract ERC20VotesArbitrator is
 
         dispute.rounds[dispute.currentRound].ruling = ruling;
         dispute.executed = true;
+        dispute.winningChoice = winningChoice;
 
         // Call the rule function on the arbitrable contract
         arbitrable.rule(disputeId, uint256(ruling));
 
         emit DisputeExecuted(disputeId, ruling);
+    }
+
+    /**
+     * @notice Allows voters to withdraw their proportional share of the cost for a voting round if they voted on the correct side of the ruling.
+     * @param disputeId The ID of the dispute.
+     * @param round The round number.
+     * @param voter The address of the voter.
+     */
+    function withdrawVoterRewards(uint256 disputeId, uint256 round, address voter) external nonReentrant {
+        Dispute storage dispute = disputes[disputeId];
+
+        // Ensure the dispute is executed
+        if (!dispute.executed) {
+            revert DISPUTE_NOT_EXECUTED();
+        }
+
+        // Get the voting round
+        VotingRound storage votingRound = dispute.rounds[round];
+
+        // Check that the voter hasn't already claimed
+        if (votingRound.rewardsClaimed[voter]) {
+            revert REWARD_ALREADY_CLAIMED();
+        }
+
+        // Get the receipt for the voter
+        Receipt storage receipt = votingRound.receipts[voter];
+
+        // Check that the voter has voted
+        if (!receipt.hasVoted) {
+            revert VOTER_HAS_NOT_VOTED();
+        }
+
+        uint256 winningChoice = dispute.winningChoice;
+
+        uint256 amount = 0;
+        uint256 totalRewards = votingRound.cost; // Total amount to distribute among voters
+
+        if (winningChoice == 0) {
+            // Ruling is 0 or Party.None, both sides can withdraw proportional share
+            amount = (receipt.votes * totalRewards) / votingRound.votes;
+        } else {
+            // Ruling is not 0, only winning voters can withdraw
+            if (receipt.choice != winningChoice) {
+                revert VOTER_ON_LOSING_SIDE();
+            }
+            uint256 totalWinningVotes = votingRound.choiceVotes[winningChoice];
+
+            // Calculate voter's share
+            amount = (receipt.votes * totalRewards) / totalWinningVotes;
+        }
+
+        // Mark as claimed
+        votingRound.rewardsClaimed[voter] = true;
+
+        // Transfer tokens to voter
+        IERC20(address(votingToken)).safeTransfer(voter, amount);
+
+        emit RewardWithdrawn(disputeId, round, voter, amount);
     }
 
     /**

@@ -58,6 +58,18 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the number of choices for a dispute is invalid
     error INVALID_DISPUTE_CHOICES();
 
+    /// @notice Error thrown when a voter has not voted
+    error VOTER_HAS_NOT_VOTED();
+
+    /// @notice Error thrown when a reward has already been claimed
+    error REWARD_ALREADY_CLAIMED();
+
+    /// @notice Error thrown when a voter is on the losing side
+    error VOTER_ON_LOSING_SIDE();
+
+    /// @notice Error thrown when a dispute is not executed
+    error DISPUTE_NOT_EXECUTED();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
@@ -74,6 +86,7 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param appealPeriodEndTime The timestamp when the appeal period ends
      * @param quorumVotes The number of votes required for quorum
      * @param totalSupply The total supply of voting tokens at dispute creation
+     * @param cost The cost paid by the arbitrable contract for this voting round. Either arbitrationCost or appealCost
      * @param extraData Additional data related to the dispute
      */
     event DisputeReset(
@@ -84,6 +97,7 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 appealPeriodEndTime,
         uint256 quorumVotes,
         uint256 totalSupply,
+        uint256 cost,
         bytes extraData
     );
 
@@ -109,6 +123,15 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param newAppealCost The new appeal cost
      */
     event AppealCostSet(uint256 oldAppealCost, uint256 newAppealCost);
+
+    /**
+     * @notice Emitted when a voter withdraws their proportional share of the cost for a voting round
+     * @param disputeId The ID of the dispute
+     * @param round The round number
+     * @param voter The address of the voter
+     * @param amount The amount withdrawn
+     */
+    event RewardWithdrawn(uint256 indexed disputeId, uint256 indexed round, address indexed voter, uint256 amount);
 
     /**
      * @notice Emitted when the arbitration cost is set
