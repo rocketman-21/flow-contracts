@@ -115,7 +115,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Requires that the recipient is valid, and the weight is greater than the minimum vote weight.
      * Emits a VoteCast event upon successful execution.
      */
-    function _vote(uint256 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
+    function _vote(bytes32 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
         // calculate new member units for recipient
         // make sure to add the current units to the new units
         // todo check this
@@ -190,7 +190,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param recipientIds The recipientIds of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    modifier validVotes(uint256[] memory recipientIds, uint32[] memory percentAllocations) {
+    modifier validVotes(bytes32[] memory recipientIds, uint32[] memory percentAllocations) {
         // must have recipientIds
         if (recipientIds.length < 1) {
             revert TOO_FEW_RECIPIENTS();
@@ -203,8 +203,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // ensure recipients are not 0 address and allocations are > 0
         for (uint256 i = 0; i < recipientIds.length; i++) {
-            uint256 recipientId = recipientIds[i];
-            if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
+            bytes32 recipientId = recipientIds[i];
             if (recipients[recipientId].removed == true) revert NOT_APPROVED_RECIPIENT();
             if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
         }
@@ -220,7 +219,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _setVotesAllocationForTokenId(
         uint256 tokenId,
-        uint256[] memory recipientIds,
+        bytes32[] memory recipientIds,
         uint32[] memory percentAllocations
     ) internal {
         uint256 weight = tokenVoteWeight;
@@ -286,15 +285,17 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
      * @param metadata The metadata of the recipient
+     * @return bytes32 The recipientId of the newly created recipient
+     * @return address The address of the newly created recipient
      */
     function addRecipient(
         address recipient,
         RecipientMetadata memory metadata
-    ) external onlyManager nonReentrant validMetadata(metadata) {
+    ) external onlyManager nonReentrant validMetadata(metadata) returns (bytes32, address) {
         if (recipient == address(0)) revert ADDRESS_ZERO();
         if (recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
 
-        uint256 recipientId = recipientCount;
+        bytes32 recipientId = keccak256(abi.encode(recipient, abi.encode(metadata), RecipientType.ExternalAccount));
 
         recipientExists[recipient] = true;
 
@@ -311,6 +312,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
+
+        return (recipientId, recipient);
     }
 
     /**
@@ -318,6 +321,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev This function creates a new Flow contract and adds it as a recipient
      * @param metadata The metadata of the recipient
      * @param flowManager The address of the flow manager for the new contract
+     * @return bytes32 The recipientId of the newly created Flow contract
      * @return address The address of the newly created Flow contract
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientCreated event if the recipient is successfully added
@@ -325,7 +329,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function addFlowRecipient(
         RecipientMetadata memory metadata,
         address flowManager
-    ) external onlyManager validMetadata(metadata) returns (address) {
+    ) external onlyManager validMetadata(metadata) returns (bytes32, address) {
         if (flowManager == address(0)) revert ADDRESS_ZERO();
 
         address recipient = _deployFlowRecipient(metadata, flowManager);
@@ -337,7 +341,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _initializeBaselineMemberUnits(recipient);
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
-        uint256 recipientId = recipientCount;
+        bytes32 recipientId = keccak256(
+            abi.encode(recipient, keccak256(abi.encode(metadata)), RecipientType.FlowContract)
+        );
 
         recipients[recipientId] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
@@ -351,7 +357,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
         emit FlowRecipientCreated(recipientId, recipient);
 
-        return recipient;
+        return (recipientId, recipient);
     }
 
     /**
@@ -372,8 +378,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
-    function removeRecipient(uint256 recipientId) external onlyManager nonReentrant {
-        if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
+    function removeRecipient(bytes32 recipientId) external onlyManager nonReentrant {
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
         address recipientAddress = recipients[recipientId].recipient;

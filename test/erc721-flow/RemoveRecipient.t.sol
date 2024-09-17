@@ -15,16 +15,16 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a recipient first
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, address recipientAddress) = flow.addRecipient(recipient, recipientMetadata);
 
         // Test successful removal of a recipient
         vm.startPrank(flow.owner());
         vm.expectEmit(true, true, true, true);
-        emit IFlowEvents.RecipientRemoved(recipient, 0);
-        flow.removeRecipient(0);
+        emit IFlowEvents.RecipientRemoved(recipientAddress, recipientId);
+        flow.removeRecipient(recipientId);
 
         // Verify recipient was removed correctly
-        (address storedRecipient, bool removed, , ) = flow.recipients(0);
+        (address storedRecipient, bool removed, , ) = flow.recipients(recipientId);
         assertEq(storedRecipient, recipient);
         assertEq(removed, true);
         assertEq(flow.recipientExists(recipient), false);
@@ -38,15 +38,15 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a recipient first
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, address recipientAddress) = flow.addRecipient(recipient, recipientMetadata);
 
         // Test removing a recipient with an invalid ID (should revert)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.INVALID_RECIPIENT_ID.selector);
-        flow.removeRecipient(1); // Using ID 1, which is invalid as we only added one recipient (ID 0)
+        flow.removeRecipient(bytes32(uint256(1))); // Using ID 1, which is invalid as we only added one recipient (ID 0)
 
         // Verify that the valid recipient (ID 0) still exists and is not removed
-        (address storedRecipient, bool removed, , ) = flow.recipients(0);
+        (address storedRecipient, bool removed, , ) = flow.recipients(recipientId);
         assertEq(storedRecipient, recipient);
         assertEq(removed, false);
     }
@@ -56,16 +56,16 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
         // Remove the recipient
         vm.prank(flow.owner());
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId);
 
         // Try to remove the same recipient again (should revert)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.RECIPIENT_ALREADY_REMOVED.selector);
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId);
     }
 
     function testRemoveRecipientNonManager() public {
@@ -73,12 +73,12 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
         // Test removing a recipient from a non-manager address (should revert)
         vm.prank(address(0xABC));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId);
     }
     function testRemoveMultipleRecipients() public {
         address recipient1 = address(0x123);
@@ -100,22 +100,22 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add recipients
         vm.startPrank(flow.owner());
-        flow.addRecipient(recipient1, metadata1);
-        flow.addRecipient(recipient2, metadata2);
+        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, metadata1);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, metadata2);
 
         // Remove first recipient
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId1);
 
         // Verify first recipient was removed
-        (address storedRecipient1, bool removed1, , ) = flow.recipients(0);
+        (address storedRecipient1, bool removed1, , ) = flow.recipients(recipientId1);
         assertEq(storedRecipient1, recipient1);
         assertEq(removed1, true);
 
         // Remove second recipient
-        flow.removeRecipient(1);
+        flow.removeRecipient(recipientId2);
 
         // Verify second recipient was removed
-        (address storedRecipient2, bool removed2, , ) = flow.recipients(1);
+        (address storedRecipient2, bool removed2, , ) = flow.recipients(recipientId2);
         assertEq(storedRecipient2, recipient2);
         assertEq(removed2, true);
 
@@ -128,12 +128,12 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
         // Cast a vote to give the recipient some member units
         uint256 tokenId = 0;
-        uint256[] memory recipientIds = new uint256[](1);
-        recipientIds[0] = 0;
+        bytes32[] memory recipientIds = new bytes32[](1);
+        recipientIds[0] = recipientId;
         uint32[] memory percentAllocations = new uint32[](1);
         percentAllocations[0] = 1e6; // 100%
         uint256[] memory tokenIds = new uint256[](1);
@@ -151,7 +151,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Remove the recipient
         vm.prank(flow.owner());
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId);
 
         // Check that member units have been updated (should be 0)
         uint128 finalUnits = flow.bonusPool().getUnits(recipient);
@@ -163,16 +163,16 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
         // Remove the recipient
         vm.prank(flow.owner());
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId);
 
         // Attempt to vote for the removed recipient
         uint256 tokenId = 0;
-        uint256[] memory recipientIds = new uint256[](1);
-        recipientIds[0] = 0;
+        bytes32[] memory recipientIds = new bytes32[](1);
+        recipientIds[0] = recipientId;
         uint32[] memory percentAllocations = new uint32[](1);
         percentAllocations[0] = 1e6; // 100%
         uint256[] memory tokenIds = new uint256[](1);
@@ -199,8 +199,8 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add two recipients
         vm.startPrank(flow.owner());
-        flow.addRecipient(recipient1, recipientMetadata);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, recipientMetadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         // Mint a token for voting
@@ -209,8 +209,8 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         nounsToken.mint(address(this), tokenId);
 
         // Vote for the first recipient
-        uint256[] memory recipientIds = new uint256[](1);
-        recipientIds[0] = 0;
+        bytes32[] memory recipientIds = new bytes32[](1);
+        recipientIds[0] = recipientId1;
         uint32[] memory percentAllocations = new uint32[](1);
         percentAllocations[0] = 1e6; // 100%
         uint256[] memory tokenIds = new uint256[](1);
@@ -221,21 +221,21 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         // Verify the vote was cast
         FlowStorageV1.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
         assertEq(votes.length, 1);
-        assertEq(votes[0].recipientId, 0);
+        assertEq(votes[0].recipientId, recipientId1);
         assertEq(votes[0].bps, 1e6);
 
         // Remove the first recipient
         vm.prank(flow.owner());
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId1);
 
         // Vote for the second recipient
-        recipientIds[0] = 1;
+        recipientIds[0] = recipientId2;
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // Verify the new vote was cast
         votes = flow.getVotesForTokenId(tokenId);
         assertEq(votes.length, 1);
-        assertEq(votes[0].recipientId, 1);
+        assertEq(votes[0].recipientId, recipientId2);
         assertEq(votes[0].bps, 1e6);
 
         // Verify member units
@@ -265,9 +265,9 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add recipients
         vm.prank(flow.owner());
-        flow.addRecipient(recipient1, metadata1);
+        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, metadata1);
         vm.prank(flow.owner());
-        flow.addRecipient(recipient2, metadata2);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, metadata2);
 
         // Check initial state
         uint128 initialTotalUnits = flow.baselinePool().getTotalUnits();
@@ -275,7 +275,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Remove first recipient
         vm.prank(flow.owner());
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId1);
 
         // Check units after removing first recipient
         uint128 unitsAfterRemove1 = flow.baselinePool().getTotalUnits();
@@ -294,7 +294,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         // Try to remove the same recipient again (should not change anything)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.RECIPIENT_ALREADY_REMOVED.selector);
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId1);
         assertEq(
             flow.baselinePool().getTotalUnits(),
             unitsAfterRemove1,
@@ -303,7 +303,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Remove second recipient
         vm.prank(flow.owner());
-        flow.removeRecipient(1);
+        flow.removeRecipient(recipientId2);
 
         // Check final state
         uint128 finalTotalUnits = flow.baselinePool().getTotalUnits();
@@ -313,7 +313,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         // Try to remove non-existent recipient (should revert)
         vm.prank(flow.owner());
         vm.expectRevert();
-        flow.removeRecipient(2);
+        flow.removeRecipient(bytes32(uint256(2)));
 
         // Add a new recipient and verify units are assigned correctly
         address recipient3 = address(0x789);
@@ -325,7 +325,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
             "https://recipient3.com"
         );
         vm.prank(flow.owner());
-        flow.addRecipient(recipient3, metadata3);
+        (bytes32 recipientId3, ) = flow.addRecipient(recipient3, metadata3);
 
         assertEq(
             flow.baselinePool().getTotalUnits(),
@@ -359,8 +359,8 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add flow recipients
         vm.startPrank(flow.owner());
-        address flowRecipient1 = flow.addFlowRecipient(metadata1, flowManager1);
-        address flowRecipient2 = flow.addFlowRecipient(metadata2, flowManager2);
+        (bytes32 recipientId1, address flowRecipient1) = flow.addFlowRecipient(metadata1, flowManager1);
+        (bytes32 recipientId2, address flowRecipient2) = flow.addFlowRecipient(metadata2, flowManager2);
         vm.stopPrank();
 
         // Check initial state
@@ -369,7 +369,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Remove first flow recipient
         vm.prank(flow.owner());
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId1);
 
         // Check units after removing first recipient
         uint128 unitsAfterRemove1 = flow.baselinePool().getTotalUnits();
@@ -388,7 +388,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         // Try to remove the same recipient again (should not change anything)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.RECIPIENT_ALREADY_REMOVED.selector);
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId1);
         assertEq(
             flow.baselinePool().getTotalUnits(),
             unitsAfterRemove1,
@@ -397,7 +397,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Remove second flow recipient
         vm.prank(flow.owner());
-        flow.removeRecipient(1);
+        flow.removeRecipient(recipientId2);
 
         // Check final state
         uint128 finalTotalUnits = flow.baselinePool().getTotalUnits();
@@ -407,7 +407,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         // Try to remove non-existent recipient (should revert)
         vm.prank(flow.owner());
         vm.expectRevert();
-        flow.removeRecipient(2);
+        flow.removeRecipient(bytes32(uint256(2)));
 
         // Add a new flow recipient and verify units are assigned correctly
         address flowManager3 = address(0x789);
@@ -419,7 +419,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
             "https://flowrecipient3.com"
         );
         vm.prank(flow.owner());
-        address flowRecipient3 = flow.addFlowRecipient(metadata3, flowManager3);
+        (bytes32 recipientId3, address flowRecipient3) = flow.addFlowRecipient(metadata3, flowManager3);
 
         assertEq(
             flow.baselinePool().getTotalUnits(),

@@ -26,5 +26,5 @@ interface IManagedFlow {
      * @notice Removes a recipient for receiving funds
      * @param recipientId The ID of the recipient to be removed
      */
-    function removeRecipient(uint256 recipientId) external;
+    function removeRecipient(bytes32 recipientId) external;
 }

@@ -17,7 +17,7 @@ interface IFlowEvents {
      * @param totalWeight Total weight of the vote
      */
     event VoteCast(
-        uint256 indexed recipientId,
+        bytes32 indexed recipientId,
         uint256 indexed tokenId,
         uint256 memberUnits,
         uint256 bps,
@@ -25,14 +25,14 @@ interface IFlowEvents {
     );
 
     /// @notice Emitted when a new child flow recipient is created
-    event FlowRecipientCreated(uint256 indexed recipientId, address indexed recipient);
+    event FlowRecipientCreated(bytes32 indexed recipientId, address indexed recipient);
 
     /// @notice Emitted when the flow is initialized
     event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
 
     /// @notice Emitted when a new grants recipient is set
     event RecipientCreated(
-        uint256 indexed recipientId,
+        bytes32 indexed recipientId,
         FlowStorageV1.FlowRecipient recipient,
         address indexed approvedBy
     );
@@ -49,7 +49,7 @@ interface IFlowEvents {
     event FlowImplementationSet(address indexed flowImpl);
 
     /// @notice Emitted when a recipient is removed
-    event RecipientRemoved(address indexed recipient, uint256 indexed recipientId);
+    event RecipientRemoved(address indexed recipient, bytes32 indexed recipientId);
 
     /// @notice Emitted when the baseline flow rate percentage is updated
     event BaselineFlowRatePercentUpdated(uint32 oldBaselineFlowRatePercent, uint32 newBaselineFlowRatePercent);

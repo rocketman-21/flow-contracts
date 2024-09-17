@@ -15,7 +15,7 @@ contract VotingNounsFlowTest is NounsFlowTest {
 
     function _setupTestParameters()
         internal
-        returns (address[] memory, uint256[][] memory, uint256[] memory, uint32[] memory, address)
+        returns (address[] memory, uint256[][] memory, bytes32[] memory, uint32[] memory, address)
     {
         address recipient1 = address(0x1);
         address recipient2 = address(0x2);
@@ -29,14 +29,15 @@ contract VotingNounsFlowTest is NounsFlowTest {
         tokenIds[0][0] = 788;
         tokenIds[0][1] = 832;
 
-        uint256[] memory recipientIds = new uint256[](2);
-        recipientIds[0] = 0;
-        recipientIds[1] = 1;
+        bytes32[] memory recipientIds = new bytes32[](2);
 
         vm.startPrank(manager);
-        flow.addRecipient(recipient1, recipientMetadata);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, recipientMetadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
+
+        recipientIds[0] = recipientId1;
+        recipientIds[1] = recipientId2;
 
         uint32[] memory percentAllocations = new uint32[](2);
         percentAllocations[0] = 1e6 / 2; // 50%
@@ -52,7 +53,7 @@ contract VotingNounsFlowTest is NounsFlowTest {
         (
             address[] memory owners,
             uint256[][] memory tokenIds,
-            uint256[] memory recipientIds,
+            bytes32[] memory recipientIds,
             uint32[] memory percentAllocations,
             address delegate
         ) = _setupTestParameters();
@@ -185,7 +186,7 @@ contract VotingNounsFlowTest is NounsFlowTest {
         (
             address[] memory owners,
             uint256[][] memory tokenIds,
-            uint256[] memory recipientIds,
+            bytes32[] memory recipientIds,
             uint32[] memory percentAllocations,
 
         ) = _setupTestParameters();

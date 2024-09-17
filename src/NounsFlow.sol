@@ -41,7 +41,7 @@ contract NounsFlow is INounsFlow, Flow {
     function castVotes(
         address[] memory owners,
         uint256[][] memory tokenIds,
-        uint256[] memory recipientIds,
+        bytes32[] memory recipientIds,
         uint32[] memory percentAllocations,
         IStateProof.BaseParameters memory baseProofParams,
         bytes[][][] memory ownershipStorageProofs,
@@ -127,7 +127,7 @@ contract NounsFlow is INounsFlow, Flow {
     function _castVotesForOwner(
         address owner,
         uint256[] memory tokenIds,
-        uint256[] memory recipientIds,
+        bytes32[] memory recipientIds,
         uint32[] memory percentAllocations,
         IStateProof.Parameters[] memory ownershipProofs,
         IStateProof.Parameters memory delegateProof

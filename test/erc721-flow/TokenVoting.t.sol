@@ -25,14 +25,14 @@ contract TokenVotingFlowTest is ERC721FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
-        recipientIds[0] = 0; // Assuming the first recipient has ID 0
+        recipientIds[0] = recipientId;
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
@@ -62,14 +62,14 @@ contract TokenVotingFlowTest is ERC721FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
-        recipientIds[0] = 0; // Assuming the first recipient has ID 0
+        recipientIds[0] = recipientId;
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
@@ -101,9 +101,9 @@ contract TokenVotingFlowTest is ERC721FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
@@ -132,14 +132,14 @@ contract TokenVotingFlowTest is ERC721FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](2);
 
         percentAllocations[0] = 1e6;
-        recipientIds[0] = 0; // Assuming the first recipient has ID 0
+        recipientIds[0] = recipientId;
         tokenIds[0] = tokenId;
         tokenIds[1] = 1;
 

@@ -24,17 +24,17 @@ contract DelegateVotingTest is ERC721FlowTest {
         address recipient1 = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient1, recipientMetadata);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId1, address recipientAddress1) = flow.addRecipient(recipient1, recipientMetadata);
+        (bytes32 recipientId2, address recipientAddress2) = flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         // Prepare vote data
-        uint256[] memory recipientIds = new uint256[](2);
+        bytes32[] memory recipientIds = new bytes32[](2);
         uint32[] memory percentAllocations = new uint32[](2);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipientIds[0] = 0;
-        recipientIds[1] = 1;
+        recipientIds[0] = recipientId1;
+        recipientIds[1] = recipientId2;
         percentAllocations[0] = 7e5; // 70%
         percentAllocations[1] = 3e5; // 30%
         tokenIds[0] = tokenId;
@@ -46,9 +46,9 @@ contract DelegateVotingTest is ERC721FlowTest {
         // Verify vote allocations
         Flow.VoteAllocation[] memory voteAllocations = flow.getVotesForTokenId(tokenId);
         assertEq(voteAllocations.length, 2);
-        assertEq(voteAllocations[0].recipientId, 0);
+        assertEq(voteAllocations[0].recipientId, recipientId1);
         assertEq(voteAllocations[0].bps, 7e5);
-        assertEq(voteAllocations[1].recipientId, 1);
+        assertEq(voteAllocations[1].recipientId, recipientId2);
         assertEq(voteAllocations[1].bps, 3e5);
 
         // Try to vote with delegate (should fail)
@@ -76,9 +76,9 @@ contract DelegateVotingTest is ERC721FlowTest {
         // Verify new vote allocations
         voteAllocations = flow.getVotesForTokenId(tokenId);
         assertEq(voteAllocations.length, 2);
-        assertEq(voteAllocations[0].recipientId, 0);
+        assertEq(voteAllocations[0].recipientId, recipientId1);
         assertEq(voteAllocations[0].bps, 4e5);
-        assertEq(voteAllocations[1].recipientId, 1);
+        assertEq(voteAllocations[1].recipientId, recipientId2);
         assertEq(voteAllocations[1].bps, 6e5);
     }
 
@@ -97,17 +97,17 @@ contract DelegateVotingTest is ERC721FlowTest {
         address recipient1 = address(4);
         address recipient2 = address(5);
         vm.startPrank(manager);
-        flow.addRecipient(recipient1, recipientMetadata);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId1, address recipientAddress1) = flow.addRecipient(recipient1, recipientMetadata);
+        (bytes32 recipientId2, address recipientAddress2) = flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         // Prepare vote data
-        uint256[] memory recipientIds = new uint256[](2);
+        bytes32[] memory recipientIds = new bytes32[](2);
         uint32[] memory percentAllocations = new uint32[](2);
         uint256[] memory tokenIds = new uint256[](2);
 
-        recipientIds[0] = 0;
-        recipientIds[1] = 1;
+        recipientIds[0] = recipientId1;
+        recipientIds[1] = recipientId2;
         percentAllocations[0] = 5e5; // 50%
         percentAllocations[1] = 5e5; // 50%
         tokenIds[0] = tokenId1;
@@ -128,15 +128,15 @@ contract DelegateVotingTest is ERC721FlowTest {
         Flow.VoteAllocation[] memory voteAllocations2 = flow.getVotesForTokenId(tokenId2);
 
         assertEq(voteAllocations1.length, 2);
-        assertEq(voteAllocations1[0].recipientId, 0);
+        assertEq(voteAllocations1[0].recipientId, recipientId1);
         assertEq(voteAllocations1[0].bps, 5e5);
-        assertEq(voteAllocations1[1].recipientId, 1);
+        assertEq(voteAllocations1[1].recipientId, recipientId2);
         assertEq(voteAllocations1[1].bps, 5e5);
 
         assertEq(voteAllocations2.length, 2);
-        assertEq(voteAllocations2[0].recipientId, 0);
+        assertEq(voteAllocations2[0].recipientId, recipientId1);
         assertEq(voteAllocations2[0].bps, 5e5);
-        assertEq(voteAllocations2[1].recipientId, 1);
+        assertEq(voteAllocations2[1].recipientId, recipientId2);
         assertEq(voteAllocations2[1].bps, 5e5);
 
         // Check that the total units for each recipient reflect votes from both tokens

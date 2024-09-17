@@ -40,7 +40,7 @@ contract ERC721Flow is IERC721Flow, Flow {
      */
     function castVotes(
         uint256[] memory tokenIds,
-        uint256[] memory recipientIds,
+        bytes32[] memory recipientIds,
         uint32[] memory percentAllocations
     ) external nonReentrant validVotes(recipientIds, percentAllocations) {
         for (uint256 i = 0; i < tokenIds.length; i++) {

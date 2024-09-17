@@ -67,6 +67,23 @@ contract FlowTCR is GeneralizedTCR {
         );
     }
 
-    // TODO: Add functions to interface with Flow.sol, such as adding or removing recipients
-    // based on TCR outcomes
+    /**
+     * @notice Removes an item from the Flow contract when it's removed from the TCR
+     * @param _itemID The ID of the item being removed
+     * @dev This function is called internally when an item is removed from the TCR
+     */
+    function _onItemRemoved(bytes32 _itemID) internal override {
+        flowContract.removeRecipient(_itemID);
+    }
+
+    /**
+     * @notice Handles the registration of an item in the TCR
+     * @param _itemID The ID of the item being registered
+     * @param _item The data describing the item
+     * @dev This function is called internally when an item is registered in the TCR
+     * @dev Currently, this function doesn't perform any actions, but it's kept for potential future use
+     */
+    function _onItemRegistered(bytes32 _itemID, bytes memory _item) internal override {
+        // Note: The unused variable has been removed
+    }
 }

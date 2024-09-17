@@ -15,7 +15,7 @@ contract OwnerFlowTest is ERC721FlowTest {
     }
 
     function testRemoveNonexistentRecipient() public {
-        uint256 nonexistentRecipientId = 999; // Assuming this ID doesn't exist
+        bytes32 nonexistentRecipientId = bytes32(""); // Assuming this ID doesn't exist
 
         vm.prank(manager); // Owner address
         vm.expectRevert(IFlow.INVALID_RECIPIENT_ID.selector);

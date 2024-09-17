@@ -22,17 +22,17 @@ contract VotingFlowTest is ERC721FlowTest {
         address recipient = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
         tokenIds[0] = tokenId;
-        recipientIds[0] = 0;
+        recipientIds[0] = recipientId;
 
         vm.prank(voter1);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
@@ -42,7 +42,7 @@ contract VotingFlowTest is ERC721FlowTest {
 
         assertGt(currentUnits, 0);
 
-        recipientIds[0] = 1;
+        recipientIds[0] = recipientId2;
 
         vm.prank(voter1);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
@@ -66,11 +66,11 @@ contract VotingFlowTest is ERC721FlowTest {
         address recipient = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory tokenIds2 = new uint256[](1);
@@ -78,7 +78,7 @@ contract VotingFlowTest is ERC721FlowTest {
         percentAllocations[0] = 1e6;
         tokenIds[0] = tokenId;
         tokenIds2[0] = tokenId2;
-        recipientIds[0] = 0;
+        recipientIds[0] = recipientId;
 
         vm.prank(voter2);
         flow.castVotes(tokenIds2, recipientIds, percentAllocations);
@@ -95,8 +95,8 @@ contract VotingFlowTest is ERC721FlowTest {
 
         assertGt(secondVoteUnits, originalUnits);
 
-        uint256[] memory newRecipientIds = new uint256[](1);
-        newRecipientIds[0] = 1;
+        bytes32[] memory newRecipientIds = new bytes32[](1);
+        newRecipientIds[0] = recipientId2;
 
         vm.prank(voter1);
         flow.castVotes(tokenIds, newRecipientIds, percentAllocations);
@@ -119,17 +119,17 @@ contract VotingFlowTest is ERC721FlowTest {
         address recipient1 = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient1, recipientMetadata);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, recipientMetadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
         // Step 3: Prepare vote data
-        uint256[] memory recipientIds = new uint256[](2);
+        bytes32[] memory recipientIds = new bytes32[](2);
         uint32[] memory percentAllocations = new uint32[](2);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipientIds[0] = 0;
-        recipientIds[1] = 1;
+        recipientIds[0] = recipientId1;
+        recipientIds[1] = recipientId2;
         percentAllocations[0] = splitPercentage;
         percentAllocations[1] = 1e6 - splitPercentage;
         tokenIds[0] = tokenId;
@@ -145,12 +145,12 @@ contract VotingFlowTest is ERC721FlowTest {
         assertEq(voteAllocations.length, 2);
 
         // Check first allocation
-        assertEq(voteAllocations[0].recipientId, 0);
+        assertEq(voteAllocations[0].recipientId, recipientId1);
         assertEq(voteAllocations[0].bps, splitPercentage);
         assertGt(voteAllocations[0].memberUnits, 0);
 
         // Check second allocation
-        assertEq(voteAllocations[1].recipientId, 1);
+        assertEq(voteAllocations[1].recipientId, recipientId2);
         assertEq(voteAllocations[1].bps, 1e6 - splitPercentage);
         assertGt(voteAllocations[1].memberUnits, 0);
 
@@ -177,16 +177,16 @@ contract VotingFlowTest is ERC721FlowTest {
         address recipient1 = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        flow.addRecipient(recipient1, recipientMetadata);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, recipientMetadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
         vm.stopPrank();
 
-        uint256[] memory recipientIds = new uint256[](2);
+        bytes32[] memory recipientIds = new bytes32[](2);
         uint32[] memory percentAllocations = new uint32[](2);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipientIds[0] = 0;
-        recipientIds[1] = 1;
+        recipientIds[0] = recipientId1;
+        recipientIds[1] = recipientId2;
         percentAllocations[0] = 5e5; // 50%
         percentAllocations[1] = 5e5; // 50%
         tokenIds[0] = tokenId;
@@ -201,13 +201,13 @@ contract VotingFlowTest is ERC721FlowTest {
         assertGt(recipient2OriginalUnits, 0);
 
         // Change vote to only recipient1
-        recipientIds = new uint256[](1);
-        percentAllocations = new uint32[](1);
-        recipientIds[0] = 0;
-        percentAllocations[0] = 1e6; // 100%
+        bytes32[] memory newRecipientIds = new bytes32[](1);
+        uint32[] memory newPercentAllocations = new uint32[](1);
+        newRecipientIds[0] = recipientId1;
+        newPercentAllocations[0] = 1e6; // 100%
 
         vm.prank(voter);
-        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+        flow.castVotes(tokenIds, newRecipientIds, newPercentAllocations);
 
         uint128 recipient1NewUnits = flow.bonusPool().getUnits(recipient1);
         uint128 recipient2NewUnits = flow.bonusPool().getUnits(recipient2);
@@ -218,7 +218,7 @@ contract VotingFlowTest is ERC721FlowTest {
         // Verify that the votes for the tokenId have been updated
         Flow.VoteAllocation[] memory voteAllocations = flow.getVotesForTokenId(tokenId);
         assertEq(voteAllocations.length, 1);
-        assertEq(voteAllocations[0].recipientId, 0);
+        assertEq(voteAllocations[0].recipientId, recipientId1);
         assertEq(voteAllocations[0].bps, 1e6);
     }
 
@@ -229,17 +229,16 @@ contract VotingFlowTest is ERC721FlowTest {
         nounsToken.mint(voter, tokenId);
 
         address recipient1 = address(3);
-        address flowRecipient = address(0);
         vm.startPrank(manager);
         flow.addRecipient(recipient1, recipientMetadata);
-        flowRecipient = flow.addFlowRecipient(recipientMetadata, manager);
+        (bytes32 recipientId, address flowRecipient) = flow.addFlowRecipient(recipientMetadata, manager);
         vm.stopPrank();
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipientIds[0] = 1; // Flow recipient
+        recipientIds[0] = recipientId; // Flow recipient
         percentAllocations[0] = 1e6; // 100%
         tokenIds[0] = tokenId;
 
@@ -287,17 +286,17 @@ contract VotingFlowTest is ERC721FlowTest {
         nounsToken.mint(voter, tokenId);
 
         address recipient1 = address(3);
-        address flowRecipient = address(0);
+
         vm.startPrank(manager);
         flow.addRecipient(recipient1, recipientMetadata);
-        flowRecipient = flow.addFlowRecipient(recipientMetadata, manager);
+        (bytes32 recipientId, address flowRecipient) = flow.addFlowRecipient(recipientMetadata, manager);
         vm.stopPrank();
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipientIds[0] = 1; // Flow recipient
+        recipientIds[0] = recipientId; // Flow recipient
         percentAllocations[0] = 1e6; // 100%
         tokenIds[0] = tokenId;
 

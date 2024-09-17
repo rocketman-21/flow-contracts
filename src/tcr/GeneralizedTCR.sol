@@ -307,7 +307,7 @@ abstract contract GeneralizedTCR is
 
         if (item.status == Status.RegistrationRequested) {
             item.status = Status.Registered;
-            _onItemRegistered(_itemID);
+            _onItemRegistered(_itemID, item.data);
         } else if (item.status == Status.ClearingRequested) {
             item.status = Status.Absent;
             _onItemRemoved(_itemID);
@@ -347,8 +347,9 @@ abstract contract GeneralizedTCR is
 
     /** @dev Hook called when an item is registered. Can be overridden by derived contracts.
      *  @param _itemID The ID of the item that was registered.
+     *  @param _item The data describing the item.
      */
-    function _onItemRegistered(bytes32 _itemID) internal virtual {}
+    function _onItemRegistered(bytes32 _itemID, bytes memory _item) internal virtual {}
 
     /** @dev Hook called when an item is removed. Can be overridden by derived contracts.
      *  @param _itemID The ID of the item that was removed.
@@ -567,7 +568,7 @@ abstract contract GeneralizedTCR is
         if (winner == Party.Requester) {
             // Execute Request.
             if (item.status == Status.RegistrationRequested) {
-                _onItemRegistered(itemID);
+                _onItemRegistered(itemID, item.data);
                 item.status = Status.Registered;
             } else if (item.status == Status.ClearingRequested) {
                 item.status = Status.Absent;
