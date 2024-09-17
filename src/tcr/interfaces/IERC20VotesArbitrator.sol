@@ -52,6 +52,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the arbitration cost is outside the allowed range
     error INVALID_ARBITRATION_COST();
 
+    /// @notice Error thrown when the arbitrable address is invalid (zero address)
+    error INVALID_ARBITRABLE_ADDRESS();
+
     /// @notice Error thrown when the appeal period is ended
     error APPEAL_PERIOD_ENDED();
 
