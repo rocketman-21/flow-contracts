@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import { GeneralizedTCRTest } from "./GeneralizedTCR.t.sol";
+import { FlowTCRTest } from "./FlowTCR.t.sol";
 import { IGeneralizedTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
 
-contract BasicTCRTest is GeneralizedTCRTest {
+contract BasicTCRTest is FlowTCRTest {
     // Test Cases
 
     /**
@@ -21,9 +21,7 @@ contract BasicTCRTest is GeneralizedTCRTest {
     function testItemSubmission() public {
         bytes32 itemID = submitItem(ITEM_DATA, requester);
 
-        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = generalizedTCR.getItemInfo(
-            itemID
-        );
+        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
 
         assertEq(data, ITEM_DATA);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.RegistrationRequested));
@@ -63,7 +61,7 @@ contract BasicTCRTest is GeneralizedTCRTest {
             IArbitrator erc20VotesArbitrator,
             bytes memory arbitratorExtraData,
             uint256 metaEvidenceID
-        ) = generalizedTCR.getRequestInfo(itemID, 0);
+        ) = flowTCR.getRequestInfo(itemID, 0);
 
         assertTrue(disputed, "Item should be disputed after challenge");
         assertEq(parties[uint256(IArbitrable.Party.Requester)], requester, "Requester should be correct");
@@ -74,9 +72,7 @@ contract BasicTCRTest is GeneralizedTCRTest {
         assertEq(arbitratorExtraData, ARBITRATOR_EXTRA_DATA, "Arbitrator extra data should be correct");
         assertEq(metaEvidenceID, 0, "Meta evidence ID should be 0");
 
-        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = generalizedTCR.getItemInfo(
-            itemID
-        );
+        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
 
         assertEq(data, ITEM_DATA, "Item data should match");
         assertEq(
@@ -103,11 +99,9 @@ contract BasicTCRTest is GeneralizedTCRTest {
 
         advanceTime(CHALLENGE_PERIOD + 1);
 
-        generalizedTCR.executeRequest(itemID);
+        flowTCR.executeRequest(itemID);
 
-        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = generalizedTCR.getItemInfo(
-            itemID
-        );
+        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
 
         assertEq(data, ITEM_DATA);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered));
@@ -130,9 +124,7 @@ contract BasicTCRTest is GeneralizedTCRTest {
         bytes32 itemID = submitItem(ITEM_DATA, requester);
 
         // Check initial state
-        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = generalizedTCR.getItemInfo(
-            itemID
-        );
+        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
         assertEq(data, ITEM_DATA, "Item data should match");
         assertEq(
             uint256(status),
@@ -156,7 +148,7 @@ contract BasicTCRTest is GeneralizedTCRTest {
             ,
             ,
 
-        ) = generalizedTCR.getRequestInfo(itemID, 0);
+        ) = flowTCR.getRequestInfo(itemID, 0);
 
         assertTrue(disputed, "Item should be disputed after challenge");
         assertEq(parties[uint256(IArbitrable.Party.Requester)], requester, "Requester should be correct");
@@ -167,17 +159,17 @@ contract BasicTCRTest is GeneralizedTCRTest {
         voteAndExecute(disputeID, IArbitrable.Party.Requester);
 
         // Check if the dispute is resolved
-        (, , , bool requestResolved, , , IArbitrable.Party ruling, , , ) = generalizedTCR.getRequestInfo(itemID, 0);
+        (, , , bool requestResolved, , , IArbitrable.Party ruling, , , ) = flowTCR.getRequestInfo(itemID, 0);
         assertTrue(requestResolved, "Dispute should be resolved");
         assertEq(uint256(ruling), uint256(IArbitrable.Party.Requester), "Ruling should be in favor of the requester");
 
         advanceTime(CHALLENGE_PERIOD + 1);
         // Start of Selection
         vm.expectRevert(IGeneralizedTCR.REQUEST_MUST_NOT_BE_DISPUTED.selector);
-        generalizedTCR.executeRequest(itemID);
+        flowTCR.executeRequest(itemID);
 
         // Check final state
-        (data, status, numberOfRequests) = generalizedTCR.getItemInfo(itemID);
+        (data, status, numberOfRequests) = flowTCR.getItemInfo(itemID);
         assertEq(data, ITEM_DATA, "Item data should still match");
         assertEq(numberOfRequests, 1, "Number of requests should still be 1");
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered), "Status should be Registered");

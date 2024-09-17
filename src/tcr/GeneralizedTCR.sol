@@ -24,7 +24,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
  *  @title GeneralizedTCR
  *  This contract is a curated registry for any types of items. Just like a TCR contract it features the request-challenge protocol and appeal fees crowdfunding.
  */
-contract GeneralizedTCR is
+abstract contract GeneralizedTCR is
     IArbitrable,
     IEvidence,
     IGeneralizedTCR,
@@ -35,10 +35,6 @@ contract GeneralizedTCR is
 {
     using CappedMath for uint256;
     using SafeERC20 for IERC20;
-    /**
-     *  @dev Deploy the arbitrable curated registry.
-     */
-    constructor() {}
 
     /**
      *  @dev Initialize the arbitrable curated registry.
@@ -58,7 +54,7 @@ contract GeneralizedTCR is
      *  - The multiplier applied to the winner's fee stake for the subsequent round.
      *  - The multiplier applied to the loser's fee stake for the subsequent round.
      */
-    function initialize(
+    function __GeneralizedTCR_init(
         IArbitrator _arbitrator,
         bytes memory _arbitratorExtraData,
         string memory _registrationMetaEvidence,
@@ -71,7 +67,7 @@ contract GeneralizedTCR is
         uint _removalChallengeBaseDeposit,
         uint _challengePeriodDuration,
         uint[3] memory _stakeMultipliers
-    ) public initializer {
+    ) public {
         __Ownable_init();
         __ReentrancyGuard_init();
 

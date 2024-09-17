@@ -4,18 +4,20 @@ pragma solidity ^0.8.20;
 import { Test } from "forge-std/Test.sol";
 import { ERC20VotesArbitrator } from "../../src/tcr/ERC20VotesArbitrator.sol";
 import { ERC20VotesMintable } from "../../src/ERC20VotesMintable.sol";
-import { GeneralizedTCR } from "../../src/tcr/GeneralizedTCR.sol";
+import { FlowTCR } from "../../src/tcr/FlowTCR.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20VotesArbitrator } from "../../src/tcr/interfaces/IERC20VotesArbitrator.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
+import { IFlow } from "../../src/interfaces/IFlow.sol";
+import { ERC721Flow } from "../../src/ERC721Flow.sol";
 
 contract ERC20VotesArbitratorTest is Test {
     // Contracts
     ERC20VotesArbitrator public arbitrator;
     ERC20VotesMintable public erc20Token;
-    GeneralizedTCR public generalizedTCR;
+    FlowTCR public flowTCR;
 
     // Addresses
     address public owner;
@@ -33,7 +35,7 @@ contract ERC20VotesArbitratorTest is Test {
     uint256 public constant APPEAL_COST = 1e18 / 10_000; // MIN_APPEAL_COST
     uint256 public constant ARBITRATION_COST = 1e18 / 10_000; // MIN_ARBITRATION_COST
 
-    // GeneralizedTCR Parameters
+    // flowTCR Parameters
     bytes public constant ARBITRATOR_EXTRA_DATA = "";
     bytes public constant ITEM_DATA = "item_data";
     string public constant BASIC_EVIDENCE = "basic_evidence";
@@ -54,20 +56,23 @@ contract ERC20VotesArbitratorTest is Test {
         requester = makeAddr("requester");
         challenger = makeAddr("challenger");
 
+        address flowImpl = address(new ERC721Flow());
+        address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
         address arbitratorImpl = address(new ERC20VotesArbitrator());
         address arbitratorProxy = address(new ERC1967Proxy(arbitratorImpl, ""));
         address erc20TokenImpl = address(new ERC20VotesMintable());
         address erc20TokenProxy = address(new ERC1967Proxy(erc20TokenImpl, ""));
-        address generalizedTCRImpl = address(new GeneralizedTCR());
-        address generalizedTCRProxy = address(new ERC1967Proxy(generalizedTCRImpl, ""));
+        address flowTCRImpl = address(new FlowTCR());
+        address flowTCRProxy = address(new ERC1967Proxy(flowTCRImpl, ""));
 
         arbitrator = ERC20VotesArbitrator(arbitratorProxy);
         erc20Token = ERC20VotesMintable(erc20TokenProxy);
-        generalizedTCR = GeneralizedTCR(generalizedTCRProxy);
+        flowTCR = FlowTCR(flowTCRProxy);
 
         erc20Token.initialize(owner, owner, "Test Token", "TST");
 
-        generalizedTCR.initialize(
+        flowTCR.initialize(
+            IFlow(flowProxy),
             IArbitrator(arbitratorProxy),
             ARBITRATOR_EXTRA_DATA,
             REGISTRATION_META_EVIDENCE,
@@ -84,7 +89,7 @@ contract ERC20VotesArbitratorTest is Test {
 
         arbitrator.initialize(
             address(erc20Token),
-            address(generalizedTCR),
+            address(flowTCR),
             VOTING_PERIOD,
             VOTING_DELAY,
             REVEAL_PERIOD,
@@ -102,15 +107,15 @@ contract ERC20VotesArbitratorTest is Test {
 
         // Approve arbitrator to spend tokens
         vm.prank(voter1);
-        erc20Token.approve(address(generalizedTCR), type(uint256).max);
+        erc20Token.approve(address(flowTCR), type(uint256).max);
         vm.prank(voter2);
-        erc20Token.approve(address(generalizedTCR), type(uint256).max);
+        erc20Token.approve(address(flowTCR), type(uint256).max);
         vm.prank(voter3);
-        erc20Token.approve(address(generalizedTCR), type(uint256).max);
+        erc20Token.approve(address(flowTCR), type(uint256).max);
         vm.prank(requester);
-        erc20Token.approve(address(generalizedTCR), type(uint256).max);
+        erc20Token.approve(address(flowTCR), type(uint256).max);
         vm.prank(challenger);
-        erc20Token.approve(address(generalizedTCR), type(uint256).max);
+        erc20Token.approve(address(flowTCR), type(uint256).max);
     }
 
     function commitVote(uint256 disputeID, address voter, uint256 choice, string memory reason, bytes32 salt) internal {
@@ -133,7 +138,7 @@ contract ERC20VotesArbitratorTest is Test {
     // Helper function to submit an item
     function submitItem(bytes memory _itemData, address _submitter) internal returns (bytes32) {
         vm.prank(_submitter);
-        generalizedTCR.addItem(_itemData);
+        flowTCR.addItem(_itemData);
         bytes32 itemID = keccak256(_itemData);
         return itemID;
     }
@@ -141,10 +146,10 @@ contract ERC20VotesArbitratorTest is Test {
     // Helper function to challenge an item
     function challengeItem(bytes32 _itemID, address _challenger) internal returns (uint256) {
         vm.prank(_challenger);
-        generalizedTCR.challengeRequest(_itemID, BASIC_EVIDENCE);
+        flowTCR.challengeRequest(_itemID, BASIC_EVIDENCE);
 
         // Get the dispute ID from the last request
-        (, uint256 disputeID, , , , , , , , ) = generalizedTCR.getRequestInfo(_itemID, 0);
+        (, uint256 disputeID, , , , , , , , ) = flowTCR.getRequestInfo(_itemID, 0);
         return disputeID;
     }
 
