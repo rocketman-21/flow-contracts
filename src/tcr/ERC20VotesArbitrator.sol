@@ -207,51 +207,70 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Cast a vote for a dispute
      * @param disputeId The id of the dispute to vote on
-     * @param choice The support value for the vote. Based on the choices provided in the createDispute function
+     * @param secretHash Commit keccak256 hash of voter's choice, reason (optional) and salt (tightly packed in this order)
      */
-    function castVote(uint256 disputeId, uint8 choice) external nonReentrant {
-        emit VoteCast(msg.sender, disputeId, choice, _castVoteInternal(msg.sender, disputeId, choice), "");
+    function commitVote(uint256 disputeId, bytes32 secretHash) external nonReentrant {
+        _commitVoteInternal(msg.sender, disputeId, secretHash);
+
+        emit VoteCommitted(msg.sender, disputeId, secretHash);
     }
 
     /**
-     * @notice Cast a vote for a dispute with a reason
-     * @param disputeId The id of the dispute to vote on
-     * @param choice The support value for the vote. Based on the choices provided in the createDispute function
-     * @param reason The reason given for the vote by the voter
+     * @notice Reveal a previously committed vote for a dispute
+     * @param disputeId The id of the dispute to reveal the vote for
+     * @param choice The choice that was voted for
+     * @param reason The reason for the vote
+     * @param salt The salt used in the commit phase
      */
-    function castVoteWithReason(uint256 disputeId, uint8 choice, string calldata reason) external nonReentrant {
-        emit VoteCast(msg.sender, disputeId, choice, _castVoteInternal(msg.sender, disputeId, choice), reason);
+    function revealVote(uint256 disputeId, uint256 choice, bytes calldata reason, bytes32 salt) external nonReentrant {
+        Dispute storage dispute = disputes[disputeId];
+        uint256 round = dispute.currentRound;
+
+        if (_getVotingRoundState(disputeId, round) != DisputeState.Reveal) revert VOTING_CLOSED();
+        if (choice == 0 || choice > dispute.choices) revert INVALID_VOTE_CHOICE();
+
+        Receipt storage receipt = dispute.rounds[round].receipts[msg.sender];
+        if (!receipt.hasCommitted) revert NO_COMMITTED_VOTE();
+        if (receipt.hasRevealed) revert ALREADY_REVEALED_VOTE();
+
+        // Reconstruct the hash to verify the revealed vote
+        bytes32 reconstructedHash = keccak256(abi.encodePacked(choice, reason, salt));
+        if (reconstructedHash != receipt.secretHash) revert HASHES_DO_NOT_MATCH();
+
+        uint256 votes = votingToken.getPastVotes(msg.sender, dispute.rounds[round].creationBlock);
+
+        if (votes == 0) revert VOTER_HAS_NO_VOTES();
+
+        receipt.hasRevealed = true;
+        receipt.choice = choice;
+        receipt.votes = votes;
+
+        dispute.rounds[round].votes += votes;
+        dispute.rounds[round].choiceVotes[choice] += votes;
+
+        emit VoteRevealed(msg.sender, disputeId, receipt.secretHash, choice, votes);
     }
 
     /**
-     * @notice Internal function that caries out voting logic
+     * @notice Internal function that caries out voting commitment logic
      * @param voter The voter that is casting their vote
      * @param disputeId The id of the dispute to vote on
-     * @param choice The support value for the vote. Based on the choices provided in the createDispute function
-     * @return The number of votes cast
+     * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
      */
-    function _castVoteInternal(address voter, uint256 disputeId, uint256 choice) internal returns (uint256) {
+    function _commitVoteInternal(address voter, uint256 disputeId, bytes32 secretHash) internal {
         Dispute storage dispute = disputes[disputeId];
         uint256 round = dispute.currentRound;
 
         if (_getVotingRoundState(disputeId, round) != DisputeState.Active) revert VOTING_CLOSED();
-        if (choice == 0 || choice > dispute.choices) revert INVALID_VOTE_CHOICE();
 
         Receipt storage receipt = dispute.rounds[round].receipts[voter];
-        if (receipt.hasVoted) revert VOTER_ALREADY_VOTED();
+        if (receipt.hasCommitted) revert VOTER_ALREADY_VOTED();
         uint256 votes = votingToken.getPastVotes(voter, dispute.rounds[round].creationBlock);
 
         if (votes == 0) revert VOTER_HAS_NO_VOTES();
 
-        dispute.rounds[round].votes += votes;
-
-        dispute.rounds[round].choiceVotes[choice] += votes;
-
-        receipt.hasVoted = true;
-        receipt.choice = choice;
-        receipt.votes = votes;
-
-        return votes;
+        receipt.hasCommitted = true;
+        receipt.secretHash = secretHash;
     }
 
     /**
@@ -377,7 +396,7 @@ contract ERC20VotesArbitrator is
         Receipt storage receipt = votingRound.receipts[voter];
 
         // Check that the voter has voted
-        if (!receipt.hasVoted) {
+        if (!receipt.hasRevealed) {
             revert VOTER_HAS_NOT_VOTED();
         }
 

@@ -79,8 +79,12 @@ contract ArbitratorStorageV1 {
     /** @notice Ballot receipt record for a voter */
     struct Receipt {
         /** @notice Whether or not a vote has been cast */
-        bool hasVoted;
-        /** @notice The choice of the voter */
+        bool hasCommitted;
+        /** @notice Whether or not a vote has been revealed */
+        bool hasRevealed;
+        /** @notice The secret hash of the voter's choice, reason (optional) and salt (tightly packed in this order) */
+        bytes32 secretHash;
+        /** @notice The choice of the voter. Invalid unless the vote has been revealed */
         uint256 choice;
         /** @notice The number of votes the voter had, which were cast */
         uint256 votes;
