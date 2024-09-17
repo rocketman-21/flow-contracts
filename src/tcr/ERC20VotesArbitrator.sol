@@ -81,7 +81,7 @@ contract ERC20VotesArbitrator is
     function createDispute(
         uint256 _choices,
         bytes calldata _extraData
-    ) external onlyArbitrable returns (uint256 disputeID) {
+    ) external onlyArbitrable nonReentrant returns (uint256 disputeID) {
         // only support 2 choices for now
         if (_choices != 2) revert INVALID_DISPUTE_CHOICES();
 
@@ -89,8 +89,6 @@ contract ERC20VotesArbitrator is
         // arbitrable must have approved the arbitrator to transfer the tokens
         // fails otherwise
         IERC20(address(votingToken)).safeTransferFrom(address(arbitrable), address(this), _arbitrationCost);
-
-        // todo give a share of the tokens to the voters
 
         disputeCount++;
         Dispute storage newDispute = disputes[disputeCount];
@@ -211,7 +209,7 @@ contract ERC20VotesArbitrator is
      * @param disputeId The id of the dispute to vote on
      * @param choice The support value for the vote. Based on the choices provided in the createDispute function
      */
-    function castVote(uint256 disputeId, uint8 choice) external {
+    function castVote(uint256 disputeId, uint8 choice) external nonReentrant {
         emit VoteCast(msg.sender, disputeId, choice, _castVoteInternal(msg.sender, disputeId, choice), "");
     }
 
@@ -221,7 +219,7 @@ contract ERC20VotesArbitrator is
      * @param choice The support value for the vote. Based on the choices provided in the createDispute function
      * @param reason The reason given for the vote by the voter
      */
-    function castVoteWithReason(uint256 disputeId, uint8 choice, string calldata reason) external {
+    function castVoteWithReason(uint256 disputeId, uint8 choice, string calldata reason) external nonReentrant {
         emit VoteCast(msg.sender, disputeId, choice, _castVoteInternal(msg.sender, disputeId, choice), reason);
     }
 
@@ -243,6 +241,8 @@ contract ERC20VotesArbitrator is
         if (receipt.hasVoted) revert VOTER_ALREADY_VOTED();
         uint256 votes = votingToken.getPastVotes(voter, dispute.rounds[round].creationBlock);
 
+        if (votes == 0) revert VOTER_HAS_NO_VOTES();
+
         dispute.rounds[round].votes += votes;
 
         dispute.rounds[round].choiceVotes[choice] += votes;
@@ -257,12 +257,17 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Implements the appeal process for disputes within the ERC20VotesArbitrator.
      * @param _disputeID The ID of the dispute to appeal.
+     * @param _extraData Additional data for the appeal
      * @dev Any party involved in the dispute can appeal via the arbitrable contract by calling fundAppeal()
      */
-    function appeal(uint256 _disputeID, bytes calldata) external payable override onlyArbitrable nonReentrant {
+    function appeal(
+        uint256 _disputeID,
+        bytes calldata _extraData
+    ) external payable override onlyArbitrable nonReentrant {
         Dispute storage dispute = disputes[_disputeID];
 
         // Ensure the dispute exists and is in a state that allows appeals
+        if (dispute.executed) revert DISPUTE_ALREADY_EXECUTED();
         if (disputeStatus(_disputeID) != DisputeStatus.Appealable) revert DISPUTE_NOT_APPEALABLE();
         if (block.timestamp >= dispute.rounds[dispute.currentRound].appealPeriodEndTime) revert APPEAL_PERIOD_ENDED();
 
@@ -289,7 +294,7 @@ contract ERC20VotesArbitrator is
         dispute.rounds[newRound].creationBlock = block.number;
         dispute.rounds[newRound].totalSupply = votingToken.totalSupply();
         dispute.rounds[newRound].cost = costToAppeal;
-
+        dispute.rounds[newRound].extraData = _extraData;
         dispute.currentRound = newRound;
 
         emit DisputeReset(
@@ -310,6 +315,7 @@ contract ERC20VotesArbitrator is
      * @return The calculated appeal cost.
      */
     function _calculateAppealCost(uint256 _currentRound) internal view returns (uint256) {
+        if (_currentRound > MAX_APPEAL_ROUNDS) revert MAX_APPEAL_ROUNDS_REACHED();
         // Increase the appeal cost with each round
         return _appealCost * (2 ** (_currentRound));
     }
@@ -351,6 +357,8 @@ contract ERC20VotesArbitrator is
         // Get the voting round
         VotingRound storage votingRound = dispute.rounds[round];
 
+        if (round > dispute.currentRound) revert INVALID_ROUND();
+
         // Ensure the dispute round is finalized
         if (_getVotingRoundState(disputeId, round) != DisputeState.Solved) {
             revert DISPUTE_NOT_SOLVED();
@@ -374,6 +382,8 @@ contract ERC20VotesArbitrator is
         uint256 amount = 0;
         uint256 totalRewards = votingRound.cost; // Total amount to distribute among voters
 
+        if (votingRound.votes == 0) revert NO_VOTES();
+
         if (winningChoice == 0) {
             // Ruling is 0 or Party.None, both sides can withdraw proportional share
             amount = (receipt.votes * totalRewards) / votingRound.votes;
@@ -383,6 +393,8 @@ contract ERC20VotesArbitrator is
                 revert VOTER_ON_LOSING_SIDE();
             }
             uint256 totalWinningVotes = votingRound.choiceVotes[winningChoice];
+
+            if (totalWinningVotes == 0) revert NO_WINNING_VOTES();
 
             // Calculate voter's share
             amount = (receipt.votes * totalRewards) / totalWinningVotes;

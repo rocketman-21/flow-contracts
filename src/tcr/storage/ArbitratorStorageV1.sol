@@ -19,6 +19,9 @@ contract ArbitratorStorageV1 {
     /** @notice The min setable voting delay */
     uint256 public constant MIN_VOTING_DELAY = 1;
 
+    /** @notice The max setable appeal rounds */
+    uint256 public constant MAX_APPEAL_ROUNDS = 10;
+
     /** @notice The max setable voting delay */
     uint256 public constant MAX_VOTING_DELAY = 604_800; // 1 week
 
