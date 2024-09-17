@@ -159,13 +159,13 @@ contract ERC20VotesArbitrator is
     ) internal view validDisputeID(disputeId) returns (DisputeState) {
         VotingRound storage votingRound = disputes[disputeId].rounds[round];
 
-        if (block.timestamp <= votingRound.votingStartTime) {
+        if (block.timestamp < votingRound.votingStartTime) {
             return DisputeState.Pending;
-        } else if (block.timestamp <= votingRound.votingEndTime) {
+        } else if (block.timestamp < votingRound.votingEndTime) {
             return DisputeState.Active;
-        } else if (block.timestamp <= votingRound.revealPeriodEndTime) {
+        } else if (block.timestamp < votingRound.revealPeriodEndTime) {
             return DisputeState.Reveal;
-        } else if (block.timestamp <= votingRound.appealPeriodEndTime) {
+        } else if (block.timestamp < votingRound.appealPeriodEndTime) {
             return DisputeState.Appealable;
         } else {
             return DisputeState.Solved;
