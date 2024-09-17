@@ -79,8 +79,12 @@ contract ArbitratorStorageV1 {
     /** @notice Ballot receipt record for a voter */
     struct Receipt {
         /** @notice Whether or not a vote has been cast */
-        bool hasVoted;
-        /** @notice The choice of the voter */
+        bool hasCommitted;
+        /** @notice Whether or not a vote has been revealed */
+        bool hasRevealed;
+        /** @notice The secret hash of the voter's choice, reason (optional) and salt (tightly packed in this order) */
+        bytes32 secretHash;
+        /** @notice The choice of the voter. Invalid unless the vote has been revealed */
         uint256 choice;
         /** @notice The number of votes the voter had, which were cast */
         uint256 votes;
@@ -120,8 +124,12 @@ contract ArbitratorStorageV1 {
         uint256 votingStartTime;
         /** @notice Timestamp when voting commit period ends */
         uint256 votingEndTime;
+        /** @notice Timestamp when the reveal period starts */
+        uint256 revealPeriodStartTime;
         /** @notice Timestamp when the reveal period ends */
         uint256 revealPeriodEndTime;
+        /** @notice Timestamp when the appeal period starts */
+        uint256 appealPeriodStartTime;
         /** @notice Timestamp when the appeal period ends */
         uint256 appealPeriodEndTime;
         /** @notice Total number of votes cast */

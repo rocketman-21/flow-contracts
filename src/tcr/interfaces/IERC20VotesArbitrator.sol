@@ -82,6 +82,15 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when a dispute is not executed
     error DISPUTE_NOT_EXECUTED();
 
+    /// @notice Error thrown when a voter has not committed a vote
+    error NO_COMMITTED_VOTE();
+
+    /// @notice Error thrown when a voter has already revealed a vote
+    error ALREADY_REVEALED_VOTE();
+
+    /// @notice Error thrown when the hashes do not match
+    error HASHES_DO_NOT_MATCH();
+
     /**
      * @notice Emitted when the voting period is set
      * @param oldVotingPeriod The previous voting period
@@ -161,11 +170,27 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @notice Emitted when a vote has been cast on a dispute
      * @param voter The address of the voter
      * @param disputeId The ID of the dispute
-     * @param choice The choice that was voted for
-     * @param votes The number of votes cast
-     * @param reason The reason given for the vote by the voter
+     * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
      */
-    event VoteCast(address indexed voter, uint256 disputeId, uint256 choice, uint256 votes, string reason);
+    event VoteCommitted(address indexed voter, uint256 disputeId, bytes32 secretHash);
+
+    /**
+     * @notice Emitted when a vote has been revealed for a dispute
+     * @param voter The address of the voter
+     * @param disputeId The ID of the dispute
+     * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
+     * @param choice The revealed choice of the voter
+     * @param reason The reason for the vote
+     * @param votes The number of votes cast
+     */
+    event VoteRevealed(
+        address indexed voter,
+        uint256 indexed disputeId,
+        bytes32 secretHash,
+        uint256 choice,
+        bytes reason,
+        uint256 votes
+    );
 
     /**
      * @dev Emitted when a dispute is executed and a ruling is set
