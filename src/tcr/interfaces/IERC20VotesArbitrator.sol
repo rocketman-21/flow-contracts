@@ -34,6 +34,18 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the appeal period is outside the allowed range
     error INVALID_APPEAL_PERIOD();
 
+    /// @notice Error thrown when the round is invalid
+    error INVALID_ROUND();
+
+    /// @notice Error thrown when there are no votes
+    error NO_VOTES();
+
+    /// @notice Error thrown when there are no winning votes
+    error NO_WINNING_VOTES();
+
+    /// @notice Error thrown when the max appeal rounds is reached
+    error MAX_APPEAL_ROUNDS_REACHED();
+
     /// @notice Error thrown when the appeal cost is outside the allowed range
     error INVALID_APPEAL_COST();
 
@@ -45,6 +57,9 @@ interface IERC20VotesArbitrator is IArbitrator {
 
     /// @notice Error thrown when the voting is closed for a dispute
     error VOTING_CLOSED();
+
+    /// @notice Error thrown when a voter has no votes
+    error VOTER_HAS_NO_VOTES();
 
     /// @notice Error thrown when an invalid vote choice is selected
     error INVALID_VOTE_CHOICE();

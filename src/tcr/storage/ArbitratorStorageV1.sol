@@ -19,6 +19,9 @@ contract ArbitratorStorageV1 {
     /** @notice The min setable voting delay */
     uint256 public constant MIN_VOTING_DELAY = 1;
 
+    /** @notice The max setable appeal rounds */
+    uint256 public constant MAX_APPEAL_ROUNDS = 10;
+
     /** @notice The max setable voting delay */
     uint256 public constant MAX_VOTING_DELAY = 604_800; // 1 week
 
@@ -88,9 +91,8 @@ contract ArbitratorStorageV1 {
         Pending, // Dispute is pending and not yet active for voting
         Active, // Dispute is active and open for voting
         Reveal, // Voting has ended, and votes can be revealed
-        Solved, // Dispute has been solved but not yet executed
-        Executed, // Dispute has been executed
-        Appealable // Dispute is appealable
+        Appealable, // Dispute is appealable
+        Solved // Dispute has been solved but not yet executed
     }
 
     /** @notice Struct containing dispute data */
