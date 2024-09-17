@@ -144,19 +144,31 @@ contract ERC20VotesArbitrator is
      * @param disputeId The id of the dispute
      * @return Dispute state
      */
-    function state(uint256 disputeId) public view validDisputeID(disputeId) returns (DisputeState) {
+    function currentRoundState(uint256 disputeId) external view returns (DisputeState) {
+        return _getVotingRoundState(disputeId, disputes[disputeId].currentRound);
+    }
+
+    /**
+     * @notice Get the state of a specific voting round for a dispute
+     * @param disputeId The ID of the dispute
+     * @param round The round number
+     * @return The state of the voting round
+     */
+    function _getVotingRoundState(
+        uint256 disputeId,
+        uint256 round
+    ) internal view validDisputeID(disputeId) returns (DisputeState) {
         Dispute storage dispute = disputes[disputeId];
-        uint256 round = dispute.currentRound;
-        if (block.timestamp <= dispute.rounds[round].votingStartTime) {
+        VotingRound storage votingRound = dispute.rounds[round];
+
+        if (block.timestamp <= votingRound.votingStartTime) {
             return DisputeState.Pending;
-        } else if (block.timestamp <= dispute.rounds[round].votingEndTime) {
+        } else if (block.timestamp <= votingRound.votingEndTime) {
             return DisputeState.Active;
-        } else if (block.timestamp <= dispute.rounds[round].revealPeriodEndTime) {
+        } else if (block.timestamp <= votingRound.revealPeriodEndTime) {
             return DisputeState.Reveal;
-        } else if (block.timestamp <= dispute.rounds[round].appealPeriodEndTime) {
+        } else if (block.timestamp <= votingRound.appealPeriodEndTime) {
             return DisputeState.Appealable;
-        } else if (dispute.executed) {
-            return DisputeState.Executed;
         } else {
             return DisputeState.Solved;
         }
@@ -170,11 +182,11 @@ contract ERC20VotesArbitrator is
      * @dev checks for valid dispute ID first in the state function
      */
     function disputeStatus(uint256 disputeId) public view returns (DisputeStatus) {
-        DisputeState disputeState = state(disputeId);
+        DisputeState disputeState = _getVotingRoundState(disputeId, disputes[disputeId].currentRound);
 
         if (disputeState == DisputeState.Appealable) {
             return DisputeStatus.Appealable;
-        } else if (disputeState == DisputeState.Executed || disputeState == DisputeState.Solved) {
+        } else if (disputeState == DisputeState.Solved) {
             // executed or solved
             return DisputeStatus.Solved;
         } else {
@@ -222,10 +234,12 @@ contract ERC20VotesArbitrator is
      * @return The number of votes cast
      */
     function _castVoteInternal(address voter, uint256 disputeId, uint256 choice) internal returns (uint256) {
-        if (state(disputeId) != DisputeState.Active) revert VOTING_CLOSED();
-        if (choice == 0 || choice > disputes[disputeId].choices) revert INVALID_VOTE_CHOICE();
         Dispute storage dispute = disputes[disputeId];
         uint256 round = dispute.currentRound;
+
+        if (_getVotingRoundState(disputeId, round) != DisputeState.Active) revert VOTING_CLOSED();
+        if (choice == 0 || choice > dispute.choices) revert INVALID_VOTE_CHOICE();
+
         Receipt storage receipt = dispute.rounds[round].receipts[voter];
         if (receipt.hasVoted) revert VOTER_ALREADY_VOTED();
         uint256 votes = votingToken.getPastVotes(voter, dispute.rounds[round].creationBlock);
@@ -307,15 +321,16 @@ contract ERC20VotesArbitrator is
      */
     function executeRuling(uint256 disputeId) external nonReentrant {
         Dispute storage dispute = disputes[disputeId];
+        uint256 round = dispute.currentRound;
         if (dispute.executed) revert DISPUTE_ALREADY_EXECUTED();
-        if (state(disputeId) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
+        if (_getVotingRoundState(disputeId, round) != DisputeState.Solved) revert DISPUTE_NOT_SOLVED();
 
-        uint256 winningChoice = _determineWinningChoice(disputeId);
+        uint256 winningChoice = _determineWinningChoice(disputeId, round);
 
         // Convert winning choice to Party enum
         IArbitrable.Party ruling = _convertChoiceToParty(winningChoice);
 
-        dispute.rounds[dispute.currentRound].ruling = ruling;
+        dispute.rounds[round].ruling = ruling;
         dispute.executed = true;
         dispute.winningChoice = winningChoice;
 
@@ -334,13 +349,13 @@ contract ERC20VotesArbitrator is
     function withdrawVoterRewards(uint256 disputeId, uint256 round, address voter) external nonReentrant {
         Dispute storage dispute = disputes[disputeId];
 
-        // Ensure the dispute is executed
-        if (!dispute.executed) {
-            revert DISPUTE_NOT_EXECUTED();
-        }
-
         // Get the voting round
         VotingRound storage votingRound = dispute.rounds[round];
+
+        // Ensure the dispute round is finalized
+        if (_getVotingRoundState(disputeId, round) != DisputeState.Solved) {
+            revert DISPUTE_NOT_SOLVED();
+        }
 
         // Check that the voter hasn't already claimed
         if (votingRound.rewardsClaimed[voter]) {
@@ -355,7 +370,7 @@ contract ERC20VotesArbitrator is
             revert VOTER_HAS_NOT_VOTED();
         }
 
-        uint256 winningChoice = dispute.winningChoice;
+        uint256 winningChoice = _determineWinningChoice(disputeId, round);
 
         uint256 amount = 0;
         uint256 totalRewards = votingRound.cost; // Total amount to distribute among voters
@@ -386,18 +401,19 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Determines the winning choice based on the votes.
      * @param _disputeID The ID of the dispute.
+     * @param _round The round number.
      * @return The choice with the highest votes.
      */
-    function _determineWinningChoice(uint256 _disputeID) internal view returns (uint256) {
+    function _determineWinningChoice(uint256 _disputeID, uint256 _round) internal view returns (uint256) {
         Dispute storage dispute = disputes[_disputeID];
-        uint256 round = dispute.currentRound;
+        VotingRound storage votingRound = dispute.rounds[_round];
 
         uint256 winningChoice = 0;
         uint256 highestVotes = 0;
         bool tie = false;
 
         for (uint256 i = 1; i <= dispute.choices; i++) {
-            uint256 votesForChoice = dispute.rounds[round].choiceVotes[i];
+            uint256 votesForChoice = votingRound.choiceVotes[i];
             if (votesForChoice > highestVotes) {
                 highestVotes = votesForChoice;
                 winningChoice = i;

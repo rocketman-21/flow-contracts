@@ -88,9 +88,8 @@ contract ArbitratorStorageV1 {
         Pending, // Dispute is pending and not yet active for voting
         Active, // Dispute is active and open for voting
         Reveal, // Voting has ended, and votes can be revealed
-        Solved, // Dispute has been solved but not yet executed
-        Executed, // Dispute has been executed
-        Appealable // Dispute is appealable
+        Appealable, // Dispute is appealable
+        Solved // Dispute has been solved but not yet executed
     }
 
     /** @notice Struct containing dispute data */
