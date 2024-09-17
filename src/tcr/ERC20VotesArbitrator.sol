@@ -139,12 +139,59 @@ contract ERC20VotesArbitrator is
     }
 
     /**
+     * @notice Gets the receipt for a voter on a given dispute and round
+     * @param disputeId The id of dispute
+     * @param round The round number
+     * @param voter The address of the voter
+     * @return The voting receipt for the specified round
+     */
+    function getReceiptByRound(uint256 disputeId, uint256 round, address voter) external view returns (Receipt memory) {
+        require(disputeId <= disputeCount, "Invalid dispute ID");
+        require(round <= disputes[disputeId].currentRound, "Invalid round");
+        return disputes[disputeId].rounds[round].receipts[voter];
+    }
+
+    /**
      * @notice Gets the state of a dispute
      * @param disputeId The id of the dispute
      * @return Dispute state
      */
     function currentRoundState(uint256 disputeId) external view returns (DisputeState) {
         return _getVotingRoundState(disputeId, disputes[disputeId].currentRound);
+    }
+
+    /**
+     * @notice Gets the votes for a specific choice and the total votes in a given round of a dispute
+     * @param disputeId The ID of the dispute
+     * @param round The round number
+     * @param choice The choice number to get votes for
+     * @return choiceVotes The number of votes for the specified choice
+     */
+    function getVotesByRound(
+        uint256 disputeId,
+        uint256 round,
+        uint256 choice
+    ) external view returns (uint256 choiceVotes) {
+        require(disputeId <= disputeCount, "Invalid dispute ID");
+        require(round <= disputes[disputeId].currentRound, "Invalid round");
+        require(choice <= disputes[disputeId].choices, "Invalid choice");
+
+        VotingRound storage votingRound = disputes[disputeId].rounds[round];
+        choiceVotes = votingRound.choiceVotes[choice];
+    }
+
+    /**
+     * @notice Gets the total votes in a given round of a dispute
+     * @param disputeId The ID of the dispute
+     * @param round The round number
+     * @return totalVotes The total number of votes cast in the specified round
+     */
+    function getTotalVotesByRound(uint256 disputeId, uint256 round) external view returns (uint256 totalVotes) {
+        require(disputeId <= disputeCount, "Invalid dispute ID");
+        require(round <= disputes[disputeId].currentRound, "Invalid round");
+
+        VotingRound storage votingRound = disputes[disputeId].rounds[round];
+        totalVotes = votingRound.votes;
     }
 
     /**
