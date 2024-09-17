@@ -37,6 +37,11 @@ contract GeneralizedTCR is
     using SafeERC20 for IERC20;
     /**
      *  @dev Deploy the arbitrable curated registry.
+     */
+    constructor() {}
+
+    /**
+     *  @dev Initialize the arbitrable curated registry.
      *  @param _arbitrator Arbitrator to resolve potential disputes. The arbitrator is trusted to support appeal periods and not reenter.
      *  @param _arbitratorExtraData Extra data for the trusted arbitrator contract.
      *  @param _registrationMetaEvidence The URI of the meta evidence object for registration requests.
@@ -53,7 +58,7 @@ contract GeneralizedTCR is
      *  - The multiplier applied to the winner's fee stake for the subsequent round.
      *  - The multiplier applied to the loser's fee stake for the subsequent round.
      */
-    constructor(
+    function initialize(
         IArbitrator _arbitrator,
         bytes memory _arbitratorExtraData,
         string memory _registrationMetaEvidence,
@@ -66,7 +71,10 @@ contract GeneralizedTCR is
         uint _removalChallengeBaseDeposit,
         uint _challengePeriodDuration,
         uint[3] memory _stakeMultipliers
-    ) {
+    ) public initializer {
+        __Ownable_init();
+        __ReentrancyGuard_init();
+
         emit MetaEvidence(0, _registrationMetaEvidence);
         emit MetaEvidence(1, _clearingMetaEvidence);
         if (address(_arbitrator) == address(0)) revert ADDRESS_ZERO();
@@ -244,7 +252,17 @@ contract GeneralizedTCR is
         bytes32 _itemID,
         uint _request,
         uint _round
-    ) public nonReentrant {
+    ) external nonReentrant {
+        _withdrawFeesAndRewards(_beneficiary, _itemID, _request, _round);
+    }
+
+    /** @dev Internal function to handle the logic of withdrawing fees and rewards.
+     *  @param _beneficiary The address that made contributions to a request.
+     *  @param _itemID The ID of the item submission to withdraw from.
+     *  @param _request The request from which to withdraw from.
+     *  @param _round The round from which to withdraw from.
+     */
+    function _withdrawFeesAndRewards(address _beneficiary, bytes32 _itemID, uint _request, uint _round) internal {
         Item storage item = items[_itemID];
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
@@ -298,7 +316,7 @@ contract GeneralizedTCR is
         request.resolved = true;
         emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1, false, true);
 
-        withdrawFeesAndRewards(request.parties[uint(Party.Requester)], _itemID, item.requests.length - 1, 0); // Automatically withdraw for the requester.
+        _withdrawFeesAndRewards(request.parties[uint(Party.Requester)], _itemID, item.requests.length - 1, 0); // Automatically withdraw for the requester.
     }
 
     /** @dev Give a ruling for a dispute. Can only be called by the arbitrator. TRUSTED.
@@ -552,10 +570,10 @@ contract GeneralizedTCR is
 
         // Automatically withdraw first deposits and reimbursements (first round only).
         if (winner == Party.None) {
-            withdrawFeesAndRewards(request.parties[uint(Party.Requester)], itemID, item.requests.length - 1, 0);
-            withdrawFeesAndRewards(request.parties[uint(Party.Challenger)], itemID, item.requests.length - 1, 0);
+            _withdrawFeesAndRewards(request.parties[uint(Party.Requester)], itemID, item.requests.length - 1, 0);
+            _withdrawFeesAndRewards(request.parties[uint(Party.Challenger)], itemID, item.requests.length - 1, 0);
         } else {
-            withdrawFeesAndRewards(request.parties[uint(winner)], itemID, item.requests.length - 1, 0);
+            _withdrawFeesAndRewards(request.parties[uint(winner)], itemID, item.requests.length - 1, 0);
         }
     }
 
