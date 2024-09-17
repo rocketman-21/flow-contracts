@@ -273,6 +273,8 @@ contract ERC20VotesArbitrator is
 
         // Calculate the appeal cost
         uint256 newRound = dispute.currentRound + 1;
+        if (newRound > MAX_APPEAL_ROUNDS) revert MAX_APPEAL_ROUNDS_REACHED();
+
         uint256 costToAppeal = _calculateAppealCost(newRound);
 
         // transfer erc20 tokens from arbitrable to arbitrator (this contract)
