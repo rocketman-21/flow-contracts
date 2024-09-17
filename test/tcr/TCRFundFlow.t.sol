@@ -7,7 +7,7 @@ import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
-contract FundFlowTest is GeneralizedTCRTest {
+contract TCRFundFlowTest is GeneralizedTCRTest {
     // Helper function to get ERC20 balance of a contract or address
     function getERC20Balance(address _token, address _account) internal view returns (uint256) {
         return IERC20(_token).balanceOf(_account);
