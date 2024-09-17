@@ -164,7 +164,7 @@ contract BasicTCRTest is GeneralizedTCRTest {
         assertEq(numberOfRounds, 2, "Number of rounds should be 2"); // new round is made after challenge for any appeals that occur post challenge
         assertFalse(resolved, "Request should not be resolved yet");
 
-        voteAndExecute(disputeID);
+        voteAndExecute(disputeID, IArbitrable.Party.Requester);
 
         // Check if the dispute is resolved
         (, , , bool requestResolved, , , IArbitrable.Party ruling, , , ) = generalizedTCR.getRequestInfo(itemID, 0);

@@ -124,8 +124,9 @@ contract GeneralizedTCRTest is Test {
     /**
      * @notice Helper function to commit, reveal votes, and execute ruling for a given dispute ID
      * @param disputeID The ID of the dispute to process
+     * @param winner The winner of the dispute
      */
-    function voteAndExecute(uint256 disputeID) internal {
+    function voteAndExecute(uint256 disputeID, IArbitrable.Party winner) internal {
         // Advance time to reveal period
         advanceTime(VOTING_DELAY + 2);
 
@@ -138,7 +139,7 @@ contract GeneralizedTCRTest is Test {
         vm.prank(challenger);
         arbitrator.commitVote(disputeID, challengerSecretHash);
 
-        bytes32 swingVoterSecretHash = keccak256(abi.encode(uint256(1), "Swing vote", bytes32("salt3")));
+        bytes32 swingVoterSecretHash = keccak256(abi.encode(uint256(winner), "Swing vote", bytes32("salt3")));
         vm.prank(swingVoter);
         arbitrator.commitVote(disputeID, swingVoterSecretHash);
 
@@ -153,7 +154,7 @@ contract GeneralizedTCRTest is Test {
         arbitrator.revealVote(disputeID, 2, "Against registration", bytes32("salt2"));
 
         vm.prank(swingVoter);
-        arbitrator.revealVote(disputeID, 1, "Swing vote", bytes32("salt3"));
+        arbitrator.revealVote(disputeID, uint256(winner), "Swing vote", bytes32("salt3"));
 
         // Advance time to end of reveal and appeal periods
         advanceTime(REVEAL_PERIOD + APPEAL_PERIOD);
