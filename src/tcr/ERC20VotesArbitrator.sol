@@ -289,8 +289,10 @@ contract ERC20VotesArbitrator is
 
         dispute.rounds[newRound].votingStartTime = block.timestamp + votingDelay;
         dispute.rounds[newRound].votingEndTime = dispute.rounds[newRound].votingStartTime + votingPeriod;
-        dispute.rounds[newRound].revealPeriodEndTime = dispute.rounds[newRound].votingEndTime + revealPeriod;
-        dispute.rounds[newRound].appealPeriodEndTime = dispute.rounds[newRound].revealPeriodEndTime + _appealPeriod;
+        dispute.rounds[newRound].revealPeriodStartTime = dispute.rounds[newRound].votingEndTime;
+        dispute.rounds[newRound].revealPeriodEndTime = dispute.rounds[newRound].revealPeriodStartTime + revealPeriod;
+        dispute.rounds[newRound].appealPeriodStartTime = dispute.rounds[newRound].revealPeriodEndTime;
+        dispute.rounds[newRound].appealPeriodEndTime = dispute.rounds[newRound].appealPeriodStartTime + _appealPeriod;
         dispute.rounds[newRound].votes = 0;
         dispute.rounds[newRound].ruling = IArbitrable.Party.None;
         dispute.rounds[newRound].creationBlock = block.number;

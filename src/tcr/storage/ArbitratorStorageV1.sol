@@ -120,8 +120,12 @@ contract ArbitratorStorageV1 {
         uint256 votingStartTime;
         /** @notice Timestamp when voting commit period ends */
         uint256 votingEndTime;
+        /** @notice Timestamp when the reveal period starts */
+        uint256 revealPeriodStartTime;
         /** @notice Timestamp when the reveal period ends */
         uint256 revealPeriodEndTime;
+        /** @notice Timestamp when the appeal period starts */
+        uint256 appealPeriodStartTime;
         /** @notice Timestamp when the appeal period ends */
         uint256 appealPeriodEndTime;
         /** @notice Total number of votes cast */
