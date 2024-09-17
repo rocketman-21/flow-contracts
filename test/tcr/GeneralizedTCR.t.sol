@@ -121,6 +121,47 @@ contract GeneralizedTCRTest is Test {
         return itemID;
     }
 
+    /**
+     * @notice Helper function to commit, reveal votes, and execute ruling for a given dispute ID
+     * @param disputeID The ID of the dispute to process
+     */
+    function voteAndExecute(uint256 disputeID) internal {
+        // Advance time to reveal period
+        advanceTime(VOTING_DELAY + 2);
+
+        // Commit votes
+        bytes32 requesterSecretHash = keccak256(abi.encode(uint256(1), "For registration", bytes32("salt")));
+        vm.prank(requester);
+        arbitrator.commitVote(disputeID, requesterSecretHash);
+
+        bytes32 challengerSecretHash = keccak256(abi.encode(uint256(2), "Against registration", bytes32("salt2")));
+        vm.prank(challenger);
+        arbitrator.commitVote(disputeID, challengerSecretHash);
+
+        bytes32 swingVoterSecretHash = keccak256(abi.encode(uint256(1), "Swing vote", bytes32("salt3")));
+        vm.prank(swingVoter);
+        arbitrator.commitVote(disputeID, swingVoterSecretHash);
+
+        // Advance time to reveal period
+        advanceTime(VOTING_PERIOD);
+
+        // Reveal votes
+        vm.prank(requester);
+        arbitrator.revealVote(disputeID, 1, "For registration", bytes32("salt"));
+
+        vm.prank(challenger);
+        arbitrator.revealVote(disputeID, 2, "Against registration", bytes32("salt2"));
+
+        vm.prank(swingVoter);
+        arbitrator.revealVote(disputeID, 1, "Swing vote", bytes32("salt3"));
+
+        // Advance time to end of reveal and appeal periods
+        advanceTime(REVEAL_PERIOD + APPEAL_PERIOD);
+
+        // Execute the ruling
+        arbitrator.executeRuling(disputeID);
+    }
+
     function challengeItem(bytes32 _itemID, address _challenger) internal {
         vm.prank(_challenger);
         generalizedTCR.challengeRequest(_itemID, BASIC_EVIDENCE);

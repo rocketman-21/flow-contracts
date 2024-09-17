@@ -164,41 +164,7 @@ contract BasicTCRTest is GeneralizedTCRTest {
         assertEq(numberOfRounds, 2, "Number of rounds should be 2"); // new round is made after challenge for any appeals that occur post challenge
         assertFalse(resolved, "Request should not be resolved yet");
 
-        advanceTime(VOTING_DELAY + 2);
-
-        // Commit votes
-        bytes32 secretHash = keccak256(abi.encode(uint256(1), "For registration", bytes32("salt")));
-        vm.prank(requester);
-        arbitrator.commitVote(disputeID, secretHash);
-
-        secretHash = keccak256(abi.encode(uint256(2), "Against registration", bytes32("salt2")));
-        vm.prank(challenger);
-        arbitrator.commitVote(disputeID, secretHash);
-
-        secretHash = keccak256(abi.encode(uint256(1), "Swing vote", bytes32("salt3")));
-        vm.prank(swingVoter);
-        arbitrator.commitVote(disputeID, secretHash);
-
-        // Advance time to reveal period
-        advanceTime(VOTING_PERIOD);
-
-        // Reveal votes
-        vm.prank(requester);
-        arbitrator.revealVote(disputeID, 1, "For registration", bytes32("salt"));
-
-        vm.prank(challenger);
-        arbitrator.revealVote(disputeID, 2, "Against registration", bytes32("salt2"));
-
-        vm.prank(swingVoter);
-        arbitrator.revealVote(disputeID, 1, "Swing vote", bytes32("salt3"));
-
-        // Advance time to end of reveal period
-        advanceTime(REVEAL_PERIOD);
-
-        advanceTime(APPEAL_PERIOD);
-
-        // Execute ruling
-        arbitrator.executeRuling(disputeID);
+        voteAndExecute(disputeID);
 
         // Check if the dispute is resolved
         (, , , bool requestResolved, , , IArbitrable.Party ruling, , , ) = generalizedTCR.getRequestInfo(itemID, 0);
