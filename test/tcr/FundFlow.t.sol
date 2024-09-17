@@ -99,4 +99,79 @@ contract FundFlowTest is GeneralizedTCRTest {
             "Arbitrator balance should gain the arbitration cost"
         );
     }
+
+    function testSuccessfulItemAdditionWithoutChallenge() public {
+        // 1. Setup initial balances
+        uint256 initialRequesterBalance = erc20Token.balanceOf(requester);
+        uint256 initialChallengerBalance = erc20Token.balanceOf(challenger);
+        uint256 initialGeneralizedTCRBalance = erc20Token.balanceOf(address(generalizedTCR));
+        uint256 initialArbitratorBalance = erc20Token.balanceOf(address(arbitrator));
+        uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
+
+        // 2. Approve GeneralizedTCR to spend tokens
+        vm.prank(requester);
+        erc20Token.approve(address(generalizedTCR), SUBMISSION_BASE_DEPOSIT + arbitratorCost);
+
+        // 3. Record initial balances
+        uint256 requesterBalanceBefore = erc20Token.balanceOf(requester);
+        uint256 generalizedTCRBalanceBefore = erc20Token.balanceOf(address(generalizedTCR));
+        uint256 arbitratorBalanceBefore = erc20Token.balanceOf(address(arbitrator));
+
+        // 4. Call addItem function
+        bytes32 itemID = submitItem(ITEM_DATA, requester);
+
+        // 5. Verify GeneralizedTCR balance increase
+        assertEq(
+            erc20Token.balanceOf(address(generalizedTCR)),
+            generalizedTCRBalanceBefore + SUBMISSION_BASE_DEPOSIT + arbitratorCost,
+            "GeneralizedTCR balance should increase by submission base deposit and arbitration cost"
+        );
+
+        // 6. Call executeRequest
+        vm.warp(block.timestamp + generalizedTCR.challengePeriodDuration() + 1);
+        generalizedTCR.executeRequest(itemID);
+
+        // 7. Check requester's balance restoration
+        assertEq(
+            erc20Token.balanceOf(requester),
+            requesterBalanceBefore,
+            "Requester balance should be restored after execution"
+        );
+
+        // 8. Ensure GeneralizedTCR balance decrease
+        assertEq(
+            erc20Token.balanceOf(address(generalizedTCR)),
+            generalizedTCRBalanceBefore,
+            "GeneralizedTCR balance should return to initial state"
+        );
+
+        // 9. Verify no arbitrator costs deducted
+        assertEq(
+            erc20Token.balanceOf(address(arbitrator)),
+            arbitratorBalanceBefore,
+            "Arbitrator balance should remain unchanged"
+        );
+
+        // 10. Assert final balances
+        assertEq(
+            erc20Token.balanceOf(requester),
+            initialRequesterBalance,
+            "Requester final balance should match initial balance"
+        );
+        assertEq(
+            erc20Token.balanceOf(challenger),
+            initialChallengerBalance,
+            "Challenger final balance should remain unchanged"
+        );
+        assertEq(
+            erc20Token.balanceOf(address(generalizedTCR)),
+            initialGeneralizedTCRBalance,
+            "GeneralizedTCR final balance should match initial balance"
+        );
+        assertEq(
+            erc20Token.balanceOf(address(arbitrator)),
+            initialArbitratorBalance,
+            "Arbitrator final balance should remain unchanged"
+        );
+    }
 }
