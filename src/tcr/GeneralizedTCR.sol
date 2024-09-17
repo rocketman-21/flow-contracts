@@ -305,9 +305,13 @@ abstract contract GeneralizedTCR is
         if (block.timestamp - request.submissionTime <= challengePeriodDuration) revert CHALLENGE_PERIOD_MUST_PASS();
         if (request.disputed) revert REQUEST_MUST_NOT_BE_DISPUTED();
 
-        if (item.status == Status.RegistrationRequested) item.status = Status.Registered;
-        else if (item.status == Status.ClearingRequested) item.status = Status.Absent;
-        else revert MUST_BE_A_REQUEST();
+        if (item.status == Status.RegistrationRequested) {
+            item.status = Status.Registered;
+            _onItemRegistered(_itemID);
+        } else if (item.status == Status.ClearingRequested) {
+            item.status = Status.Absent;
+            _onItemRemoved(_itemID);
+        } else revert MUST_BE_A_REQUEST();
 
         request.resolved = true;
         emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1, false, true);
@@ -340,6 +344,16 @@ abstract contract GeneralizedTCR is
         emit Ruling(IArbitrator(msg.sender), _disputeID, uint(resultRuling));
         _executeRuling(_disputeID, uint(resultRuling));
     }
+
+    /** @dev Hook called when an item is registered. Can be overridden by derived contracts.
+     *  @param _itemID The ID of the item that was registered.
+     */
+    function _onItemRegistered(bytes32 _itemID) internal virtual {}
+
+    /** @dev Hook called when an item is removed. Can be overridden by derived contracts.
+     *  @param _itemID The ID of the item that was removed.
+     */
+    function _onItemRemoved(bytes32 _itemID) internal virtual {}
 
     /** @dev Submit a reference to evidence. EVENT.
      *  @param _itemID The ID of the item which the evidence is related to.
@@ -552,8 +566,13 @@ abstract contract GeneralizedTCR is
 
         if (winner == Party.Requester) {
             // Execute Request.
-            if (item.status == Status.RegistrationRequested) item.status = Status.Registered;
-            else if (item.status == Status.ClearingRequested) item.status = Status.Absent;
+            if (item.status == Status.RegistrationRequested) {
+                _onItemRegistered(itemID);
+                item.status = Status.Registered;
+            } else if (item.status == Status.ClearingRequested) {
+                item.status = Status.Absent;
+                _onItemRemoved(itemID);
+            }
         } else {
             if (item.status == Status.RegistrationRequested) item.status = Status.Absent;
             else if (item.status == Status.ClearingRequested) item.status = Status.Registered;
