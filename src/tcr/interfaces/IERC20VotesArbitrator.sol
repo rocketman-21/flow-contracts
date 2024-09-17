@@ -13,9 +13,6 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when the voting delay is outside the allowed range
     error INVALID_VOTING_DELAY();
 
-    /// @notice Error thrown when the quorum votes basis points are outside the allowed range
-    error INVALID_QUORUM_VOTES_BPS();
-
     /// @notice Error thrown when the function is called by an address other than the arbitrable address
     error ONLY_ARBITRABLE();
 
@@ -84,7 +81,6 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param votingEndTime The timestamp when voting ends
      * @param revealPeriodEndTime The timestamp when the reveal period ends
      * @param appealPeriodEndTime The timestamp when the appeal period ends
-     * @param quorumVotes The number of votes required for quorum
      * @param totalSupply The total supply of voting tokens at dispute creation
      * @param cost The cost paid by the arbitrable contract for this voting round. Either arbitrationCost or appealCost
      * @param extraData Additional data related to the dispute
@@ -95,7 +91,6 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 votingEndTime,
         uint256 revealPeriodEndTime,
         uint256 appealPeriodEndTime,
-        uint256 quorumVotes,
         uint256 totalSupply,
         uint256 cost,
         bytes extraData
@@ -141,13 +136,6 @@ interface IERC20VotesArbitrator is IArbitrator {
     event ArbitrationCostSet(uint256 oldArbitrationCost, uint256 newArbitrationCost);
 
     /**
-     * @notice Emitted when the quorum votes basis points are set
-     * @param oldQuorumVotesBPS The previous quorum votes basis points
-     * @param newQuorumVotesBPS The new quorum votes basis points
-     */
-    event QuorumVotesBPSSet(uint256 oldQuorumVotesBPS, uint256 newQuorumVotesBPS);
-
-    /**
      * @notice Emitted when the appeal period is set
      * @param oldAppealPeriod The previous appeal period
      * @param newAppealPeriod The new appeal period
@@ -179,7 +167,6 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param votingEndTime The timestamp when voting ends
      * @param revealPeriodEndTime The timestamp when the reveal period ends
      * @param appealPeriodEndTime The timestamp when the appeal period ends
-     * @param quorumVotes The number of votes required for quorum
      * @param totalSupply The total supply of voting tokens at dispute creation
      * @param extraData Additional data related to the dispute
      * @param choices The number of choices available for voting
@@ -191,7 +178,6 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 votingEndTime,
         uint256 revealPeriodEndTime,
         uint256 appealPeriodEndTime,
-        uint256 quorumVotes,
         uint256 totalSupply,
         bytes extraData,
         uint256 choices
