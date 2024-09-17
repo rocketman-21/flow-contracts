@@ -10,7 +10,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC20VotesArbitrator } from "../../src/tcr/interfaces/IERC20VotesArbitrator.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
-import { IFlow } from "../../src/interfaces/IFlow.sol";
+import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { ERC721Flow } from "../../src/ERC721Flow.sol";
 
 contract ERC20VotesArbitratorTest is Test {
@@ -72,7 +72,7 @@ contract ERC20VotesArbitratorTest is Test {
         erc20Token.initialize(owner, owner, "Test Token", "TST");
 
         flowTCR.initialize(
-            IFlow(flowProxy),
+            IManagedFlow(flowProxy),
             IArbitrator(arbitratorProxy),
             ARBITRATOR_EXTRA_DATA,
             REGISTRATION_META_EVIDENCE,

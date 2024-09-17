@@ -4,7 +4,7 @@ pragma solidity ^0.8.27;
 import { GeneralizedTCR } from "./GeneralizedTCR.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IFlow } from "../interfaces/IFlow.sol";
+import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 
 /**
  * @title FlowTCR
@@ -15,7 +15,7 @@ import { IFlow } from "../interfaces/IFlow.sol";
  */
 contract FlowTCR is GeneralizedTCR {
     // The Flow contract this TCR is managing
-    IFlow public flowContract;
+    IManagedFlow public flowContract;
 
     constructor() payable initializer {}
 
@@ -36,7 +36,7 @@ contract FlowTCR is GeneralizedTCR {
      * @param _stakeMultipliers Multipliers for appeals
      */
     function initialize(
-        IFlow _flowContract,
+        IManagedFlow _flowContract,
         IArbitrator _arbitrator,
         bytes memory _arbitratorExtraData,
         string memory _registrationMetaEvidence,

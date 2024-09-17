@@ -13,7 +13,7 @@ import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { ArbitratorStorageV1 } from "../../src/tcr/storage/ArbitratorStorageV1.sol";
 import { ERC721Flow } from "../../src/ERC721Flow.sol";
-import { IFlow } from "../../src/interfaces/IFlow.sol";
+import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 
 contract FlowTCRTest is Test {
     // Contracts
@@ -77,7 +77,7 @@ contract FlowTCRTest is Test {
 
         flowTCR = FlowTCR(flowTCRProxy);
         flowTCR.initialize(
-            IFlow(flowProxy),
+            IManagedFlow(flowProxy),
             IArbitrator(arbitratorProxy),
             ARBITRATOR_EXTRA_DATA,
             REGISTRATION_META_EVIDENCE,
