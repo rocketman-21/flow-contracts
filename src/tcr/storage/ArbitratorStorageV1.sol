@@ -28,12 +28,6 @@ contract ArbitratorStorageV1 {
     /** @notice The maximum setable reveal period */
     uint256 public constant MAX_REVEAL_PERIOD = 604_800; // 7 days
 
-    /** @notice The minimum setable quorum votes basis points */
-    uint256 public constant MIN_QUORUM_VOTES_BPS = 200; // 200 basis points or 2%
-
-    /** @notice The maximum setable quorum votes basis points */
-    uint256 public constant MAX_QUORUM_VOTES_BPS = 2_000; // 2,000 basis points or 20%
-
     /** @notice The minimum setable appeal period */
     uint256 public constant MIN_APPEAL_PERIOD = 21_600; // 6 hours
 
@@ -66,9 +60,6 @@ contract ArbitratorStorageV1 {
 
     /** @notice The number of seconds between the proposal creation and the vote start */
     uint256 public votingDelay;
-
-    /** @notice The number of votes required to reach quorum, in basis points */
-    uint256 public quorumVotesBPS;
 
     /** @notice The number of seconds for the reveal period after voting ends */
     uint256 public revealPeriod;
@@ -141,8 +132,6 @@ contract ArbitratorStorageV1 {
         bytes extraData;
         /** @notice Block number when the dispute was created */
         uint256 creationBlock;
-        /** @notice Number of votes required to reach quorum */
-        uint256 quorumVotes;
         /** @notice Total supply of voting tokens at dispute creation */
         uint256 totalSupply;
         /** @notice Mapping of voter addresses to their voting receipts */

@@ -33,7 +33,6 @@ contract ERC20VotesArbitrator is
      * @param appealPeriod_ The initial appeal period
      * @param appealCost_ The initial appeal cost
      * @param arbitrationCost_ The initial arbitration cost
-     * @param quorumVotesBPS_ The initial quorum votes threshold in basis points
      */
     function initialize(
         address votingToken_,
@@ -43,7 +42,6 @@ contract ERC20VotesArbitrator is
         uint256 revealPeriod_,
         uint256 appealPeriod_,
         uint256 appealCost_,
-        uint256 quorumVotesBPS_,
         uint256 arbitrationCost_
     ) public initializer {
         __Ownable_init();
@@ -52,8 +50,6 @@ contract ERC20VotesArbitrator is
         if (votingToken_ == address(0)) revert INVALID_VOTING_TOKEN_ADDRESS();
         if (votingPeriod_ < MIN_VOTING_PERIOD || votingPeriod_ > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
         if (votingDelay_ < MIN_VOTING_DELAY || votingDelay_ > MAX_VOTING_DELAY) revert INVALID_VOTING_DELAY();
-        if (quorumVotesBPS_ < MIN_QUORUM_VOTES_BPS || quorumVotesBPS_ > MAX_QUORUM_VOTES_BPS)
-            revert INVALID_QUORUM_VOTES_BPS();
         if (revealPeriod_ < MIN_REVEAL_PERIOD || revealPeriod_ > MAX_REVEAL_PERIOD) revert INVALID_REVEAL_PERIOD();
         if (appealPeriod_ < MIN_APPEAL_PERIOD || appealPeriod_ > MAX_APPEAL_PERIOD) revert INVALID_APPEAL_PERIOD();
         if (appealCost_ < MIN_APPEAL_COST || appealCost_ > MAX_APPEAL_COST) revert INVALID_APPEAL_COST();
@@ -62,7 +58,6 @@ contract ERC20VotesArbitrator is
 
         emit VotingPeriodSet(votingPeriod, votingPeriod_);
         emit VotingDelaySet(votingDelay, votingDelay_);
-        emit QuorumVotesBPSSet(quorumVotesBPS, quorumVotesBPS_);
         emit AppealPeriodSet(_appealPeriod, appealPeriod_);
         emit AppealCostSet(_appealCost, appealCost_);
         emit ArbitrationCostSet(_arbitrationCost, arbitrationCost_);
@@ -71,7 +66,6 @@ contract ERC20VotesArbitrator is
         arbitrable = IArbitrable(arbitrable_);
         votingPeriod = votingPeriod_;
         votingDelay = votingDelay_;
-        quorumVotesBPS = quorumVotesBPS_;
         revealPeriod = revealPeriod_;
         _appealPeriod = appealPeriod_;
         _appealCost = appealCost_;
@@ -115,7 +109,6 @@ contract ERC20VotesArbitrator is
         newDispute.rounds[0].ruling = IArbitrable.Party.None; // winning choice
         newDispute.rounds[0].extraData = _extraData;
         newDispute.rounds[0].creationBlock = block.number;
-        newDispute.rounds[0].quorumVotes = quorumVotes();
         newDispute.rounds[0].totalSupply = votingToken.totalSupply();
         newDispute.rounds[0].cost = _arbitrationCost;
 
@@ -126,7 +119,6 @@ contract ERC20VotesArbitrator is
             newDispute.rounds[0].votingEndTime,
             newDispute.rounds[0].revealPeriodEndTime,
             newDispute.rounds[0].appealPeriodEndTime,
-            newDispute.rounds[0].quorumVotes,
             newDispute.rounds[0].totalSupply,
             _extraData,
             _choices
@@ -282,7 +274,6 @@ contract ERC20VotesArbitrator is
         dispute.rounds[newRound].votes = 0;
         dispute.rounds[newRound].ruling = IArbitrable.Party.None;
         dispute.rounds[newRound].creationBlock = block.number;
-        dispute.rounds[newRound].quorumVotes = quorumVotes();
         dispute.rounds[newRound].totalSupply = votingToken.totalSupply();
         dispute.rounds[newRound].cost = costToAppeal;
 
@@ -294,7 +285,6 @@ contract ERC20VotesArbitrator is
             dispute.rounds[newRound].votingEndTime,
             dispute.rounds[newRound].revealPeriodEndTime,
             dispute.rounds[newRound].appealPeriodEndTime,
-            dispute.rounds[newRound].quorumVotes,
             dispute.rounds[newRound].totalSupply,
             dispute.rounds[newRound].cost,
             dispute.rounds[newRound].extraData
@@ -402,11 +392,6 @@ contract ERC20VotesArbitrator is
         Dispute storage dispute = disputes[_disputeID];
         uint256 round = dispute.currentRound;
 
-        // check for quorum
-        if (dispute.rounds[round].votes < dispute.rounds[round].quorumVotes) {
-            return 0;
-        }
-
         uint256 winningChoice = 0;
         uint256 highestVotes = 0;
         bool tie = false;
@@ -458,20 +443,6 @@ contract ERC20VotesArbitrator is
     }
 
     /**
-     * @notice Owner function for setting the quorum votes basis points
-     * @dev newQuorumVotesBPS must be greater than the hardcoded min
-     * @param newQuorumVotesBPS new dispute threshold
-     */
-    function setQuorumVotesBPS(uint256 newQuorumVotesBPS) external onlyOwner {
-        if (newQuorumVotesBPS < MIN_QUORUM_VOTES_BPS || newQuorumVotesBPS > MAX_QUORUM_VOTES_BPS)
-            revert INVALID_QUORUM_VOTES_BPS();
-        uint256 oldQuorumVotesBPS = quorumVotesBPS;
-        quorumVotesBPS = newQuorumVotesBPS;
-
-        emit QuorumVotesBPSSet(oldQuorumVotesBPS, quorumVotesBPS);
-    }
-
-    /**
      * @notice Owner function for setting the voting period
      * @param newVotingPeriod new voting period, in blocks
      */
@@ -511,13 +482,6 @@ contract ERC20VotesArbitrator is
     modifier validDisputeID(uint256 _disputeID) {
         if (_disputeID == 0 || _disputeID > disputeCount) revert INVALID_DISPUTE_ID();
         _;
-    }
-
-    /**
-     * @notice Current quorum votes using Voting Token Total Supply
-     */
-    function quorumVotes() public view returns (uint256) {
-        return bps2Uint(quorumVotesBPS, votingToken.totalSupply());
     }
 
     /**
