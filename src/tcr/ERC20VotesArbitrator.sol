@@ -248,7 +248,7 @@ contract ERC20VotesArbitrator is
         dispute.rounds[round].votes += votes;
         dispute.rounds[round].choiceVotes[choice] += votes;
 
-        emit VoteRevealed(msg.sender, disputeId, receipt.secretHash, choice, votes);
+        emit VoteRevealed(msg.sender, disputeId, receipt.secretHash, choice, reason, votes);
     }
 
     /**

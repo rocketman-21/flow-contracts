@@ -180,6 +180,7 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param disputeId The ID of the dispute
      * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
      * @param choice The revealed choice of the voter
+     * @param reason The reason for the vote
      * @param votes The number of votes cast
      */
     event VoteRevealed(
@@ -187,6 +188,7 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 indexed disputeId,
         bytes32 secretHash,
         uint256 choice,
+        bytes reason,
         uint256 votes
     );
 
