@@ -47,6 +47,7 @@ contract ERC20VotesArbitrator is
         __Ownable_init();
         __ReentrancyGuard_init();
 
+        if (arbitrable_ == address(0)) revert INVALID_ARBITRABLE_ADDRESS();
         if (votingToken_ == address(0)) revert INVALID_VOTING_TOKEN_ADDRESS();
         if (votingPeriod_ < MIN_VOTING_PERIOD || votingPeriod_ > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
         if (votingDelay_ < MIN_VOTING_DELAY || votingDelay_ > MAX_VOTING_DELAY) revert INVALID_VOTING_DELAY();
@@ -207,7 +208,7 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Cast a vote for a dispute
      * @param disputeId The id of the dispute to vote on
-     * @param secretHash Commit keccak256 hash of voter's choice, reason (optional) and salt (tightly packed in this order)
+     * @param secretHash Commit keccak256 hash of voter's choice, reason (optional) and salt (in this order)
      */
     function commitVote(uint256 disputeId, bytes32 secretHash) external nonReentrant {
         _commitVoteInternal(msg.sender, disputeId, secretHash);
@@ -234,7 +235,7 @@ contract ERC20VotesArbitrator is
         if (receipt.hasRevealed) revert ALREADY_REVEALED_VOTE();
 
         // Reconstruct the hash to verify the revealed vote
-        bytes32 reconstructedHash = keccak256(abi.encodePacked(choice, reason, salt));
+        bytes32 reconstructedHash = keccak256(abi.encode(choice, reason, salt));
         if (reconstructedHash != receipt.secretHash) revert HASHES_DO_NOT_MATCH();
 
         uint256 votes = votingToken.getPastVotes(msg.sender, dispute.rounds[round].creationBlock);
@@ -255,7 +256,7 @@ contract ERC20VotesArbitrator is
      * @notice Internal function that caries out voting commitment logic
      * @param voter The voter that is casting their vote
      * @param disputeId The id of the dispute to vote on
-     * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
+     * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (in this order)
      */
     function _commitVoteInternal(address voter, uint256 disputeId, bytes32 secretHash) internal {
         Dispute storage dispute = disputes[disputeId];
