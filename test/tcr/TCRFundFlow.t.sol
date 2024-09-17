@@ -6,6 +6,7 @@ import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IGeneralizedTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
 
 contract TCRFundFlowTest is GeneralizedTCRTest {
     // Helper function to get ERC20 balance of a contract or address
@@ -210,5 +211,81 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
             initialBalances[3],
             "Arbitrator final balance should remain unchanged"
         );
+    }
+
+    function testDisputeTieRefund() public {
+        uint256[] memory initialBalances = new uint256[](4);
+        initialBalances[0] = erc20Token.balanceOf(requester);
+        initialBalances[1] = erc20Token.balanceOf(challenger);
+        initialBalances[2] = erc20Token.balanceOf(address(generalizedTCR));
+        initialBalances[3] = erc20Token.balanceOf(address(arbitrator));
+
+        // Initial setup
+        bytes32 itemID = submitItem(ITEM_DATA, requester);
+
+        uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
+
+        // Challenge the item
+        challengeItem(itemID, challenger);
+
+        // Get the dispute ID
+        (, uint256 disputeID, , , , , , , , ) = generalizedTCR.getRequestInfo(itemID, 0);
+
+        // Advance time to voting period
+        advanceTime(VOTING_DELAY + 2);
+
+        // Commit votes for a tie
+        bytes32 requesterSecretHash = keccak256(abi.encode(uint256(1), "For registration", bytes32("salt")));
+        vm.prank(requester);
+        arbitrator.commitVote(disputeID, requesterSecretHash);
+
+        bytes32 challengerSecretHash = keccak256(abi.encode(uint256(2), "Against registration", bytes32("salt2")));
+        vm.prank(challenger);
+        arbitrator.commitVote(disputeID, challengerSecretHash);
+
+        // Advance time to reveal period
+        advanceTime(VOTING_PERIOD);
+
+        // Reveal votes
+        vm.prank(requester);
+        arbitrator.revealVote(disputeID, 1, "For registration", bytes32("salt"));
+
+        vm.prank(challenger);
+        arbitrator.revealVote(disputeID, 2, "Against registration", bytes32("salt2"));
+
+        // Advance time to end of reveal and appeal periods
+        advanceTime(REVEAL_PERIOD + APPEAL_PERIOD);
+
+        // Execute the ruling
+        arbitrator.executeRuling(disputeID);
+
+        // Check if both parties got their deposits back
+        assertEq(
+            erc20Token.balanceOf(requester),
+            initialBalances[0] - arbitratorCost / 2,
+            "Requester should get their deposit back minus half of the arbitration cost"
+        );
+        assertEq(
+            erc20Token.balanceOf(challenger),
+            initialBalances[1] - arbitratorCost / 2,
+            "Challenger should get their deposit back minus half of the arbitration cost"
+        );
+
+        assertEq(
+            erc20Token.balanceOf(address(generalizedTCR)),
+            initialBalances[2],
+            "GeneralizedTCR balance should remain unchanged"
+        );
+
+        // Verify arbitrator received payment
+        assertEq(
+            erc20Token.balanceOf(address(arbitrator)),
+            initialBalances[3] + arbitratorCost,
+            "Arbitrator should receive payment"
+        );
+
+        // Verify the item status
+        (, IGeneralizedTCR.Status status, ) = generalizedTCR.getItemInfo(itemID);
+        assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Absent), "Item should remain absent after a tie");
     }
 }
