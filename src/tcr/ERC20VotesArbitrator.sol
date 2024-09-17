@@ -158,8 +158,7 @@ contract ERC20VotesArbitrator is
         uint256 disputeId,
         uint256 round
     ) internal view validDisputeID(disputeId) returns (DisputeState) {
-        Dispute storage dispute = disputes[disputeId];
-        VotingRound storage votingRound = dispute.rounds[round];
+        VotingRound storage votingRound = disputes[disputeId].rounds[round];
 
         if (block.timestamp <= votingRound.votingStartTime) {
             return DisputeState.Pending;
