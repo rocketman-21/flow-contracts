@@ -246,22 +246,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Modifier to restrict access to only the owner or the parent
-     */
-    modifier onlyOwnerOrParent() {
-        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
-        _;
-    }
-
-    /**
-     * @notice Modifier to restrict access to only the owner or the manager
-     */
-    modifier onlyOwnerOrManager() {
-        if (msg.sender != owner() && msg.sender != manager) revert NOT_OWNER_OR_MANAGER();
-        _;
-    }
-
-    /**
      * @notice Modifier to validate the metadata for a recipient
      * @param metadata The metadata to validate
      */
@@ -419,7 +403,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the owner or parent of the contract
      * @dev Emits a PoolConnected event upon successful connection
      */
-    function connectPool(ISuperfluidPool poolAddress) external onlyOwnerOrParent nonReentrant {
+    function connectPool(ISuperfluidPool poolAddress) external nonReentrant {
+        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
+
         if (address(poolAddress) == address(0)) revert ADDRESS_ZERO();
 
         bool success = superToken.connectPool(poolAddress);
@@ -465,7 +451,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the owner or parent of the contract
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
-    function setFlowRate(int96 _flowRate) external onlyOwnerOrParent nonReentrant {
+    function setFlowRate(int96 _flowRate) external nonReentrant {
+        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
+
         _setFlowRate(_flowRate);
     }
 
@@ -511,7 +499,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the owner or manager of the contract
      * @dev Emits a BaselineFlowRatePercentUpdated event with the old and new percentages
      */
-    function setBaselineFlowRatePercent(uint32 _baselineFlowRatePercent) external onlyOwnerOrManager nonReentrant {
+    function setBaselineFlowRatePercent(uint32 _baselineFlowRatePercent) external nonReentrant {
+        if (msg.sender != owner() && msg.sender != manager) revert NOT_OWNER_OR_MANAGER();
+
         if (_baselineFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_PERCENTAGE();
 
         emit BaselineFlowRatePercentUpdated(baselinePoolFlowRatePercent, _baselineFlowRatePercent);
