@@ -6,7 +6,7 @@ import { INounsFlow } from "./interfaces/IFlow.sol";
 import { ITokenVerifier } from "./interfaces/ITokenVerifier.sol";
 import { IStateProof } from "./interfaces/IStateProof.sol";
 
-import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { IOwnable2Step } from "./interfaces/IOwnable2Step.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract NounsFlow is INounsFlow, Flow {
@@ -157,7 +157,7 @@ contract NounsFlow is INounsFlow, Flow {
             metadata: metadata
         });
 
-        Ownable2StepUpgradeable(recipient).transferOwnership(owner());
+        IOwnable2Step(recipient).transferOwnership(owner());
 
         return recipient;
     }

@@ -6,7 +6,7 @@ import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow, IERC721Flow } from "./interfaces/IFlow.sol";
 import { IERC721Checkpointable } from "./interfaces/IERC721Checkpointable.sol";
 
-import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { IOwnable2Step } from "./interfaces/IOwnable2Step.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -91,7 +91,7 @@ contract ERC721Flow is IERC721Flow, Flow {
             metadata: metadata
         });
 
-        Ownable2StepUpgradeable(recipient).transferOwnership(owner());
+        IOwnable2Step(recipient).transferOwnership(owner());
 
         return recipient;
     }
