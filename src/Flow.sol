@@ -290,6 +290,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         if (recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
 
         bytes32 recipientId = keccak256(abi.encode(recipient, metadata, RecipientType.ExternalAccount));
+        if (recipients[recipientId].recipient != address(0)) revert RECIPIENT_ALREADY_EXISTS();
 
         recipientExists[recipient] = true;
 
