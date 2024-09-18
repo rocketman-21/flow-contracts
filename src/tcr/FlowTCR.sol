@@ -107,7 +107,7 @@ contract FlowTCR is GeneralizedTCR {
             flowContract.addRecipient(recipient, metadata);
         } else if (recipientType == FlowStorageV1.RecipientType.FlowContract) {
             // temporarily set manager to owner
-            (bytes32 recipientId, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner());
+            (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner());
 
             address newTCR = tcrFactory.deployFlowTCR(
                 ITCRFactory.FlowTCRParams({

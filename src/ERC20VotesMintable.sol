@@ -88,6 +88,8 @@ contract ERC20VotesMintable is
 
         __ERC20Mintable_init(_name, _symbol);
 
+        _transferOwnership(_initialOwner);
+
         emit MinterUpdated(_minter);
     }
 
