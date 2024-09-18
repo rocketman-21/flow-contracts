@@ -328,7 +328,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a RecipientCreated event if the recipient is successfully added
      */
     function addFlowRecipient(
-        RecipientMetadata memory metadata,
+        RecipientMetadata calldata metadata,
         address flowManager
     ) external onlyManager validMetadata(metadata) returns (bytes32, address) {
         if (flowManager == address(0)) revert ADDRESS_ZERO();
@@ -368,7 +368,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @return address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
-        RecipientMetadata memory metadata,
+        RecipientMetadata calldata metadata,
         address flowManager
     ) internal virtual returns (address) {}
 
