@@ -15,6 +15,8 @@ import { ArbitratorStorageV1 } from "../../src/tcr/storage/ArbitratorStorageV1.s
 import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { ERC721FlowTest } from "../erc721-flow/ERC721Flow.t.sol";
+import { TCRFactory } from "../../src/tcr/TCRFactory.sol";
+import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 
 contract FlowTCRTest is ERC721FlowTest {
     // Contracts
@@ -76,13 +78,23 @@ contract FlowTCRTest is ERC721FlowTest {
         address erc20TokenImpl = address(new ERC20VotesMintable());
         address erc20TokenProxy = address(new ERC1967Proxy(erc20TokenImpl, ""));
 
+        address tcrFactoryImpl = address(new TCRFactory());
+        address tcrFactoryProxy = address(new ERC1967Proxy(tcrFactoryImpl, ""));
+
+        ITCRFactory(tcrFactoryProxy).initialize({
+            initialOwner: owner,
+            flowTCRImplementation_: flowTCRImpl,
+            arbitratorImplementation_: arbitratorImpl,
+            erc20Implementation_: erc20TokenImpl
+        });
+
         ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowStorageV1.RecipientType.ExternalAccount);
 
         flowTCR = FlowTCR(flowTCRProxy);
         flowTCR.initialize(
             IManagedFlow(address(flow)),
             IArbitrator(arbitratorProxy),
-            flowTCRImpl,
+            ITCRFactory(tcrFactoryProxy),
             ARBITRATOR_EXTRA_DATA,
             REGISTRATION_META_EVIDENCE,
             CLEARING_META_EVIDENCE,

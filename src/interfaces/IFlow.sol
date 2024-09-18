@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
+import { IManagedFlow } from "./IManagedFlow.sol";
 
 /**
  * @title IFlowEvents
@@ -62,7 +63,7 @@ interface IFlowEvents {
  * @title IFlow
  * @dev This interface defines the methods for the Flow contract.
  */
-interface IFlow is IFlowEvents {
+interface IFlow is IFlowEvents, IManagedFlow {
     ///                                                          ///
     ///                           ERRORS                         ///
     ///                                                          ///

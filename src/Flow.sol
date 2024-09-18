@@ -244,6 +244,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
+     * @notice Modifier to restrict access to only the owner or the manager
+     */
+    modifier onlyOwnerOrManager() {
+        if (msg.sender != owner() && msg.sender != manager) revert NOT_OWNER_OR_MANAGER();
+        _;
+    }
+
+    /**
      * @notice Modifier to restrict access to only the owner or the parent
      */
     modifier onlyOwnerOrParent() {
@@ -465,7 +473,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the current owner
      * @dev Emits a ManagerUpdated event with the old and new manager addresses
      */
-    function setManager(address _newManager) external onlyOwner nonReentrant {
+    function setManager(address _newManager) external onlyOwnerOrManager nonReentrant {
         if (_newManager == address(0)) revert ADDRESS_ZERO();
 
         address oldManager = manager;
@@ -501,9 +509,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the owner or manager of the contract
      * @dev Emits a BaselineFlowRatePercentUpdated event with the old and new percentages
      */
-    function setBaselineFlowRatePercent(uint32 _baselineFlowRatePercent) external nonReentrant {
-        if (msg.sender != owner() && msg.sender != manager) revert NOT_OWNER_OR_MANAGER();
-
+    function setBaselineFlowRatePercent(uint32 _baselineFlowRatePercent) external onlyOwnerOrManager nonReentrant {
         if (_baselineFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_PERCENTAGE();
 
         emit BaselineFlowRatePercentUpdated(baselinePoolFlowRatePercent, _baselineFlowRatePercent);

@@ -211,12 +211,12 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             url: "https://testrecipient.com"
         });
         vm.prank(manager);
-        (bytes32 recipientId, address recipientAddress) = flow.addRecipient(address(0x123), metadata);
+        (bytes32 recipientId, ) = flow.addRecipient(address(0x123), metadata);
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding");
 
         // Add another recipient
         vm.prank(manager);
-        (bytes32 recipientId2, address recipientAddress2) = flow.addRecipient(address(0x456), metadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(address(0x456), metadata);
         assertEq(flow.activeRecipientCount(), 2, "Active recipient count should be 2 after adding second recipient");
 
         // Remove a recipient
@@ -320,7 +320,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
         // Test calling from non-owner address
         vm.prank(address(0xdead));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(IFlow.NOT_OWNER_OR_MANAGER.selector));
         flow.setManager(newManager);
 
         // Test calling from owner address
