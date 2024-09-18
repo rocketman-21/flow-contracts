@@ -97,7 +97,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
      */
     function getVotesForTokenIds(
-        uint256[] memory tokenIds
+        uint256[] calldata tokenIds
     ) public view returns (VoteAllocation[][] memory allocations) {
         allocations = new VoteAllocation[][](tokenIds.length);
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -156,16 +156,16 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function _clearPreviousVotes(uint256 tokenId) internal {
         VoteAllocation[] memory allocations = votes[tokenId];
         for (uint256 i = 0; i < allocations.length; i++) {
-            FlowRecipient memory recipient = recipients[allocations[i].recipientId];
+            bytes32 recipientId = allocations[i].recipientId;
 
             // if recipient is removed, skip - don't want to update member units because they have been wiped to 0
             // fine because this vote will be deleted in the next step
-            if (recipient.removed) continue;
+            if (recipients[recipientId].removed) continue;
 
-            address recipientAddress = recipient.recipient;
+            address recipientAddress = recipients[recipientId].recipient;
             uint128 currentUnits = bonusPool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
-            RecipientType recipientType = recipient.recipientType;
+            RecipientType recipientType = recipients[recipientId].recipientType;
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
