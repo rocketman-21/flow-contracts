@@ -6,6 +6,7 @@ import { IArbitrable } from "./interfaces/IArbitrable.sol";
 import { ArbitratorStorageV1 } from "./storage/ArbitratorStorageV1.sol";
 
 import { ERC20VotesMintable } from "../ERC20VotesMintable.sol";
+import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
@@ -531,6 +532,22 @@ contract ERC20VotesArbitrator is
         } else {
             return IArbitrable.Party.None;
         }
+    }
+
+    /**
+     * @dev Returns the arbitrator parameters for use in the TCR factory.
+     * @return ArbitratorParams struct containing the necessary parameters for the factory.
+     */
+    function getArbitratorParamsForFactory() external view override returns (ITCRFactory.ArbitratorParams memory) {
+        return
+            ITCRFactory.ArbitratorParams({
+                votingPeriod: _votingPeriod,
+                votingDelay: _votingDelay,
+                revealPeriod: _revealPeriod,
+                appealPeriod: _appealPeriod,
+                appealCost: _appealCost,
+                arbitrationCost: _arbitrationCost
+            });
     }
 
     /**

@@ -123,14 +123,7 @@ contract FlowTCR is GeneralizedTCR {
                     challengePeriodDuration: challengePeriodDuration,
                     stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier]
                 }),
-                ITCRFactory.ArbitratorParams({
-                    votingPeriod: 0,
-                    votingDelay: 0,
-                    revealPeriod: 0,
-                    appealPeriod: 0,
-                    appealCost: 0,
-                    arbitrationCost: 0
-                }),
+                arbitrator.getArbitratorParamsForFactory(),
                 ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }) // TODO update all
             );
 

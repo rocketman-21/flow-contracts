@@ -8,6 +8,7 @@
 pragma solidity ^0.8.0;
 
 import { IArbitrable } from "./IArbitrable.sol";
+import { ITCRFactory } from "./ITCRFactory.sol";
 
 /**
  * @title Arbitrator
@@ -99,4 +100,10 @@ interface IArbitrator {
      * @return ruling The ruling which has been given or the one which will be given if there is no appeal.
      */
     function currentRuling(uint256 _disputeID) external view returns (IArbitrable.Party ruling);
+
+    /**
+     * @dev Returns the arbitrator parameters for use in the TCR factory.
+     * @return ArbitratorParams struct containing the necessary parameters for the factory.
+     */
+    function getArbitratorParamsForFactory() external view returns (ITCRFactory.ArbitratorParams memory);
 }
