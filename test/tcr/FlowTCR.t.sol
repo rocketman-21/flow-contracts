@@ -1,6 +1,6 @@
 // Start of Selection
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.27;
 
 import { Test } from "forge-std/Test.sol";
 import { FlowTCR } from "../../src/tcr/FlowTCR.sol";
@@ -12,10 +12,11 @@ import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { ArbitratorStorageV1 } from "../../src/tcr/storage/ArbitratorStorageV1.sol";
-import { ERC721Flow } from "../../src/ERC721Flow.sol";
+import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
+import { ERC721FlowTest } from "../erc721-flow/ERC721Flow.t.sol";
 
-contract FlowTCRTest is Test {
+contract FlowTCRTest is ERC721FlowTest {
     // Contracts
     FlowTCR public flowTCR;
     ERC20VotesMintable public erc20Token;
@@ -27,6 +28,7 @@ contract FlowTCRTest is Test {
     address public requester;
     address public challenger;
     address public swingVoter;
+    address public recipient;
 
     // Test Parameters
     uint256 public constant SUBMISSION_BASE_DEPOSIT = 100 ether;
@@ -37,7 +39,7 @@ contract FlowTCRTest is Test {
     uint256 public constant STAKE_MULTIPLIER_SHARED = 10000; // 100%
     uint256 public constant STAKE_MULTIPLIER_WINNER = 10000; // 100%
     uint256 public constant STAKE_MULTIPLIER_LOSER = 10000; // 100%
-    bytes public constant ITEM_DATA = "0x1234";
+    bytes public ITEM_DATA = "0x1234";
 
     // FlowTCR Parameters
     bytes public constant ARBITRATOR_EXTRA_DATA = "";
@@ -58,15 +60,14 @@ contract FlowTCRTest is Test {
     uint256 public constant APPEAL_COST = 1e18 / 10_000; // MIN_APPEAL_COST
     uint256 public constant ARBITRATION_COST = 1e18 / 10_000; // MIN_ARBITRATION_COST
 
-    function setUp() public {
+    function setUp() public override {
+        super.setUp();
         governor = address(this);
         requester = makeAddr("requester");
         challenger = makeAddr("challenger");
         owner = makeAddr("owner");
         swingVoter = makeAddr("swingVoter");
-
-        address flowImpl = address(new ERC721Flow());
-        address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+        recipient = makeAddr("recipient");
 
         address flowTCRImpl = address(new FlowTCR());
         address flowTCRProxy = address(new ERC1967Proxy(flowTCRImpl, ""));
@@ -75,9 +76,11 @@ contract FlowTCRTest is Test {
         address erc20TokenImpl = address(new ERC20VotesMintable());
         address erc20TokenProxy = address(new ERC1967Proxy(erc20TokenImpl, ""));
 
+        ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowStorageV1.RecipientType.ExternalAccount);
+
         flowTCR = FlowTCR(flowTCRProxy);
         flowTCR.initialize(
-            IManagedFlow(flowProxy),
+            IManagedFlow(address(flow)),
             IArbitrator(arbitratorProxy),
             ARBITRATOR_EXTRA_DATA,
             REGISTRATION_META_EVIDENCE,
@@ -111,6 +114,9 @@ contract FlowTCRTest is Test {
         erc20Token.mint(requester, 1000 ether);
         erc20Token.mint(challenger, 1000 ether);
         erc20Token.mint(swingVoter, 1000 ether);
+
+        vm.prank(flow.owner());
+        flow.setManager(address(flowTCR));
 
         // Approve FlowTCR to spend tokens
         vm.prank(requester);

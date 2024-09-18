@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.27;
 
 import { FlowTCRTest } from "./FlowTCR.t.sol";
 import { IGeneralizedTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
+import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
 
 contract BasicTCRTest is FlowTCRTest {
     // Test Cases
