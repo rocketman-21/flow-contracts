@@ -108,7 +108,7 @@ contract TokenVotingFlowTest is ERC721FlowTest {
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
-        recipientIds[0] = 0; // Assuming the first recipient has ID 0
+        recipientIds[0] = recipientId;
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);

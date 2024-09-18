@@ -17,7 +17,9 @@ contract AddRecipientsTest is ERC721FlowTest {
         vm.startPrank(flow.owner());
         vm.expectEmit(true, true, true, true);
         emit IFlowEvents.RecipientCreated(
-            0,
+            keccak256(
+                abi.encode(recipient, abi.encode(recipientMetadata), FlowStorageV1.RecipientType.ExternalAccount)
+            ),
             FlowStorageV1.FlowRecipient({
                 recipientType: FlowStorageV1.RecipientType.ExternalAccount,
                 removed: false,

@@ -230,15 +230,15 @@ contract VotingFlowTest is ERC721FlowTest {
 
         address recipient1 = address(3);
         vm.startPrank(manager);
-        flow.addRecipient(recipient1, recipientMetadata);
-        (bytes32 recipientId, address flowRecipient) = flow.addFlowRecipient(recipientMetadata, manager);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient1, recipientMetadata);
+        (bytes32 flowRecipientId, address flowRecipient) = flow.addFlowRecipient(recipientMetadata, manager);
         vm.stopPrank();
 
         bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipientIds[0] = recipientId; // Flow recipient
+        recipientIds[0] = flowRecipientId; // Flow recipient
         percentAllocations[0] = 1e6; // 100%
         tokenIds[0] = tokenId;
 
@@ -252,7 +252,7 @@ contract VotingFlowTest is ERC721FlowTest {
         assertGt(flowRecipientTotalFlowRate, 0);
 
         // Change vote to recipient1
-        recipientIds[0] = 0;
+        recipientIds[0] = recipientId;
         percentAllocations[0] = 1e6; // 100%
 
         vm.prank(voter);
