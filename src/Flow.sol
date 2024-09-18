@@ -75,7 +75,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Sets the address of the grants implementation contract
      * @param _flowImpl The new address of the grants implementation contract
      */
-    function setFlowImpl(address _flowImpl) public onlyOwner nonReentrant {
+    function setFlowImpl(address _flowImpl) external onlyOwner nonReentrant {
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
 
         flowImpl = _flowImpl;
@@ -87,7 +87,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param tokenId The tokenId of the account to retrieve votes for
      * @return allocations An array of VoteAllocation structs representing each vote made by the token
      */
-    function getVotesForTokenId(uint256 tokenId) public view returns (VoteAllocation[] memory allocations) {
+    function getVotesForTokenId(uint256 tokenId) external view returns (VoteAllocation[] memory allocations) {
         return votes[tokenId];
     }
 
@@ -581,7 +581,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param memberAddr The address of the member
      * @return totalAmountReceived The total amount received by the member
      */
-    function getTotalReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
+    function getTotalReceivedByMember(address memberAddr) external view returns (uint256 totalAmountReceived) {
         totalAmountReceived =
             bonusPool.getTotalAmountReceivedByMember(memberAddr) +
             baselinePool.getTotalAmountReceivedByMember(memberAddr);
