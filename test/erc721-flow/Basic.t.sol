@@ -246,7 +246,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding flow recipient");
 
         // Verify total recipient count
-        assertEq(flow.recipientCount(), 3, "Total recipient count should be 3");
+        assertEq(flow.activeRecipientCount(), 3, "Total recipient count should be 3");
     }
 
     function testSetBaselineFlowRatePercent() public {

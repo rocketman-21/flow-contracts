@@ -30,7 +30,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         assertEq(flow.recipientExists(recipient), false);
 
         // Verify recipient count remains the same
-        assertEq(flow.recipientCount(), 1);
+        assertEq(flow.activeRecipientCount(), 1);
     }
 
     function testRemoveRecipientInvalidId() public {
@@ -120,7 +120,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         assertEq(removed2, true);
 
         // Verify recipient count remains the same
-        assertEq(flow.recipientCount(), 2);
+        assertEq(flow.activeRecipientCount(), 2);
     }
 
     function testRemoveRecipientUpdateMemberUnits() public {

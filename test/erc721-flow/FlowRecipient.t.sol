@@ -86,7 +86,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         assertEq(storedMetadata.url, metadata.url);
 
         // Verify recipient count increased
-        assertEq(flow.recipientCount(), 1);
+        assertEq(flow.activeRecipientCount(), 1);
 
         // Check the newly created Flow contract fields
         ERC721Flow newFlow = ERC721Flow(newFlowAddress);
@@ -185,7 +185,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         (bytes32 recipientId2, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2);
 
         assertNotEq(newFlowAddress1, newFlowAddress2);
-        assertEq(flow.recipientCount(), 2);
+        assertEq(flow.activeRecipientCount(), 2);
 
         vm.stopPrank();
     }

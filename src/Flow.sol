@@ -273,16 +273,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Increments the recipient counts
-     * @dev This function increments both the total recipient count and the active recipient count
-     * @dev This should be called whenever a new recipient is added
-     */
-    function _incrementRecipientCounts() internal {
-        recipientCount++;
-        activeRecipientCount++;
-    }
-
-    /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
      * @param metadata The metadata of the recipient
@@ -307,7 +297,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             metadata: metadata
         });
 
-        _incrementRecipientCounts();
+        activeRecipientCount++;
 
         _initializeBaselineMemberUnits(recipient);
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
@@ -352,7 +342,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             metadata: metadata
         });
 
-        _incrementRecipientCounts();
+        activeRecipientCount++;
 
         emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
         emit FlowRecipientCreated(recipientId, recipient);
