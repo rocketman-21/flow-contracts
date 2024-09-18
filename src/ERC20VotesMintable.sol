@@ -64,7 +64,7 @@ contract ERC20VotesMintable is
      */
     function __ERC20Mintable_init(string calldata _name, string calldata _symbol) internal onlyInitializing {
         __ReentrancyGuard_init();
-        __Ownable_init();
+        __Ownable2Step_init();
         __ERC20_init(_name, _symbol);
     }
 

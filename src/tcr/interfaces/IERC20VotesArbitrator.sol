@@ -76,6 +76,9 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when a voter has not voted
     error VOTER_HAS_NOT_VOTED();
 
+    /// @notice Error thrown when the initial owner is invalid (zero address)
+    error INVALID_INITIAL_OWNER();
+
     /// @notice Error thrown when a reward has already been claimed
     error REWARD_ALREADY_CLAIMED();
 
@@ -228,6 +231,7 @@ interface IERC20VotesArbitrator is IArbitrator {
 
     /**
      * @notice Used to initialize the contract
+     * @param initialOwner The address of the initial owner
      * @param votingToken The address of the ERC20 voting token
      * @param arbitrable The address of the arbitrable contract
      * @param votingPeriod The initial voting period
@@ -238,6 +242,7 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param arbitrationCost The initial arbitration cost
      */
     function initialize(
+        address initialOwner,
         address votingToken,
         address arbitrable,
         uint256 votingPeriod,

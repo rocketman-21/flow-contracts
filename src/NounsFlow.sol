@@ -15,6 +15,7 @@ contract NounsFlow is INounsFlow, Flow {
     constructor() payable initializer {}
 
     function initialize(
+        address _initialOwner,
         address _verifier,
         address _superToken,
         address _flowImpl,
@@ -23,7 +24,7 @@ contract NounsFlow is INounsFlow, Flow {
         FlowParams calldata _flowParams,
         RecipientMetadata calldata _metadata
     ) public initializer {
-        __Flow_init(_superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
+        __Flow_init(_initialOwner, _superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
 
         verifier = ITokenVerifier(_verifier);
     }
@@ -145,6 +146,7 @@ contract NounsFlow is INounsFlow, Flow {
         if (recipient == address(0)) revert ADDRESS_ZERO();
 
         INounsFlow(recipient).initialize({
+            initialOwner: owner(),
             verifier: address(verifier),
             superToken: address(superToken),
             flowImpl: flowImpl,
@@ -156,8 +158,6 @@ contract NounsFlow is INounsFlow, Flow {
             }),
             metadata: metadata
         });
-
-        IOwnable2Step(recipient).transferOwnership(owner());
 
         return recipient;
     }

@@ -53,6 +53,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         vm.prank(address(manager));
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
         IERC721Flow(flowProxy).initialize({
+            initialOwner: address(manager),
             nounsToken: address(0),
             superToken: address(superToken),
             flowImpl: flowImpl,
@@ -74,6 +75,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         vm.prank(address(manager));
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
         IERC721Flow(flowProxy).initialize({
+            initialOwner: address(manager),
             nounsToken: address(0x1),
             superToken: address(superToken),
             flowImpl: address(0),
@@ -92,6 +94,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
         // Test double initialization (should revert)
         IERC721Flow(payable(flowProxy)).initialize(
+            address(manager),
             address(0x1),
             address(superToken),
             address(flowImpl),
@@ -110,6 +113,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Test double initialization (should revert)
         vm.expectRevert("Initializable: contract is already initialized");
         IERC721Flow(payable(flowProxy)).initialize(
+            address(manager),
             address(0x1),
             address(superToken),
             address(flowImpl),

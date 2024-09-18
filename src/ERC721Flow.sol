@@ -17,6 +17,7 @@ contract ERC721Flow is IERC721Flow, Flow {
     constructor() payable initializer {}
 
     function initialize(
+        address _initialOwner,
         address _nounsToken,
         address _superToken,
         address _flowImpl,
@@ -29,7 +30,7 @@ contract ERC721Flow is IERC721Flow, Flow {
 
         erc721Votes = IERC721Checkpointable(_nounsToken);
 
-        __Flow_init(_superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
+        __Flow_init(_initialOwner, _superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
     }
 
     /**
@@ -79,6 +80,7 @@ contract ERC721Flow is IERC721Flow, Flow {
         if (recipient == address(0)) revert ADDRESS_ZERO();
 
         IERC721Flow(recipient).initialize({
+            initialOwner: owner(),
             nounsToken: address(erc721Votes),
             superToken: address(superToken),
             flowImpl: flowImpl,
@@ -90,8 +92,6 @@ contract ERC721Flow is IERC721Flow, Flow {
             }),
             metadata: metadata
         });
-
-        IOwnable2Step(recipient).transferOwnership(owner());
 
         return recipient;
     }

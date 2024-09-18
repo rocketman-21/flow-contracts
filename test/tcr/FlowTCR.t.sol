@@ -92,6 +92,7 @@ contract FlowTCRTest is ERC721FlowTest {
 
         flowTCR = FlowTCR(flowTCRProxy);
         flowTCR.initialize(
+            address(owner),
             IManagedFlow(address(flow)),
             IArbitrator(arbitratorProxy),
             ITCRFactory(tcrFactoryProxy),
@@ -113,6 +114,7 @@ contract FlowTCRTest is ERC721FlowTest {
 
         arbitrator = ERC20VotesArbitrator(arbitratorProxy);
         arbitrator.initialize(
+            address(owner),
             address(erc20Token),
             address(flowTCR),
             VOTING_PERIOD,

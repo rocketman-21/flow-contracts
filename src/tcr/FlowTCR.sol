@@ -26,6 +26,7 @@ contract FlowTCR is GeneralizedTCR {
 
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
+     * @param _initialOwner The initial owner of the contract
      * @param _flowContract The address of the Flow contract this TCR will manage
      * @param _arbitrator The arbitrator to resolve disputes
      * @param _tcrFactory The address of the TCR factory
@@ -42,6 +43,7 @@ contract FlowTCR is GeneralizedTCR {
      * @param _stakeMultipliers Multipliers for appeals
      */
     function initialize(
+        address _initialOwner,
         IManagedFlow _flowContract,
         IArbitrator _arbitrator,
         ITCRFactory _tcrFactory,
@@ -60,6 +62,7 @@ contract FlowTCR is GeneralizedTCR {
         flowContract = _flowContract;
         tcrFactory = _tcrFactory;
         __GeneralizedTCR_init(
+            _initialOwner,
             _arbitrator,
             _arbitratorExtraData,
             _registrationMetaEvidence,

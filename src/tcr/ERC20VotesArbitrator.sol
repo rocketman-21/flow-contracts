@@ -8,7 +8,7 @@ import { ArbitratorStorageV1 } from "./storage/ArbitratorStorageV1.sol";
 import { ERC20VotesMintable } from "../ERC20VotesMintable.sol";
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -17,7 +17,7 @@ contract ERC20VotesArbitrator is
     IERC20VotesArbitrator,
     ArbitratorStorageV1,
     UUPSUpgradeable,
-    OwnableUpgradeable,
+    Ownable2StepUpgradeable,
     ReentrancyGuardUpgradeable
 {
     using SafeERC20 for IERC20;
@@ -25,6 +25,7 @@ contract ERC20VotesArbitrator is
 
     /**
      * @notice Used to initialize the contract
+     * @param initialOwner_ The address of the initial owner
      * @param votingToken_ The address of the ERC20 voting token
      * @param arbitrable_ The address of the arbitrable contract
      * @param votingPeriod_ The initial voting period
@@ -35,6 +36,7 @@ contract ERC20VotesArbitrator is
      * @param arbitrationCost_ The initial arbitration cost
      */
     function initialize(
+        address initialOwner_,
         address votingToken_,
         address arbitrable_,
         uint256 votingPeriod_,
@@ -44,9 +46,10 @@ contract ERC20VotesArbitrator is
         uint256 appealCost_,
         uint256 arbitrationCost_
     ) public initializer {
-        __Ownable_init();
+        __Ownable2Step_init();
         __ReentrancyGuard_init();
 
+        if (initialOwner_ == address(0)) revert INVALID_INITIAL_OWNER();
         if (arbitrable_ == address(0)) revert INVALID_ARBITRABLE_ADDRESS();
         if (votingToken_ == address(0)) revert INVALID_VOTING_TOKEN_ADDRESS();
         if (votingPeriod_ < MIN_VOTING_PERIOD || votingPeriod_ > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
@@ -56,6 +59,8 @@ contract ERC20VotesArbitrator is
         if (appealCost_ < MIN_APPEAL_COST || appealCost_ > MAX_APPEAL_COST) revert INVALID_APPEAL_COST();
         if (arbitrationCost_ < MIN_ARBITRATION_COST || arbitrationCost_ > MAX_ARBITRATION_COST)
             revert INVALID_ARBITRATION_COST();
+
+        _transferOwnership(initialOwner_);
 
         emit VotingPeriodSet(_votingPeriod, votingPeriod_);
         emit VotingDelaySet(_votingDelay, votingDelay_);

@@ -84,6 +84,7 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
 
         // Initialize the arbitrator
         IERC20VotesArbitrator(arbitratorProxy).initialize({
+            initialOwner: params.governor,
             votingToken: address(erc20Proxy),
             arbitrable: flowTCRProxy,
             votingPeriod: arbitratorParams.votingPeriod,
@@ -96,9 +97,10 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
 
         // Initialize the FlowTCR
         IFlowTCR(flowTCRProxy).initialize({
+            initialOwner: params.governor,
             flowContract: params.flowContract,
             arbitrator: IArbitrator(arbitratorProxy),
-            flowTCRImpl: flowTCRImplementation,
+            tcrFactory: address(this),
             arbitratorExtraData: params.arbitratorExtraData,
             registrationMetaEvidence: params.registrationMetaEvidence,
             clearingMetaEvidence: params.clearingMetaEvidence,
@@ -111,11 +113,6 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             challengePeriodDuration: params.challengePeriodDuration,
             stakeMultipliers: params.stakeMultipliers
         });
-
-        // Transfer ownership of the contracts to the governor
-        IOwnable2Step(flowTCRProxy).transferOwnership(params.governor);
-        IOwnable2Step(arbitratorProxy).transferOwnership(params.governor);
-        IOwnable2Step(erc20Proxy).transferOwnership(params.governor);
 
         emit FlowTCRDeployed(msg.sender, flowTCRProxy, arbitratorProxy, erc20Proxy);
 

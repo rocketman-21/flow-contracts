@@ -192,6 +192,7 @@ interface IFlow is IFlowEvents, IManagedFlow {
 interface IERC721Flow is IFlow {
     /**
      * @notice Initializes an ERC721Flow contract
+     * @param initialOwner The address of the initial owner
      * @param nounsToken The address of the ERC721 token used for voting
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
@@ -201,6 +202,7 @@ interface IERC721Flow is IFlow {
      * @param metadata The metadata for the flow contract
      */
     function initialize(
+        address initialOwner,
         address nounsToken,
         address superToken,
         address flowImpl,
@@ -217,6 +219,7 @@ interface INounsFlow is IFlow {
 
     /**
      * @notice Initializes an NounsFlow contract
+     * @param initialOwner The address of the initial owner
      * @param verifier The address of the NounsVerifier contract
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
@@ -226,6 +229,7 @@ interface INounsFlow is IFlow {
      * @param metadata The metadata for the flow contract
      */
     function initialize(
+        address initialOwner,
         address verifier,
         address superToken,
         address flowImpl,

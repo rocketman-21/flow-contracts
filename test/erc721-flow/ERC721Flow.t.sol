@@ -40,6 +40,7 @@ contract ERC721FlowTest is Test {
 
         vm.prank(address(manager));
         IERC721Flow(flowProxy).initialize({
+            initialOwner: address(manager),
             nounsToken: erc721,
             superToken: superTokenAddress,
             flowImpl: flowImpl,
