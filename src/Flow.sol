@@ -246,6 +246,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
+     * @notice Modifier to restrict access to only the owner or the parent
+     */
+    modifier onlyOwnerOrParent() {
+        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
+        _;
+    }
+
+    /**
      * @notice Modifier to validate the metadata for a recipient
      * @param metadata The metadata to validate
      */
@@ -403,9 +411,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the owner or parent of the contract
      * @dev Emits a PoolConnected event upon successful connection
      */
-    function connectPool(ISuperfluidPool poolAddress) external nonReentrant {
-        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
-
+    function connectPool(ISuperfluidPool poolAddress) external onlyOwnerOrParent nonReentrant {
         if (address(poolAddress) == address(0)) revert ADDRESS_ZERO();
 
         bool success = superToken.connectPool(poolAddress);
@@ -451,9 +457,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the owner or parent of the contract
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
-    function setFlowRate(int96 _flowRate) external nonReentrant {
-        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
-
+    function setFlowRate(int96 _flowRate) external onlyOwnerOrParent nonReentrant {
         _setFlowRate(_flowRate);
     }
 
