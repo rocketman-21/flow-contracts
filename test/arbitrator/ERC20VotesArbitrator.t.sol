@@ -8,95 +8,18 @@ import { FlowTCR } from "../../src/tcr/FlowTCR.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC20VotesArbitrator } from "../../src/tcr/interfaces/IERC20VotesArbitrator.sol";
-import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
-import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
-import { ERC721Flow } from "../../src/ERC721Flow.sol";
+import { FlowTCRTest } from "../tcr/FlowTCR.t.sol";
 
-contract ERC20VotesArbitratorTest is Test {
-    // Contracts
-    ERC20VotesArbitrator public arbitrator;
-    ERC20VotesMintable public erc20Token;
-    FlowTCR public flowTCR;
-
-    // Addresses
-    address public owner;
+contract ERC20VotesArbitratorTest is FlowTCRTest {
     address public voter1;
     address public voter2;
     address public voter3;
-    address public requester;
-    address public challenger;
 
-    // Test Parameters
-    uint256 public constant VOTING_PERIOD = 86_400; // MIN_VOTING_PERIOD
-    uint256 public constant VOTING_DELAY = 1; // MIN_VOTING_DELAY
-    uint256 public constant REVEAL_PERIOD = 86_400; // MIN_REVEAL_PERIOD
-    uint256 public constant APPEAL_PERIOD = 21_600; // MIN_APPEAL_PERIOD
-    uint256 public constant APPEAL_COST = 1e18 / 10_000; // MIN_APPEAL_COST
-    uint256 public constant ARBITRATION_COST = 1e18 / 10_000; // MIN_ARBITRATION_COST
-
-    // flowTCR Parameters
-    bytes public constant ARBITRATOR_EXTRA_DATA = "";
-    bytes public constant ITEM_DATA = "item_data";
-    string public constant BASIC_EVIDENCE = "basic_evidence";
-    string public constant REGISTRATION_META_EVIDENCE = "meta_evidence/registration";
-    string public constant CLEARING_META_EVIDENCE = "meta_evidence/clearing";
-    uint256 public constant SUBMISSION_BASE_DEPOSIT = 100 ether;
-    uint256 public constant REMOVAL_BASE_DEPOSIT = 100 ether;
-    uint256 public constant SUBMISSION_CHALLENGE_BASE_DEPOSIT = 100 ether;
-    uint256 public constant REMOVAL_CHALLENGE_BASE_DEPOSIT = 100 ether;
-    uint256 public constant CHALLENGE_PERIOD = 3 days;
-    uint256[3] public STAKE_MULTIPLIERS = [10000, 10000, 10000]; // 100% for all
-
-    function setUp() public {
-        owner = address(this);
+    function setUp() public override {
+        super.setUp();
         voter1 = makeAddr("voter1");
         voter2 = makeAddr("voter2");
         voter3 = makeAddr("voter3");
-        requester = makeAddr("requester");
-        challenger = makeAddr("challenger");
-
-        address flowImpl = address(new ERC721Flow());
-        address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
-        address arbitratorImpl = address(new ERC20VotesArbitrator());
-        address arbitratorProxy = address(new ERC1967Proxy(arbitratorImpl, ""));
-        address erc20TokenImpl = address(new ERC20VotesMintable());
-        address erc20TokenProxy = address(new ERC1967Proxy(erc20TokenImpl, ""));
-        address flowTCRImpl = address(new FlowTCR());
-        address flowTCRProxy = address(new ERC1967Proxy(flowTCRImpl, ""));
-
-        arbitrator = ERC20VotesArbitrator(arbitratorProxy);
-        erc20Token = ERC20VotesMintable(erc20TokenProxy);
-        flowTCR = FlowTCR(flowTCRProxy);
-
-        erc20Token.initialize(owner, owner, "Test Token", "TST");
-
-        flowTCR.initialize(
-            IManagedFlow(flowProxy),
-            IArbitrator(arbitratorProxy),
-            ARBITRATOR_EXTRA_DATA,
-            REGISTRATION_META_EVIDENCE,
-            CLEARING_META_EVIDENCE,
-            owner,
-            IERC20(address(erc20Token)),
-            SUBMISSION_BASE_DEPOSIT,
-            REMOVAL_BASE_DEPOSIT,
-            SUBMISSION_CHALLENGE_BASE_DEPOSIT,
-            REMOVAL_CHALLENGE_BASE_DEPOSIT,
-            CHALLENGE_PERIOD,
-            STAKE_MULTIPLIERS
-        );
-
-        arbitrator.initialize(
-            address(erc20Token),
-            address(flowTCR),
-            VOTING_PERIOD,
-            VOTING_DELAY,
-            REVEAL_PERIOD,
-            APPEAL_PERIOD,
-            APPEAL_COST,
-            ARBITRATION_COST
-        );
 
         // Mint tokens to test addresses
         erc20Token.mint(voter1, 1000 ether);
@@ -127,30 +50,6 @@ contract ERC20VotesArbitratorTest is Test {
     function revealVote(uint256 disputeID, address voter, uint256 choice, string memory reason, bytes32 salt) internal {
         vm.prank(voter);
         arbitrator.revealVote(disputeID, choice, bytes(reason), salt);
-    }
-
-    function advanceTime(uint256 _seconds) internal {
-        uint256 blockTime = 2;
-        vm.warp(block.timestamp + _seconds);
-        vm.roll(block.number + _seconds / blockTime);
-    }
-
-    // Helper function to submit an item
-    function submitItem(bytes memory _itemData, address _submitter) internal returns (bytes32) {
-        vm.prank(_submitter);
-        flowTCR.addItem(_itemData);
-        bytes32 itemID = keccak256(_itemData);
-        return itemID;
-    }
-
-    // Helper function to challenge an item
-    function challengeItem(bytes32 _itemID, address _challenger) internal returns (uint256) {
-        vm.prank(_challenger);
-        flowTCR.challengeRequest(_itemID, BASIC_EVIDENCE);
-
-        // Get the dispute ID from the last request
-        (, uint256 disputeID, , , , , , , , ) = flowTCR.getRequestInfo(_itemID, 0);
-        return disputeID;
     }
 
     // Helper function to submit an item and challenge it

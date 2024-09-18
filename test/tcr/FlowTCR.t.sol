@@ -60,7 +60,7 @@ contract FlowTCRTest is ERC721FlowTest {
     uint256 public constant APPEAL_COST = 1e18 / 10_000; // MIN_APPEAL_COST
     uint256 public constant ARBITRATION_COST = 1e18 / 10_000; // MIN_ARBITRATION_COST
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
         governor = address(this);
         requester = makeAddr("requester");
@@ -175,9 +175,14 @@ contract FlowTCRTest is ERC721FlowTest {
         arbitrator.executeRuling(disputeID);
     }
 
-    function challengeItem(bytes32 _itemID, address _challenger) internal {
+    // Helper function to challenge an item
+    function challengeItem(bytes32 _itemID, address _challenger) internal returns (uint256) {
         vm.prank(_challenger);
         flowTCR.challengeRequest(_itemID, BASIC_EVIDENCE);
+
+        // Get the dispute ID from the last request
+        (, uint256 disputeID, , , , , , , , ) = flowTCR.getRequestInfo(_itemID, 0);
+        return disputeID;
     }
 
     function advanceTime(uint256 _seconds) internal {
