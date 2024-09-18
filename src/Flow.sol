@@ -119,9 +119,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // calculate new member units for recipient
         // make sure to add the current units to the new units
         // todo check this
-        FlowRecipient memory recipient = recipients[recipientId];
-        RecipientType recipientType = recipient.recipientType;
-        address recipientAddress = recipient.recipient;
+        RecipientType recipientType = recipients[recipientId].recipientType;
+        address recipientAddress = recipients[recipientId].recipient;
         uint128 currentUnits = bonusPool.getUnits(recipientAddress);
 
         // double check for overflow before casting
