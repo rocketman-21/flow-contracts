@@ -109,10 +109,6 @@ contract FlowRecipientTest is ERC721FlowTest {
         assertEq(url, metadata.url);
         vm.stopPrank();
 
-        // Test accepting ownership of the new Flow contract
-        vm.prank(flow.owner());
-        newFlow.acceptOwnership();
-
         // Verify that ownership has been accepted
         assertEq(newFlow.owner(), flow.owner());
 
