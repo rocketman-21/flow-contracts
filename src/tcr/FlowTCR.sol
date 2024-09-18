@@ -5,7 +5,7 @@ import { GeneralizedTCR } from "./GeneralizedTCR.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
-
+import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
 /**
  * @title FlowTCR
  * @dev This contract extends GeneralizedTCR to provide a Token Curated Registry (TCR)
@@ -85,5 +85,19 @@ contract FlowTCR is GeneralizedTCR {
      */
     function _onItemRegistered(bytes32 _itemID, bytes memory _item) internal override {
         // Note: The unused variable has been removed
+        // Decode the item data
+        (
+            address recipient,
+            FlowStorageV1.RecipientMetadata memory metadata,
+            FlowStorageV1.RecipientType recipientType
+        ) = abi.decode(_item, (address, FlowStorageV1.RecipientMetadata, FlowStorageV1.RecipientType));
+
+        // Add the recipient to the Flow contract
+        if (recipientType == FlowStorageV1.RecipientType.ExternalAccount) {
+            flowContract.addRecipient(recipient, metadata);
+        } else if (recipientType == FlowStorageV1.RecipientType.FlowContract) {
+            address flowManager = address(0x1); // TODO: Get this by creating new TCR
+            flowContract.addFlowRecipient(metadata, flowManager);
+        }
     }
 }
