@@ -19,7 +19,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     /**
      * @notice Initializes the Flow contract
      * @param _superToken The address of the SuperToken to be used for the pool
-     * @param _flowImpl The address of the flow implementation contract
      * @param _manager The address of the flow manager
      * @param _parent The address of the parent flow contract (optional)
      * @param _flowParams The parameters for the flow contract

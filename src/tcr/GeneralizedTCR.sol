@@ -89,6 +89,8 @@ abstract contract GeneralizedTCR is
         sharedStakeMultiplier = _stakeMultipliers[0];
         winnerStakeMultiplier = _stakeMultipliers[1];
         loserStakeMultiplier = _stakeMultipliers[2];
+        registrationMetaEvidence = _registrationMetaEvidence;
+        clearingMetaEvidence = _clearingMetaEvidence;
     }
 
     /* External and Public */
@@ -454,6 +456,8 @@ abstract contract GeneralizedTCR is
         string calldata _clearingMetaEvidence
     ) external onlyGovernor {
         metaEvidenceUpdates++;
+        registrationMetaEvidence = _registrationMetaEvidence;
+        clearingMetaEvidence = _clearingMetaEvidence;
         emit MetaEvidence(2 * metaEvidenceUpdates, _registrationMetaEvidence);
         emit MetaEvidence(2 * metaEvidenceUpdates + 1, _clearingMetaEvidence);
     }

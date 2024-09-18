@@ -88,6 +88,14 @@ contract GeneralizedTCRStorageV1 {
      */
     uint256 public submissionChallengeBaseDeposit;
     /**
+     * @notice The meta evidence for registration requests
+     */
+    string public registrationMetaEvidence;
+    /**
+     * @notice The meta evidence for clearing requests
+     */
+    string public clearingMetaEvidence;
+    /**
      * @notice The base deposit to challenge a removal request
      */
     uint256 public removalChallengeBaseDeposit;

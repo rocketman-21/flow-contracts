@@ -82,6 +82,7 @@ contract FlowTCRTest is ERC721FlowTest {
         flowTCR.initialize(
             IManagedFlow(address(flow)),
             IArbitrator(arbitratorProxy),
+            flowTCRImpl,
             ARBITRATOR_EXTRA_DATA,
             REGISTRATION_META_EVIDENCE,
             CLEARING_META_EVIDENCE,
