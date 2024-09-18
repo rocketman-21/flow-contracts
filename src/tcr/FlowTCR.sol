@@ -93,11 +93,10 @@ contract FlowTCR is GeneralizedTCR {
 
     /**
      * @notice Handles the registration of an item in the TCR
-     * @param _itemID The ID of the item being registered
      * @param _item The data describing the item
      * @dev This function is called internally when an item is registered in the TCR
      */
-    function _onItemRegistered(bytes32 _itemID, bytes memory _item) internal override {
+    function _onItemRegistered(bytes32, bytes memory _item) internal override {
         // Note: The unused variable has been removed
         // Decode the item data
         (
