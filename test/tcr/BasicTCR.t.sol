@@ -85,7 +85,7 @@ contract BasicTCRTest is FlowTCRTest {
     }
 
     /**
-     * @dev Tests the registration of an item after the challenge period has passed
+     * @dev Tests the registration of an item after the challenge period has passed and verifies flow recipient creation
      * @notice This test performs the following steps:
      * 1. Submits an item to the TCR
      * 2. Advances time beyond the challenge period
@@ -94,6 +94,7 @@ contract BasicTCRTest is FlowTCRTest {
      * 5. Verifies that the item data matches the submitted data
      * 6. Checks that the item status is now set to Registered
      * 7. Ensures that the number of requests for the item is still 1
+     * 8. Verifies that a flow recipient was created for the item
      */
     function testItemRegistrationAfterChallengePeriod() public {
         bytes32 itemID = submitItem(ITEM_DATA, requester);
@@ -107,6 +108,18 @@ contract BasicTCRTest is FlowTCRTest {
         assertEq(data, ITEM_DATA);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered));
         assertEq(numberOfRequests, 1);
+
+        // Decode the ITEM_DATA to get the recipient address
+        (address recipientAddress, , ) = abi.decode(ITEM_DATA, (address, string, FlowStorageV1.RecipientType));
+
+        // Check if a flow recipient was created for the item
+        assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
+
+        // Optionally, you can also check the recipient's details in the flow contract
+        (address actualRecipient, , , ) = flow.recipients(keccak256(ITEM_DATA));
+        assertEq(actualRecipient, recipientAddress, "Flow recipient address should match the one in ITEM_DATA");
+        // check member units > 0 and flow rate > 0
+        assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
     }
 
     /**
@@ -174,5 +187,17 @@ contract BasicTCRTest is FlowTCRTest {
         assertEq(data, ITEM_DATA, "Item data should still match");
         assertEq(numberOfRequests, 1, "Number of requests should still be 1");
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered), "Status should be Registered");
+
+        // Decode the ITEM_DATA to get the recipient address
+        (address recipientAddress, , ) = abi.decode(ITEM_DATA, (address, string, FlowStorageV1.RecipientType));
+
+        // Check if a flow recipient was created for the item
+        assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
+
+        // Optionally, you can also check the recipient's details in the flow contract
+        (address actualRecipient, , , ) = flow.recipients(keccak256(ITEM_DATA));
+        assertEq(actualRecipient, recipientAddress, "Flow recipient address should match the one in ITEM_DATA");
+        // check member units > 0 and flow rate > 0
+        assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
     }
 }

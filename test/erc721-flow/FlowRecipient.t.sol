@@ -21,7 +21,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         address flowManager = address(0x123);
 
         vm.prank(manager);
-        (bytes32 recipientId, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager);
+        (, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager);
 
         ERC721Flow newFlow = ERC721Flow(newFlowAddress);
 
@@ -109,10 +109,6 @@ contract FlowRecipientTest is ERC721FlowTest {
         assertEq(url, metadata.url);
         vm.stopPrank();
 
-        // Test accepting ownership of the new Flow contract
-        vm.prank(flow.owner());
-        newFlow.acceptOwnership();
-
         // Verify that ownership has been accepted
         assertEq(newFlow.owner(), flow.owner());
 
@@ -181,8 +177,8 @@ contract FlowRecipientTest is ERC721FlowTest {
 
         vm.startPrank(flow.owner());
 
-        (bytes32 recipientId1, address newFlowAddress1) = flow.addFlowRecipient(metadata1, flowManager1);
-        (bytes32 recipientId2, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2);
+        (, address newFlowAddress1) = flow.addFlowRecipient(metadata1, flowManager1);
+        (, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2);
 
         assertNotEq(newFlowAddress1, newFlowAddress2);
         assertEq(flow.activeRecipientCount(), 2);

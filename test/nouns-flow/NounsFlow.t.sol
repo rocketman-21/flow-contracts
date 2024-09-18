@@ -46,6 +46,7 @@ contract NounsFlowTest is Test {
 
         vm.prank(address(manager));
         INounsFlow(flowProxy).initialize({
+            initialOwner: address(manager),
             verifier: verifierAddress,
             superToken: superTokenAddress,
             flowImpl: flowImpl,

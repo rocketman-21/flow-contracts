@@ -26,6 +26,7 @@ contract FlowTCR is GeneralizedTCR {
 
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
+     * @param _initialOwner The initial owner of the contract
      * @param _flowContract The address of the Flow contract this TCR will manage
      * @param _arbitrator The arbitrator to resolve disputes
      * @param _tcrFactory The address of the TCR factory
@@ -42,6 +43,7 @@ contract FlowTCR is GeneralizedTCR {
      * @param _stakeMultipliers Multipliers for appeals
      */
     function initialize(
+        address _initialOwner,
         IManagedFlow _flowContract,
         IArbitrator _arbitrator,
         ITCRFactory _tcrFactory,
@@ -60,6 +62,7 @@ contract FlowTCR is GeneralizedTCR {
         flowContract = _flowContract;
         tcrFactory = _tcrFactory;
         __GeneralizedTCR_init(
+            _initialOwner,
             _arbitrator,
             _arbitratorExtraData,
             _registrationMetaEvidence,
@@ -104,7 +107,7 @@ contract FlowTCR is GeneralizedTCR {
             flowContract.addRecipient(recipient, metadata);
         } else if (recipientType == FlowStorageV1.RecipientType.FlowContract) {
             // temporarily set manager to owner
-            (bytes32 recipientId, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner());
+            (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner());
 
             address newTCR = tcrFactory.deployFlowTCR(
                 ITCRFactory.FlowTCRParams({
@@ -120,14 +123,7 @@ contract FlowTCR is GeneralizedTCR {
                     challengePeriodDuration: challengePeriodDuration,
                     stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier]
                 }),
-                ITCRFactory.ArbitratorParams({
-                    votingPeriod: 0,
-                    votingDelay: 0,
-                    revealPeriod: 0,
-                    appealPeriod: 0,
-                    appealCost: 0,
-                    arbitrationCost: 0
-                }),
+                arbitrator.getArbitratorParamsForFactory(),
                 ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }) // TODO update all
             );
 

@@ -18,6 +18,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
     /**
      * @notice Initializes the Flow contract
+     * @param _initialOwner The address of the initial owner
      * @param _superToken The address of the SuperToken to be used for the pool
      * @param _manager The address of the flow manager
      * @param _parent The address of the parent flow contract (optional)
@@ -25,6 +26,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param _metadata The metadata for the flow contract
      */
     function __Flow_init(
+        address _initialOwner,
         address _superToken,
         address _flowImpl,
         address _manager,
@@ -32,6 +34,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
     ) public {
+        if (_initialOwner == address(0)) revert ADDRESS_ZERO();
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
         if (_manager == address(0)) revert ADDRESS_ZERO();
         if (_superToken == address(0)) revert ADDRESS_ZERO();
@@ -41,8 +44,10 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         if (bytes(_metadata.image).length == 0) revert INVALID_METADATA();
         if (_flowParams.baselinePoolFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_RATE_PERCENT();
 
-        __Ownable_init();
+        __Ownable2Step_init();
         __ReentrancyGuard_init();
+
+        _transferOwnership(_initialOwner);
 
         // Set the voting power info
         tokenVoteWeight = _flowParams.tokenVoteWeight; // scaled by 1e18

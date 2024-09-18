@@ -38,6 +38,7 @@ abstract contract GeneralizedTCR is
 
     /**
      *  @dev Initialize the arbitrable curated registry.
+     *  @param _initialOwner The initial owner of the contract
      *  @param _arbitrator Arbitrator to resolve potential disputes. The arbitrator is trusted to support appeal periods and not reenter.
      *  @param _arbitratorExtraData Extra data for the trusted arbitrator contract.
      *  @param _registrationMetaEvidence The URI of the meta evidence object for registration requests.
@@ -55,6 +56,7 @@ abstract contract GeneralizedTCR is
      *  - The multiplier applied to the loser's fee stake for the subsequent round.
      */
     function __GeneralizedTCR_init(
+        address _initialOwner,
         IArbitrator _arbitrator,
         bytes memory _arbitratorExtraData,
         string memory _registrationMetaEvidence,
@@ -68,8 +70,10 @@ abstract contract GeneralizedTCR is
         uint _challengePeriodDuration,
         uint[3] memory _stakeMultipliers
     ) public {
-        __Ownable_init();
+        __Ownable2Step_init();
         __ReentrancyGuard_init();
+
+        _transferOwnership(_initialOwner);
 
         emit MetaEvidence(0, _registrationMetaEvidence);
         emit MetaEvidence(1, _clearingMetaEvidence);

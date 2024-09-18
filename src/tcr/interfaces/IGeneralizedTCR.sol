@@ -167,9 +167,10 @@ interface IGeneralizedTCR {
 interface IFlowTCR is IGeneralizedTCR {
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
+     * @param initialOwner The address of the initial owner
      * @param flowContract The address of the Flow contract this TCR will manage
      * @param arbitrator The arbitrator to resolve disputes
-     * @param flowTCRImpl The address of the FlowTCR implementation contract
+     * @param tcrFactory The address of the TCR factory
      * @param arbitratorExtraData Extra data for the arbitrator
      * @param registrationMetaEvidence MetaEvidence for registration requests
      * @param clearingMetaEvidence MetaEvidence for removal requests
@@ -183,9 +184,10 @@ interface IFlowTCR is IGeneralizedTCR {
      * @param stakeMultipliers Multipliers for appeals
      */
     function initialize(
+        address initialOwner,
         IManagedFlow flowContract,
         IArbitrator arbitrator,
-        address flowTCRImpl,
+        address tcrFactory,
         bytes memory arbitratorExtraData,
         string memory registrationMetaEvidence,
         string memory clearingMetaEvidence,
