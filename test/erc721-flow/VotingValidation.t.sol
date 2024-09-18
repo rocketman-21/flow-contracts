@@ -21,13 +21,13 @@ contract VotingValidationTest is ERC721FlowTest {
 
         address recipient = address(3);
         vm.prank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](0);
         uint256[] memory tokenIds = new uint256[](1);
 
-        recipientIds[0] = 0;
+        recipientIds[0] = recipientId;
         tokenIds[0] = tokenId;
 
         vm.prank(voter1);
@@ -43,11 +43,11 @@ contract VotingValidationTest is ERC721FlowTest {
 
         // add new recipient
         vm.prank(manager);
-        flow.addRecipient(address(23), recipientMetadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(address(23), recipientMetadata);
 
-        uint256[] memory recipientIdsTwo = new uint256[](2);
-        recipientIdsTwo[0] = 0;
-        recipientIdsTwo[1] = 1;
+        bytes32[] memory recipientIdsTwo = new bytes32[](2);
+        recipientIdsTwo[0] = recipientId;
+        recipientIdsTwo[1] = recipientId2;
 
         vm.expectRevert(IFlow.ALLOCATION_MUST_BE_POSITIVE.selector);
         vm.prank(voter1);
@@ -70,7 +70,7 @@ contract VotingValidationTest is ERC721FlowTest {
         vm.prank(manager);
         flow.addRecipient(recipient, recipientMetadata);
 
-        uint256[] memory recipientIds = new uint256[](0);
+        bytes32[] memory recipientIds = new bytes32[](0);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
@@ -83,13 +83,13 @@ contract VotingValidationTest is ERC721FlowTest {
 
         address recipient2 = address(4);
         vm.prank(manager);
-        flow.addRecipient(recipient2, recipientMetadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
 
         vm.prank(flow.owner());
-        flow.removeRecipient(1);
+        flow.removeRecipient(recipientId2);
 
-        uint256[] memory recipientIds2 = new uint256[](1);
-        recipientIds2[0] = 1;
+        bytes32[] memory recipientIds2 = new bytes32[](1);
+        recipientIds2[0] = recipientId2;
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.NOT_APPROVED_RECIPIENT.selector);
@@ -106,13 +106,13 @@ contract VotingValidationTest is ERC721FlowTest {
         vm.prank(manager);
         flow.addRecipient(recipient, recipientMetadata);
 
-        uint256[] memory recipientIds = new uint256[](1);
+        bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
 
         percentAllocations[0] = 1e6;
         tokenIds[0] = tokenId;
-        recipientIds[0] = type(uint256).max; // Use an invalid recipient ID
+        recipientIds[0] = bytes32(type(uint256).max); // Use an invalid recipient ID
 
         vm.prank(voter1);
         vm.expectRevert(IFlow.INVALID_RECIPIENT_ID.selector);

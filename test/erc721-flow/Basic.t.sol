@@ -137,7 +137,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         address flowManager = address(0x123);
 
         vm.prank(manager);
-        address newFlowRecipient = flow.addFlowRecipient(metadata, flowManager);
+        (bytes32 recipientId, address newFlowRecipient) = flow.addFlowRecipient(metadata, flowManager);
 
         assertNotEq(newFlowRecipient, address(0));
 
@@ -158,7 +158,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             bool removed,
             FlowStorageV1.RecipientType recipientType,
             FlowStorageV1.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(flow.recipientCount() - 1);
+        ) = flow.recipients(recipientId);
         assertEq(uint(recipientType), uint(FlowStorageV1.RecipientType.FlowContract));
         assertEq(removed, false);
         assertEq(recipient, newFlowRecipient);
@@ -211,23 +211,23 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             url: "https://testrecipient.com"
         });
         vm.prank(manager);
-        flow.addRecipient(address(0x123), metadata);
+        (bytes32 recipientId, ) = flow.addRecipient(address(0x123), metadata);
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding");
 
         // Add another recipient
         vm.prank(manager);
-        flow.addRecipient(address(0x456), metadata);
+        (bytes32 recipientId2, ) = flow.addRecipient(address(0x456), metadata);
         assertEq(flow.activeRecipientCount(), 2, "Active recipient count should be 2 after adding second recipient");
 
         // Remove a recipient
         vm.prank(manager);
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId);
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after removing");
 
         // Try to remove the same recipient again (should not affect the count)
         vm.prank(manager);
         vm.expectRevert(abi.encodeWithSelector(IFlow.RECIPIENT_ALREADY_REMOVED.selector));
-        flow.removeRecipient(0);
+        flow.removeRecipient(recipientId);
         assertEq(
             flow.activeRecipientCount(),
             1,
@@ -236,7 +236,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
         // Remove the last recipient
         vm.prank(manager);
-        flow.removeRecipient(1);
+        flow.removeRecipient(recipientId2);
         assertEq(flow.activeRecipientCount(), 0, "Active recipient count should be 0 after removing all recipients");
 
         // Add a flow recipient
@@ -246,7 +246,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding flow recipient");
 
         // Verify total recipient count
-        assertEq(flow.recipientCount(), 3, "Total recipient count should be 3");
+        assertEq(flow.activeRecipientCount(), 1, "Total recipient count should be 1");
     }
 
     function testSetBaselineFlowRatePercent() public {
@@ -320,7 +320,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
         // Test calling from non-owner address
         vm.prank(address(0xdead));
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert(abi.encodeWithSelector(IFlow.NOT_OWNER_OR_MANAGER.selector));
         flow.setManager(newManager);
 
         // Test calling from owner address

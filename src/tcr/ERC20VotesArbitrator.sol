@@ -57,17 +57,17 @@ contract ERC20VotesArbitrator is
         if (arbitrationCost_ < MIN_ARBITRATION_COST || arbitrationCost_ > MAX_ARBITRATION_COST)
             revert INVALID_ARBITRATION_COST();
 
-        emit VotingPeriodSet(votingPeriod, votingPeriod_);
-        emit VotingDelaySet(votingDelay, votingDelay_);
+        emit VotingPeriodSet(_votingPeriod, votingPeriod_);
+        emit VotingDelaySet(_votingDelay, votingDelay_);
         emit AppealPeriodSet(_appealPeriod, appealPeriod_);
         emit AppealCostSet(_appealCost, appealCost_);
         emit ArbitrationCostSet(_arbitrationCost, arbitrationCost_);
 
         votingToken = ERC20VotesMintable(votingToken_);
         arbitrable = IArbitrable(arbitrable_);
-        votingPeriod = votingPeriod_;
-        votingDelay = votingDelay_;
-        revealPeriod = revealPeriod_;
+        _votingPeriod = votingPeriod_;
+        _votingDelay = votingDelay_;
+        _revealPeriod = revealPeriod_;
         _appealPeriod = appealPeriod_;
         _appealCost = appealCost_;
         _arbitrationCost = arbitrationCost_;
@@ -100,9 +100,9 @@ contract ERC20VotesArbitrator is
         newDispute.choices = _choices;
         newDispute.executed = false;
 
-        newDispute.rounds[0].votingStartTime = block.timestamp + votingDelay;
-        newDispute.rounds[0].votingEndTime = newDispute.rounds[0].votingStartTime + votingPeriod;
-        newDispute.rounds[0].revealPeriodEndTime = newDispute.rounds[0].votingEndTime + revealPeriod;
+        newDispute.rounds[0].votingStartTime = block.timestamp + _votingDelay;
+        newDispute.rounds[0].votingEndTime = newDispute.rounds[0].votingStartTime + _votingPeriod;
+        newDispute.rounds[0].revealPeriodEndTime = newDispute.rounds[0].votingEndTime + _revealPeriod;
         newDispute.rounds[0].appealPeriodEndTime = newDispute.rounds[0].revealPeriodEndTime + _appealPeriod;
         newDispute.rounds[0].votes = 0; // total votes cast
         newDispute.rounds[0].ruling = IArbitrable.Party.None; // winning choice
@@ -354,10 +354,10 @@ contract ERC20VotesArbitrator is
         emit AppealDecision(_disputeID, arbitrable);
         emit AppealRaised(_disputeID, newRound, msg.sender, costToAppeal);
 
-        dispute.rounds[newRound].votingStartTime = block.timestamp + votingDelay;
-        dispute.rounds[newRound].votingEndTime = dispute.rounds[newRound].votingStartTime + votingPeriod;
+        dispute.rounds[newRound].votingStartTime = block.timestamp + _votingDelay;
+        dispute.rounds[newRound].votingEndTime = dispute.rounds[newRound].votingStartTime + _votingPeriod;
         dispute.rounds[newRound].revealPeriodStartTime = dispute.rounds[newRound].votingEndTime;
-        dispute.rounds[newRound].revealPeriodEndTime = dispute.rounds[newRound].revealPeriodStartTime + revealPeriod;
+        dispute.rounds[newRound].revealPeriodEndTime = dispute.rounds[newRound].revealPeriodStartTime + _revealPeriod;
         dispute.rounds[newRound].appealPeriodStartTime = dispute.rounds[newRound].revealPeriodEndTime;
         dispute.rounds[newRound].appealPeriodEndTime = dispute.rounds[newRound].appealPeriodStartTime + _appealPeriod;
         dispute.rounds[newRound].votes = 0;
@@ -534,10 +534,10 @@ contract ERC20VotesArbitrator is
      */
     function setVotingDelay(uint256 newVotingDelay) external onlyOwner {
         if (newVotingDelay < MIN_VOTING_DELAY || newVotingDelay > MAX_VOTING_DELAY) revert INVALID_VOTING_DELAY();
-        uint256 oldVotingDelay = votingDelay;
-        votingDelay = newVotingDelay;
+        uint256 oldVotingDelay = _votingDelay;
+        _votingDelay = newVotingDelay;
 
-        emit VotingDelaySet(oldVotingDelay, votingDelay);
+        emit VotingDelaySet(oldVotingDelay, _votingDelay);
     }
 
     /**
@@ -547,10 +547,10 @@ contract ERC20VotesArbitrator is
     function setVotingPeriod(uint256 newVotingPeriod) external onlyOwner {
         if (newVotingPeriod < MIN_VOTING_PERIOD || newVotingPeriod > MAX_VOTING_PERIOD) revert INVALID_VOTING_PERIOD();
 
-        uint256 oldVotingPeriod = votingPeriod;
-        votingPeriod = newVotingPeriod;
+        uint256 oldVotingPeriod = _votingPeriod;
+        _votingPeriod = newVotingPeriod;
 
-        emit VotingPeriodSet(oldVotingPeriod, votingPeriod);
+        emit VotingPeriodSet(oldVotingPeriod, _votingPeriod);
     }
 
     function bps2Uint(uint256 bps, uint256 number) internal pure returns (uint256) {

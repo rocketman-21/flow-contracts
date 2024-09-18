@@ -17,7 +17,7 @@ contract AddRecipientsTest is ERC721FlowTest {
         vm.startPrank(flow.owner());
         vm.expectEmit(true, true, true, true);
         emit IFlowEvents.RecipientCreated(
-            0,
+            keccak256(abi.encode(recipient, recipientMetadata, FlowStorageV1.RecipientType.ExternalAccount)),
             FlowStorageV1.FlowRecipient({
                 recipientType: FlowStorageV1.RecipientType.ExternalAccount,
                 removed: false,
@@ -26,7 +26,7 @@ contract AddRecipientsTest is ERC721FlowTest {
             }),
             flow.owner()
         );
-        flow.addRecipient(recipient, recipientMetadata);
+        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
         // Verify recipient was added correctly
         (
@@ -34,7 +34,7 @@ contract AddRecipientsTest is ERC721FlowTest {
             bool removed,
             FlowStorageV1.RecipientType recipientType,
             FlowStorageV1.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(0);
+        ) = flow.recipients(recipientId);
         assertEq(storedRecipient, recipient);
         assertEq(removed, false);
         assertEq(uint8(recipientType), uint8(FlowStorageV1.RecipientType.ExternalAccount));
@@ -44,7 +44,7 @@ contract AddRecipientsTest is ERC721FlowTest {
         assertEq(flow.recipientExists(recipient), true);
 
         // Verify recipient count increased
-        assertEq(flow.recipientCount(), 1);
+        assertEq(flow.activeRecipientCount(), 1);
     }
 
     function testAddRecipientZeroAddress() public {
@@ -92,17 +92,21 @@ contract AddRecipientsTest is ERC721FlowTest {
 
         // Add first recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient1, metadata1);
+        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, metadata1);
 
         // Add second recipient
         vm.prank(flow.owner());
-        flow.addRecipient(recipient2, metadata2);
+        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, metadata2);
 
         // Verify both recipients were added correctly
-        assertEq(flow.recipientCount(), 2);
+        assertEq(flow.activeRecipientCount(), 2);
 
-        (address storedRecipient1, , , FlowStorageV1.RecipientMetadata memory storedMetadata1) = flow.recipients(0);
-        (address storedRecipient2, , , FlowStorageV1.RecipientMetadata memory storedMetadata2) = flow.recipients(1);
+        (address storedRecipient1, , , FlowStorageV1.RecipientMetadata memory storedMetadata1) = flow.recipients(
+            recipientId1
+        );
+        (address storedRecipient2, , , FlowStorageV1.RecipientMetadata memory storedMetadata2) = flow.recipients(
+            recipientId2
+        );
 
         assertEq(storedRecipient1, recipient1);
         assertEq(storedRecipient2, recipient2);
@@ -126,7 +130,7 @@ contract AddRecipientsTest is ERC721FlowTest {
 
         // Add flow recipient
         vm.prank(flow.owner());
-        address flowRecipient = flow.addFlowRecipient(
+        (, address flowRecipient) = flow.addFlowRecipient(
             FlowStorageV1.RecipientMetadata(
                 "Flow Recipient",
                 "Description",
@@ -178,6 +182,6 @@ contract AddRecipientsTest is ERC721FlowTest {
         flow.addRecipient(recipient, metadata);
 
         // Verify recipient count hasn't changed
-        assertEq(flow.recipientCount(), 1, "Recipient count should still be 1");
+        assertEq(flow.activeRecipientCount(), 1, "Recipient count should still be 1");
     }
 }

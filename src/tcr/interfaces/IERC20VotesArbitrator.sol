@@ -225,4 +225,26 @@ interface IERC20VotesArbitrator is IArbitrator {
         bytes extraData,
         uint256 choices
     );
+
+    /**
+     * @notice Used to initialize the contract
+     * @param votingToken The address of the ERC20 voting token
+     * @param arbitrable The address of the arbitrable contract
+     * @param votingPeriod The initial voting period
+     * @param votingDelay The initial voting delay
+     * @param revealPeriod The initial reveal period to reveal committed votes
+     * @param appealPeriod The initial appeal period
+     * @param appealCost The initial appeal cost
+     * @param arbitrationCost The initial arbitration cost
+     */
+    function initialize(
+        address votingToken,
+        address arbitrable,
+        uint256 votingPeriod,
+        uint256 votingDelay,
+        uint256 revealPeriod,
+        uint256 appealPeriod,
+        uint256 appealCost,
+        uint256 arbitrationCost
+    ) external;
 }

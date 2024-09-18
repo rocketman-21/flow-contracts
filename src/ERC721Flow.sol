@@ -6,7 +6,7 @@ import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow, IERC721Flow } from "./interfaces/IFlow.sol";
 import { IERC721Checkpointable } from "./interfaces/IERC721Checkpointable.sol";
 
-import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { IOwnable2Step } from "./interfaces/IOwnable2Step.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
@@ -22,8 +22,8 @@ contract ERC721Flow is IERC721Flow, Flow {
         address _flowImpl,
         address _manager,
         address _parent,
-        FlowParams memory _flowParams,
-        RecipientMetadata memory _metadata
+        FlowParams calldata _flowParams,
+        RecipientMetadata calldata _metadata
     ) public initializer {
         if (_nounsToken == address(0)) revert ADDRESS_ZERO();
 
@@ -39,9 +39,9 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
     function castVotes(
-        uint256[] memory tokenIds,
-        uint256[] memory recipientIds,
-        uint32[] memory percentAllocations
+        uint256[] calldata tokenIds,
+        bytes32[] calldata recipientIds,
+        uint32[] calldata percentAllocations
     ) external nonReentrant validVotes(recipientIds, percentAllocations) {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
@@ -72,7 +72,7 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @return address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
-        RecipientMetadata memory metadata,
+        RecipientMetadata calldata metadata,
         address flowManager
     ) internal override returns (address) {
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
@@ -91,7 +91,7 @@ contract ERC721Flow is IERC721Flow, Flow {
             metadata: metadata
         });
 
-        Ownable2StepUpgradeable(recipient).transferOwnership(owner());
+        IOwnable2Step(recipient).transferOwnership(owner());
 
         return recipient;
     }

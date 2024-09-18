@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.27;
 
-import { GeneralizedTCRTest } from "./GeneralizedTCR.t.sol";
+import { FlowTCRTest } from "./FlowTCR.t.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IGeneralizedTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
 
-contract TCRFundFlowTest is GeneralizedTCRTest {
+contract TCRFundFlowTest is FlowTCRTest {
     // Helper function to get ERC20 balance of a contract or address
     function getERC20Balance(address _token, address _account) internal view returns (uint256) {
         return IERC20(_token).balanceOf(_account);
@@ -33,11 +33,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
 
         // Verify balances after submission
         assertBalanceChange(requester, initialBalances[0], -int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost));
-        assertBalanceChange(
-            address(generalizedTCR),
-            initialBalances[2],
-            int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost)
-        );
+        assertBalanceChange(address(flowTCR), initialBalances[2], int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost));
 
         // Challenge the item
         challengeItem(itemID, challenger);
@@ -49,19 +45,19 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
             -int256(SUBMISSION_CHALLENGE_BASE_DEPOSIT + arbitratorCost)
         );
         assertBalanceChange(
-            address(generalizedTCR),
+            address(flowTCR),
             initialBalances[2],
             int256(SUBMISSION_BASE_DEPOSIT + SUBMISSION_CHALLENGE_BASE_DEPOSIT + arbitratorCost)
         );
 
         // Get dispute ID and execute voting in favor of the challenger
-        (, uint256 disputeID, , , , , , , , ) = generalizedTCR.getRequestInfo(itemID, 0);
+        (, uint256 disputeID, , , , , , , , ) = flowTCR.getRequestInfo(itemID, 0);
         voteAndExecute(disputeID, IArbitrable.Party.Challenger);
 
         // Verify final balances
         assertBalanceChange(requester, initialBalances[0], -int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost));
         assertBalanceChange(challenger, initialBalances[1], int256(SUBMISSION_BASE_DEPOSIT));
-        assertBalanceChange(address(generalizedTCR), initialBalances[2], 0);
+        assertBalanceChange(address(flowTCR), initialBalances[2], 0);
         assertBalanceChange(address(arbitrator), initialBalances[3], int256(arbitratorCost));
     }
 
@@ -84,11 +80,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
 
         // Verify balances after submission
         assertBalanceChange(requester, initialBalances[0], -int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost));
-        assertBalanceChange(
-            address(generalizedTCR),
-            initialBalances[2],
-            int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost)
-        );
+        assertBalanceChange(address(flowTCR), initialBalances[2], int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost));
 
         // Challenge the item
         challengeItem(itemID, challenger);
@@ -100,13 +92,13 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
             -int256(SUBMISSION_CHALLENGE_BASE_DEPOSIT + arbitratorCost)
         );
         assertBalanceChange(
-            address(generalizedTCR),
+            address(flowTCR),
             initialBalances[2],
             int256(SUBMISSION_BASE_DEPOSIT + SUBMISSION_CHALLENGE_BASE_DEPOSIT + arbitratorCost)
         );
 
         // Get dispute ID and execute voting
-        (, uint256 disputeID, , , , , , , , ) = generalizedTCR.getRequestInfo(itemID, 0);
+        (, uint256 disputeID, , , , , , , , ) = flowTCR.getRequestInfo(itemID, 0);
         voteAndExecute(disputeID, IArbitrable.Party.Requester);
 
         // Verify final balances
@@ -116,7 +108,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
             initialBalances[1],
             -int256(SUBMISSION_CHALLENGE_BASE_DEPOSIT + arbitratorCost)
         );
-        assertBalanceChange(address(generalizedTCR), initialBalances[2], 0);
+        assertBalanceChange(address(flowTCR), initialBalances[2], 0);
         assertBalanceChange(address(arbitrator), initialBalances[3], int256(arbitratorCost));
     }
 
@@ -127,7 +119,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
     function getRelevantBalances() internal view returns (uint256[4] memory balances) {
         balances[0] = erc20Token.balanceOf(requester);
         balances[1] = erc20Token.balanceOf(challenger);
-        balances[2] = erc20Token.balanceOf(address(generalizedTCR));
+        balances[2] = erc20Token.balanceOf(address(flowTCR));
         balances[3] = erc20Token.balanceOf(address(arbitrator));
     }
 
@@ -153,21 +145,21 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
 
         // 2. Approve GeneralizedTCR to spend tokens
         vm.prank(requester);
-        erc20Token.approve(address(generalizedTCR), SUBMISSION_BASE_DEPOSIT + arbitratorCost);
+        erc20Token.approve(address(flowTCR), SUBMISSION_BASE_DEPOSIT + arbitratorCost);
 
         // 4. Call addItem function
         bytes32 itemID = submitItem(ITEM_DATA, requester);
 
         // 5. Verify GeneralizedTCR balance increase
         assertEq(
-            erc20Token.balanceOf(address(generalizedTCR)),
+            erc20Token.balanceOf(address(flowTCR)),
             initialBalances[2] + SUBMISSION_BASE_DEPOSIT + arbitratorCost,
             "GeneralizedTCR balance should increase by submission base deposit and arbitration cost"
         );
 
         // 6. Call executeRequest
-        vm.warp(block.timestamp + generalizedTCR.challengePeriodDuration() + 1);
-        generalizedTCR.executeRequest(itemID);
+        vm.warp(block.timestamp + flowTCR.challengePeriodDuration() + 1);
+        flowTCR.executeRequest(itemID);
 
         // 7. Check requester's balance restoration
         assertEq(
@@ -178,7 +170,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
 
         // 8. Ensure GeneralizedTCR balance decrease
         assertEq(
-            erc20Token.balanceOf(address(generalizedTCR)),
+            erc20Token.balanceOf(address(flowTCR)),
             initialBalances[2],
             "GeneralizedTCR balance should return to initial state"
         );
@@ -202,7 +194,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
             "Challenger final balance should remain unchanged"
         );
         assertEq(
-            erc20Token.balanceOf(address(generalizedTCR)),
+            erc20Token.balanceOf(address(flowTCR)),
             initialBalances[2],
             "GeneralizedTCR final balance should match initial balance"
         );
@@ -217,7 +209,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
         uint256[] memory initialBalances = new uint256[](4);
         initialBalances[0] = erc20Token.balanceOf(requester);
         initialBalances[1] = erc20Token.balanceOf(challenger);
-        initialBalances[2] = erc20Token.balanceOf(address(generalizedTCR));
+        initialBalances[2] = erc20Token.balanceOf(address(flowTCR));
         initialBalances[3] = erc20Token.balanceOf(address(arbitrator));
 
         // Initial setup
@@ -229,7 +221,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
         challengeItem(itemID, challenger);
 
         // Get the dispute ID
-        (, uint256 disputeID, , , , , , , , ) = generalizedTCR.getRequestInfo(itemID, 0);
+        (, uint256 disputeID, , , , , , , , ) = flowTCR.getRequestInfo(itemID, 0);
 
         // Advance time to voting period
         advanceTime(VOTING_DELAY + 2);
@@ -272,7 +264,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
         );
 
         assertEq(
-            erc20Token.balanceOf(address(generalizedTCR)),
+            erc20Token.balanceOf(address(flowTCR)),
             initialBalances[2],
             "GeneralizedTCR balance should remain unchanged"
         );
@@ -285,7 +277,7 @@ contract TCRFundFlowTest is GeneralizedTCRTest {
         );
 
         // Verify the item status
-        (, IGeneralizedTCR.Status status, ) = generalizedTCR.getItemInfo(itemID);
+        (, IGeneralizedTCR.Status status, ) = flowTCR.getItemInfo(itemID);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Absent), "Item should remain absent after a tie");
     }
 }

@@ -30,9 +30,6 @@ contract FlowStorageV1 {
     /// The flow manager
     address public manager;
 
-    /// Counter for total recipients added
-    uint256 public recipientCount;
-
     /// Counter for active recipients (not removed)
     uint256 public activeRecipientCount;
 
@@ -40,7 +37,7 @@ contract FlowStorageV1 {
     RecipientMetadata public metadata;
 
     /// The mapping of recipients
-    mapping(uint256 => FlowRecipient) public recipients;
+    mapping(bytes32 => FlowRecipient) public recipients;
 
     /// The mapping of addresses to whether they are a recipient
     mapping(address => bool) public recipientExists;
@@ -69,7 +66,7 @@ contract FlowStorageV1 {
 
     // Struct to hold the recipientId and their corresponding BPS for a vote
     struct VoteAllocation {
-        uint256 recipientId;
+        bytes32 recipientId;
         uint32 bps;
         uint128 memberUnits;
     }

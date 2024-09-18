@@ -21,7 +21,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         address flowManager = address(0x123);
 
         vm.prank(manager);
-        address newFlowAddress = flow.addFlowRecipient(metadata, flowManager);
+        (bytes32 recipientId, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager);
 
         ERC721Flow newFlow = ERC721Flow(newFlowAddress);
 
@@ -64,7 +64,7 @@ contract FlowRecipientTest is ERC721FlowTest {
             }),
             flow.owner()
         );
-        address newFlowAddress = flow.addFlowRecipient(metadata, flowManager);
+        (bytes32 recipientId, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager);
 
         assertNotEq(newFlowAddress, address(0));
 
@@ -75,7 +75,7 @@ contract FlowRecipientTest is ERC721FlowTest {
             bool removed,
             FlowStorageV1.RecipientType recipientType,
             FlowStorageV1.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(0);
+        ) = flow.recipients(recipientId);
         assertEq(storedRecipient, newFlowAddress);
         assertEq(removed, false);
         assertEq(uint8(recipientType), uint8(FlowStorageV1.RecipientType.FlowContract));
@@ -86,7 +86,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         assertEq(storedMetadata.url, metadata.url);
 
         // Verify recipient count increased
-        assertEq(flow.recipientCount(), 1);
+        assertEq(flow.activeRecipientCount(), 1);
 
         // Check the newly created Flow contract fields
         ERC721Flow newFlow = ERC721Flow(newFlowAddress);
@@ -181,11 +181,11 @@ contract FlowRecipientTest is ERC721FlowTest {
 
         vm.startPrank(flow.owner());
 
-        address newFlowAddress1 = flow.addFlowRecipient(metadata1, flowManager1);
-        address newFlowAddress2 = flow.addFlowRecipient(metadata2, flowManager2);
+        (bytes32 recipientId1, address newFlowAddress1) = flow.addFlowRecipient(metadata1, flowManager1);
+        (bytes32 recipientId2, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2);
 
         assertNotEq(newFlowAddress1, newFlowAddress2);
-        assertEq(flow.recipientCount(), 2);
+        assertEq(flow.activeRecipientCount(), 2);
 
         vm.stopPrank();
     }

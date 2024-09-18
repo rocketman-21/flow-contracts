@@ -19,7 +19,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     /**
      * @notice Initializes the Flow contract
      * @param _superToken The address of the SuperToken to be used for the pool
-     * @param _flowImpl The address of the flow implementation contract
      * @param _manager The address of the flow manager
      * @param _parent The address of the parent flow contract (optional)
      * @param _flowParams The parameters for the flow contract
@@ -75,7 +74,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Sets the address of the grants implementation contract
      * @param _flowImpl The new address of the grants implementation contract
      */
-    function setFlowImpl(address _flowImpl) public onlyOwner nonReentrant {
+    function setFlowImpl(address _flowImpl) external onlyOwner nonReentrant {
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
 
         flowImpl = _flowImpl;
@@ -87,7 +86,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param tokenId The tokenId of the account to retrieve votes for
      * @return allocations An array of VoteAllocation structs representing each vote made by the token
      */
-    function getVotesForTokenId(uint256 tokenId) public view returns (VoteAllocation[] memory allocations) {
+    function getVotesForTokenId(uint256 tokenId) external view returns (VoteAllocation[] memory allocations) {
         return votes[tokenId];
     }
 
@@ -97,7 +96,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
      */
     function getVotesForTokenIds(
-        uint256[] memory tokenIds
+        uint256[] calldata tokenIds
     ) public view returns (VoteAllocation[][] memory allocations) {
         allocations = new VoteAllocation[][](tokenIds.length);
         for (uint256 i = 0; i < tokenIds.length; i++) {
@@ -115,13 +114,12 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Requires that the recipient is valid, and the weight is greater than the minimum vote weight.
      * Emits a VoteCast event upon successful execution.
      */
-    function _vote(uint256 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
+    function _vote(bytes32 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
         // calculate new member units for recipient
         // make sure to add the current units to the new units
         // todo check this
-        FlowRecipient memory recipient = recipients[recipientId];
-        RecipientType recipientType = recipient.recipientType;
-        address recipientAddress = recipient.recipient;
+        RecipientType recipientType = recipients[recipientId].recipientType;
+        address recipientAddress = recipients[recipientId].recipient;
         uint128 currentUnits = bonusPool.getUnits(recipientAddress);
 
         // double check for overflow before casting
@@ -156,16 +154,16 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function _clearPreviousVotes(uint256 tokenId) internal {
         VoteAllocation[] memory allocations = votes[tokenId];
         for (uint256 i = 0; i < allocations.length; i++) {
-            FlowRecipient memory recipient = recipients[allocations[i].recipientId];
+            bytes32 recipientId = allocations[i].recipientId;
 
             // if recipient is removed, skip - don't want to update member units because they have been wiped to 0
             // fine because this vote will be deleted in the next step
-            if (recipient.removed) continue;
+            if (recipients[recipientId].removed) continue;
 
-            address recipientAddress = recipient.recipient;
+            address recipientAddress = recipients[recipientId].recipient;
             uint128 currentUnits = bonusPool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
-            RecipientType recipientType = recipient.recipientType;
+            RecipientType recipientType = recipients[recipientId].recipientType;
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
@@ -190,7 +188,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param recipientIds The recipientIds of the grant recipients.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
      */
-    modifier validVotes(uint256[] memory recipientIds, uint32[] memory percentAllocations) {
+    modifier validVotes(bytes32[] memory recipientIds, uint32[] memory percentAllocations) {
         // must have recipientIds
         if (recipientIds.length < 1) {
             revert TOO_FEW_RECIPIENTS();
@@ -203,8 +201,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // ensure recipients are not 0 address and allocations are > 0
         for (uint256 i = 0; i < recipientIds.length; i++) {
-            uint256 recipientId = recipientIds[i];
-            if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
+            bytes32 recipientId = recipientIds[i];
+            if (recipients[recipientId].recipient == address(0)) revert INVALID_RECIPIENT_ID();
             if (recipients[recipientId].removed == true) revert NOT_APPROVED_RECIPIENT();
             if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
         }
@@ -220,7 +218,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _setVotesAllocationForTokenId(
         uint256 tokenId,
-        uint256[] memory recipientIds,
+        bytes32[] memory recipientIds,
         uint32[] memory percentAllocations
     ) internal {
         uint256 weight = tokenVoteWeight;
@@ -246,18 +244,18 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Modifier to restrict access to only the owner or the parent
-     */
-    modifier onlyOwnerOrParent() {
-        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
-        _;
-    }
-
-    /**
      * @notice Modifier to restrict access to only the owner or the manager
      */
     modifier onlyOwnerOrManager() {
         if (msg.sender != owner() && msg.sender != manager) revert NOT_OWNER_OR_MANAGER();
+        _;
+    }
+
+    /**
+     * @notice Modifier to restrict access to only the owner or the parent
+     */
+    modifier onlyOwnerOrParent() {
+        if (msg.sender != owner() && msg.sender != parent) revert NOT_OWNER_OR_PARENT();
         _;
     }
 
@@ -273,28 +271,20 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Increments the recipient counts
-     * @dev This function increments both the total recipient count and the active recipient count
-     * @dev This should be called whenever a new recipient is added
-     */
-    function _incrementRecipientCounts() internal {
-        recipientCount++;
-        activeRecipientCount++;
-    }
-
-    /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
      * @param metadata The metadata of the recipient
+     * @return bytes32 The recipientId of the newly created recipient
+     * @return address The address of the newly created recipient
      */
     function addRecipient(
         address recipient,
         RecipientMetadata memory metadata
-    ) external onlyManager nonReentrant validMetadata(metadata) {
+    ) external onlyManager nonReentrant validMetadata(metadata) returns (bytes32, address) {
         if (recipient == address(0)) revert ADDRESS_ZERO();
         if (recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
 
-        uint256 recipientId = recipientCount;
+        bytes32 recipientId = keccak256(abi.encode(recipient, metadata, RecipientType.ExternalAccount));
 
         recipientExists[recipient] = true;
 
@@ -305,12 +295,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             metadata: metadata
         });
 
-        _incrementRecipientCounts();
+        activeRecipientCount++;
 
         _initializeBaselineMemberUnits(recipient);
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
+
+        return (recipientId, recipient);
     }
 
     /**
@@ -318,14 +310,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev This function creates a new Flow contract and adds it as a recipient
      * @param metadata The metadata of the recipient
      * @param flowManager The address of the flow manager for the new contract
+     * @return bytes32 The recipientId of the newly created Flow contract
      * @return address The address of the newly created Flow contract
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientCreated event if the recipient is successfully added
      */
     function addFlowRecipient(
-        RecipientMetadata memory metadata,
+        RecipientMetadata calldata metadata,
         address flowManager
-    ) external onlyManager validMetadata(metadata) returns (address) {
+    ) external onlyManager validMetadata(metadata) returns (bytes32, address) {
         if (flowManager == address(0)) revert ADDRESS_ZERO();
 
         address recipient = _deployFlowRecipient(metadata, flowManager);
@@ -337,7 +330,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _initializeBaselineMemberUnits(recipient);
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
-        uint256 recipientId = recipientCount;
+        // functionality equivalent to addItem _itemID in GeneralizedTCR.sol (keccak256(bytes calldata _item))
+        bytes32 recipientId = keccak256(abi.encode(recipient, metadata, RecipientType.FlowContract));
 
         recipients[recipientId] = FlowRecipient({
             recipientType: RecipientType.FlowContract,
@@ -346,12 +340,12 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             metadata: metadata
         });
 
-        _incrementRecipientCounts();
+        activeRecipientCount++;
 
         emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
         emit FlowRecipientCreated(recipientId, recipient);
 
-        return recipient;
+        return (recipientId, recipient);
     }
 
     /**
@@ -362,7 +356,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @return address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
-        RecipientMetadata memory metadata,
+        RecipientMetadata calldata metadata,
         address flowManager
     ) internal virtual returns (address) {}
 
@@ -372,8 +366,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
-    function removeRecipient(uint256 recipientId) external onlyManager nonReentrant {
-        if (recipientId >= recipientCount) revert INVALID_RECIPIENT_ID();
+    function removeRecipient(bytes32 recipientId) external onlyManager nonReentrant {
+        if (recipients[recipientId].recipient == address(0)) revert INVALID_RECIPIENT_ID();
         if (recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
 
         address recipientAddress = recipients[recipientId].recipient;
@@ -479,7 +473,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Only callable by the current owner
      * @dev Emits a ManagerUpdated event with the old and new manager addresses
      */
-    function setManager(address _newManager) external onlyOwner nonReentrant {
+    function setManager(address _newManager) external onlyOwnerOrManager nonReentrant {
         if (_newManager == address(0)) revert ADDRESS_ZERO();
 
         address oldManager = manager;
@@ -585,7 +579,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param memberAddr The address of the member
      * @return totalAmountReceived The total amount received by the member
      */
-    function getTotalReceivedByMember(address memberAddr) public view returns (uint256 totalAmountReceived) {
+    function getTotalReceivedByMember(address memberAddr) external view returns (uint256 totalAmountReceived) {
         totalAmountReceived =
             bonusPool.getTotalAmountReceivedByMember(memberAddr) +
             baselinePool.getTotalAmountReceivedByMember(memberAddr);

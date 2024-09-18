@@ -24,7 +24,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
  *  @title GeneralizedTCR
  *  This contract is a curated registry for any types of items. Just like a TCR contract it features the request-challenge protocol and appeal fees crowdfunding.
  */
-contract GeneralizedTCR is
+abstract contract GeneralizedTCR is
     IArbitrable,
     IEvidence,
     IGeneralizedTCR,
@@ -35,10 +35,6 @@ contract GeneralizedTCR is
 {
     using CappedMath for uint256;
     using SafeERC20 for IERC20;
-    /**
-     *  @dev Deploy the arbitrable curated registry.
-     */
-    constructor() {}
 
     /**
      *  @dev Initialize the arbitrable curated registry.
@@ -58,7 +54,7 @@ contract GeneralizedTCR is
      *  - The multiplier applied to the winner's fee stake for the subsequent round.
      *  - The multiplier applied to the loser's fee stake for the subsequent round.
      */
-    function initialize(
+    function __GeneralizedTCR_init(
         IArbitrator _arbitrator,
         bytes memory _arbitratorExtraData,
         string memory _registrationMetaEvidence,
@@ -71,7 +67,7 @@ contract GeneralizedTCR is
         uint _removalChallengeBaseDeposit,
         uint _challengePeriodDuration,
         uint[3] memory _stakeMultipliers
-    ) public initializer {
+    ) public {
         __Ownable_init();
         __ReentrancyGuard_init();
 
@@ -93,6 +89,8 @@ contract GeneralizedTCR is
         sharedStakeMultiplier = _stakeMultipliers[0];
         winnerStakeMultiplier = _stakeMultipliers[1];
         loserStakeMultiplier = _stakeMultipliers[2];
+        registrationMetaEvidence = _registrationMetaEvidence;
+        clearingMetaEvidence = _clearingMetaEvidence;
     }
 
     /* External and Public */
@@ -309,9 +307,13 @@ contract GeneralizedTCR is
         if (block.timestamp - request.submissionTime <= challengePeriodDuration) revert CHALLENGE_PERIOD_MUST_PASS();
         if (request.disputed) revert REQUEST_MUST_NOT_BE_DISPUTED();
 
-        if (item.status == Status.RegistrationRequested) item.status = Status.Registered;
-        else if (item.status == Status.ClearingRequested) item.status = Status.Absent;
-        else revert MUST_BE_A_REQUEST();
+        if (item.status == Status.RegistrationRequested) {
+            item.status = Status.Registered;
+            _onItemRegistered(_itemID, item.data);
+        } else if (item.status == Status.ClearingRequested) {
+            item.status = Status.Absent;
+            _onItemRemoved(_itemID);
+        } else revert MUST_BE_A_REQUEST();
 
         request.resolved = true;
         emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1, false, true);
@@ -344,6 +346,17 @@ contract GeneralizedTCR is
         emit Ruling(IArbitrator(msg.sender), _disputeID, uint(resultRuling));
         _executeRuling(_disputeID, uint(resultRuling));
     }
+
+    /** @dev Hook called when an item is registered. Can be overridden by derived contracts.
+     *  @param _itemID The ID of the item that was registered.
+     *  @param _item The data describing the item.
+     */
+    function _onItemRegistered(bytes32 _itemID, bytes memory _item) internal virtual {}
+
+    /** @dev Hook called when an item is removed. Can be overridden by derived contracts.
+     *  @param _itemID The ID of the item that was removed.
+     */
+    function _onItemRemoved(bytes32 _itemID) internal virtual {}
 
     /** @dev Submit a reference to evidence. EVENT.
      *  @param _itemID The ID of the item which the evidence is related to.
@@ -443,6 +456,8 @@ contract GeneralizedTCR is
         string calldata _clearingMetaEvidence
     ) external onlyGovernor {
         metaEvidenceUpdates++;
+        registrationMetaEvidence = _registrationMetaEvidence;
+        clearingMetaEvidence = _clearingMetaEvidence;
         emit MetaEvidence(2 * metaEvidenceUpdates, _registrationMetaEvidence);
         emit MetaEvidence(2 * metaEvidenceUpdates + 1, _clearingMetaEvidence);
     }
@@ -556,8 +571,13 @@ contract GeneralizedTCR is
 
         if (winner == Party.Requester) {
             // Execute Request.
-            if (item.status == Status.RegistrationRequested) item.status = Status.Registered;
-            else if (item.status == Status.ClearingRequested) item.status = Status.Absent;
+            if (item.status == Status.RegistrationRequested) {
+                _onItemRegistered(itemID, item.data);
+                item.status = Status.Registered;
+            } else if (item.status == Status.ClearingRequested) {
+                item.status = Status.Absent;
+                _onItemRemoved(itemID);
+            }
         } else {
             if (item.status == Status.RegistrationRequested) item.status = Status.Absent;
             else if (item.status == Status.ClearingRequested) item.status = Status.Registered;

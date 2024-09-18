@@ -56,22 +56,22 @@ contract ArbitratorStorageV1 {
     IArbitrable public arbitrable;
 
     /** @notice The number of seconds between the vote start and the vote end */
-    uint256 public votingPeriod;
+    uint256 public _votingPeriod;
 
     /** @notice The number of seconds after a dispute is executed that a party can appeal the decision */
     uint256 public _appealPeriod;
 
     /** @notice The number of seconds between the proposal creation and the vote start */
-    uint256 public votingDelay;
+    uint256 public _votingDelay;
 
     /** @notice The number of seconds for the reveal period after voting ends */
-    uint256 public revealPeriod;
-
-    /** @notice The total number of disputes created */
-    uint256 public disputeCount;
+    uint256 public _revealPeriod;
 
     /** @notice The cost of appealing a dispute */
     uint256 public _appealCost;
+
+    /** @notice The total number of disputes created */
+    uint256 public disputeCount;
 
     /** @notice The cost of arbitration */
     uint256 public _arbitrationCost;

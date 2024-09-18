@@ -1,9 +1,9 @@
 // Start of Selection
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.27;
 
 import { Test } from "forge-std/Test.sol";
-import { GeneralizedTCR } from "../../src/tcr/GeneralizedTCR.sol";
+import { FlowTCR } from "../../src/tcr/FlowTCR.sol";
 import { ERC20VotesMintable } from "../../src/ERC20VotesMintable.sol";
 import { ERC20VotesArbitrator } from "../../src/tcr/ERC20VotesArbitrator.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -12,10 +12,15 @@ import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { ArbitratorStorageV1 } from "../../src/tcr/storage/ArbitratorStorageV1.sol";
+import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
+import { ERC721FlowTest } from "../erc721-flow/ERC721Flow.t.sol";
+import { TCRFactory } from "../../src/tcr/TCRFactory.sol";
+import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 
-contract GeneralizedTCRTest is Test {
+contract FlowTCRTest is ERC721FlowTest {
     // Contracts
-    GeneralizedTCR public generalizedTCR;
+    FlowTCR public flowTCR;
     ERC20VotesMintable public erc20Token;
     ERC20VotesArbitrator public arbitrator;
 
@@ -25,6 +30,7 @@ contract GeneralizedTCRTest is Test {
     address public requester;
     address public challenger;
     address public swingVoter;
+    address public recipient;
 
     // Test Parameters
     uint256 public constant SUBMISSION_BASE_DEPOSIT = 100 ether;
@@ -35,9 +41,9 @@ contract GeneralizedTCRTest is Test {
     uint256 public constant STAKE_MULTIPLIER_SHARED = 10000; // 100%
     uint256 public constant STAKE_MULTIPLIER_WINNER = 10000; // 100%
     uint256 public constant STAKE_MULTIPLIER_LOSER = 10000; // 100%
-    bytes public constant ITEM_DATA = "0x1234";
+    bytes public ITEM_DATA = "0x1234";
 
-    // GeneralizedTCR Parameters
+    // FlowTCR Parameters
     bytes public constant ARBITRATOR_EXTRA_DATA = "";
     string public constant REGISTRATION_META_EVIDENCE = "meta_evidence/registration";
     string public constant CLEARING_META_EVIDENCE = "meta_evidence/clearing";
@@ -56,23 +62,39 @@ contract GeneralizedTCRTest is Test {
     uint256 public constant APPEAL_COST = 1e18 / 10_000; // MIN_APPEAL_COST
     uint256 public constant ARBITRATION_COST = 1e18 / 10_000; // MIN_ARBITRATION_COST
 
-    function setUp() public {
+    function setUp() public virtual override {
+        super.setUp();
         governor = address(this);
         requester = makeAddr("requester");
         challenger = makeAddr("challenger");
         owner = makeAddr("owner");
         swingVoter = makeAddr("swingVoter");
+        recipient = makeAddr("recipient");
 
-        address generalizedTCRImpl = address(new GeneralizedTCR());
-        address generalizedTCRProxy = address(new ERC1967Proxy(generalizedTCRImpl, ""));
+        address flowTCRImpl = address(new FlowTCR());
+        address flowTCRProxy = address(new ERC1967Proxy(flowTCRImpl, ""));
         address arbitratorImpl = address(new ERC20VotesArbitrator());
         address arbitratorProxy = address(new ERC1967Proxy(arbitratorImpl, ""));
         address erc20TokenImpl = address(new ERC20VotesMintable());
         address erc20TokenProxy = address(new ERC1967Proxy(erc20TokenImpl, ""));
 
-        generalizedTCR = GeneralizedTCR(generalizedTCRProxy);
-        generalizedTCR.initialize(
+        address tcrFactoryImpl = address(new TCRFactory());
+        address tcrFactoryProxy = address(new ERC1967Proxy(tcrFactoryImpl, ""));
+
+        ITCRFactory(tcrFactoryProxy).initialize({
+            initialOwner: owner,
+            flowTCRImplementation_: flowTCRImpl,
+            arbitratorImplementation_: arbitratorImpl,
+            erc20Implementation_: erc20TokenImpl
+        });
+
+        ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowStorageV1.RecipientType.ExternalAccount);
+
+        flowTCR = FlowTCR(flowTCRProxy);
+        flowTCR.initialize(
+            IManagedFlow(address(flow)),
             IArbitrator(arbitratorProxy),
+            ITCRFactory(tcrFactoryProxy),
             ARBITRATOR_EXTRA_DATA,
             REGISTRATION_META_EVIDENCE,
             CLEARING_META_EVIDENCE,
@@ -92,7 +114,7 @@ contract GeneralizedTCRTest is Test {
         arbitrator = ERC20VotesArbitrator(arbitratorProxy);
         arbitrator.initialize(
             address(erc20Token),
-            address(generalizedTCR),
+            address(flowTCR),
             VOTING_PERIOD,
             VOTING_DELAY,
             REVEAL_PERIOD,
@@ -106,17 +128,20 @@ contract GeneralizedTCRTest is Test {
         erc20Token.mint(challenger, 1000 ether);
         erc20Token.mint(swingVoter, 1000 ether);
 
-        // Approve GeneralizedTCR to spend tokens
+        vm.prank(flow.owner());
+        flow.setManager(address(flowTCR));
+
+        // Approve FlowTCR to spend tokens
         vm.prank(requester);
-        erc20Token.approve(address(generalizedTCR), type(uint256).max);
+        erc20Token.approve(address(flowTCR), type(uint256).max);
         vm.prank(challenger);
-        erc20Token.approve(address(generalizedTCR), type(uint256).max);
+        erc20Token.approve(address(flowTCR), type(uint256).max);
     }
 
     // Helper Functions
     function submitItem(bytes memory _itemData, address _submitter) internal returns (bytes32) {
         vm.prank(_submitter);
-        generalizedTCR.addItem(_itemData);
+        flowTCR.addItem(_itemData);
         bytes32 itemID = keccak256(_itemData);
         return itemID;
     }
@@ -163,9 +188,14 @@ contract GeneralizedTCRTest is Test {
         arbitrator.executeRuling(disputeID);
     }
 
-    function challengeItem(bytes32 _itemID, address _challenger) internal {
+    // Helper function to challenge an item
+    function challengeItem(bytes32 _itemID, address _challenger) internal returns (uint256) {
         vm.prank(_challenger);
-        generalizedTCR.challengeRequest(_itemID, BASIC_EVIDENCE);
+        flowTCR.challengeRequest(_itemID, BASIC_EVIDENCE);
+
+        // Get the dispute ID from the last request
+        (, uint256 disputeID, , , , , , , , ) = flowTCR.getRequestInfo(_itemID, 0);
+        return disputeID;
     }
 
     function advanceTime(uint256 _seconds) internal {

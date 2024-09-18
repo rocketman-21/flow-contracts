@@ -6,7 +6,7 @@ import { INounsFlow } from "./interfaces/IFlow.sol";
 import { ITokenVerifier } from "./interfaces/ITokenVerifier.sol";
 import { IStateProof } from "./interfaces/IStateProof.sol";
 
-import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { IOwnable2Step } from "./interfaces/IOwnable2Step.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract NounsFlow is INounsFlow, Flow {
@@ -20,8 +20,8 @@ contract NounsFlow is INounsFlow, Flow {
         address _flowImpl,
         address _manager,
         address _parent,
-        FlowParams memory _flowParams,
-        RecipientMetadata memory _metadata
+        FlowParams calldata _flowParams,
+        RecipientMetadata calldata _metadata
     ) public initializer {
         __Flow_init(_superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
 
@@ -39,35 +39,26 @@ contract NounsFlow is INounsFlow, Flow {
      * @param delegateStorageProofs A 2D array of storage proofs for delegation, corresponding to each token ID.
      */
     function castVotes(
-        address[] memory owners,
-        uint256[][] memory tokenIds,
-        uint256[] memory recipientIds,
-        uint32[] memory percentAllocations,
-        IStateProof.BaseParameters memory baseProofParams,
-        bytes[][][] memory ownershipStorageProofs,
-        bytes[][] memory delegateStorageProofs
+        address[] calldata owners,
+        uint256[][] calldata tokenIds,
+        bytes32[] calldata recipientIds,
+        uint32[] calldata percentAllocations,
+        IStateProof.BaseParameters calldata baseProofParams,
+        bytes[][][] calldata ownershipStorageProofs,
+        bytes[][] calldata delegateStorageProofs
     ) external nonReentrant validVotes(recipientIds, percentAllocations) {
         // if the timestamp is more than 5 minutes old, it is invalid
         // TODO check through security considerations if this is a valid assumption
         if (baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
 
         for (uint256 i = 0; i < owners.length; i++) {
-            IStateProof.Parameters[] memory ownershipProofs = _generateOwnershipProofs(
-                baseProofParams,
-                ownershipStorageProofs[i]
-            );
-            IStateProof.Parameters memory delegateProof = _generateStateProofParams(
-                baseProofParams,
-                delegateStorageProofs[i]
-            );
-
             _castVotesForOwner(
                 owners[i],
                 tokenIds[i],
                 recipientIds,
                 percentAllocations,
-                ownershipProofs,
-                delegateProof
+                _generateOwnershipProofs(baseProofParams, ownershipStorageProofs[i]),
+                _generateStateProofParams(baseProofParams, delegateStorageProofs[i])
             );
         }
     }
@@ -80,8 +71,8 @@ contract NounsFlow is INounsFlow, Flow {
      * @return An array of IStateProof.Parameters, one for each token ID
      */
     function _generateOwnershipProofs(
-        IStateProof.BaseParameters memory baseProofParams,
-        bytes[][] memory ownershipStorageProofs
+        IStateProof.BaseParameters calldata baseProofParams,
+        bytes[][] calldata ownershipStorageProofs
     ) internal pure returns (IStateProof.Parameters[] memory) {
         uint256 tokenIdCount = ownershipStorageProofs.length;
         IStateProof.Parameters[] memory ownershipProofs = new IStateProof.Parameters[](tokenIdCount);
@@ -101,8 +92,8 @@ contract NounsFlow is INounsFlow, Flow {
      * @return IStateProof.Parameters The generated state proof parameters
      */
     function _generateStateProofParams(
-        IStateProof.BaseParameters memory baseProofParams,
-        bytes[] memory storageProof
+        IStateProof.BaseParameters calldata baseProofParams,
+        bytes[] calldata storageProof
     ) internal pure returns (IStateProof.Parameters memory) {
         return
             IStateProof.Parameters({
@@ -126,9 +117,9 @@ contract NounsFlow is INounsFlow, Flow {
      */
     function _castVotesForOwner(
         address owner,
-        uint256[] memory tokenIds,
-        uint256[] memory recipientIds,
-        uint32[] memory percentAllocations,
+        uint256[] calldata tokenIds,
+        bytes32[] calldata recipientIds,
+        uint32[] calldata percentAllocations,
         IStateProof.Parameters[] memory ownershipProofs,
         IStateProof.Parameters memory delegateProof
     ) internal {
@@ -147,7 +138,7 @@ contract NounsFlow is INounsFlow, Flow {
      * @return address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
-        RecipientMetadata memory metadata,
+        RecipientMetadata calldata metadata,
         address flowManager
     ) internal override returns (address) {
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
@@ -166,7 +157,7 @@ contract NounsFlow is INounsFlow, Flow {
             metadata: metadata
         });
 
-        Ownable2StepUpgradeable(recipient).transferOwnership(owner());
+        IOwnable2Step(recipient).transferOwnership(owner());
 
         return recipient;
     }
