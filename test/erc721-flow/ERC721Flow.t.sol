@@ -90,7 +90,7 @@ contract ERC721FlowTest is Test {
         address rewardPoolProxy = address(new ERC1967Proxy(rewardPoolImpl, ""));
 
         // Initialize the proxy
-        IRewardPool(rewardPoolProxy).initialize(ISuperToken(superTokenAddress));
+        IRewardPool(rewardPoolProxy).initialize(ISuperToken(superTokenAddress), manager);
 
         return IRewardPool(rewardPoolProxy);
     }

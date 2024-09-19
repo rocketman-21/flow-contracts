@@ -25,6 +25,9 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     /// @notice The Superfluid pool created on initialization
     ISuperfluidPool public rewardPool;
 
+    /// @notice The manager of the pool
+    address public manager;
+
     /// The Superfluid pool configuration
     PoolConfig public poolConfig =
         PoolConfig({ transferabilityForUnitsOwner: false, distributionFromAnyAddress: false });
@@ -32,17 +35,19 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     error ADDRESS_ZERO();
     error FLOW_RATE_NEGATIVE();
     error UNITS_UPDATE_FAILED();
-
+    error NOT_MANAGER_OR_OWNER();
     /**
      * @notice Initializes the contract and creates a Superfluid pool
      * @dev On initialization, the contract creates a Superfluid pool with the specified SuperToken
      * @param _superToken The address of the SuperToken to be used
+     * @param _manager The address of the manager of the pool
      */
-    function initialize(ISuperToken _superToken) public initializer {
+    function initialize(ISuperToken _superToken, address _manager) public initializer {
         if (address(_superToken) == address(0)) revert ADDRESS_ZERO();
         __Ownable2Step_init();
         __ReentrancyGuard_init();
         superToken = _superToken;
+        manager = _manager;
         rewardPool = superToken.createPool(address(this), poolConfig);
     }
 
@@ -63,7 +68,7 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      * @param _member The address of the pool recipient
      * @param _units The new member units to assign to the recipient
      */
-    function updateMemberUnits(address _member, uint128 _units) external onlyOwner nonReentrant {
+    function updateMemberUnits(address _member, uint128 _units) external onlyManagerOrOwner nonReentrant {
         if (_member == address(0)) revert ADDRESS_ZERO();
 
         uint128 totalUnitsBefore = rewardPool.getTotalUnits();
@@ -101,6 +106,14 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      */
     function getTotalFlowRate() public view returns (int96 totalFlowRate) {
         totalFlowRate = rewardPool.getTotalFlowRate();
+    }
+
+    /**
+     * @notice Modifier to restrict access to only the manager or owner
+     */
+    modifier onlyManagerOrOwner() {
+        if (msg.sender != owner() && msg.sender != manager) revert NOT_MANAGER_OR_OWNER();
+        _;
     }
 
     /**

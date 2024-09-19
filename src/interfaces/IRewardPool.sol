@@ -13,8 +13,9 @@ interface IRewardPool {
     /**
      * @notice Initializes the contract and creates a Superfluid pool
      * @param superToken The address of the SuperToken to be used
+     * @param manager The address of the manager of the pool
      */
-    function initialize(ISuperToken superToken) external;
+    function initialize(ISuperToken superToken, address manager) external;
 
     /**
      * @notice Allows the admin or owner to update the flow rate of the pool
