@@ -113,7 +113,7 @@ contract FlowTCRTest is ERC721FlowTest {
         );
 
         erc20Token = ERC20VotesMintable(erc20TokenProxy);
-        erc20Token.initialize(governor, governor, "Test Token", "TST");
+        erc20Token.initialize(governor, governor, address(rewardPool), "Test Token", "TST");
 
         arbitrator = ERC20VotesArbitrator(arbitratorProxy);
         arbitrator.initialize(

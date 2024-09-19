@@ -31,6 +31,13 @@ interface IRewardPool {
     function updateMemberUnits(address member, uint128 units) external;
 
     /**
+     * @notice Retrieves the units for a specific member in the pool
+     * @param member The address of the member
+     * @return units The units assigned to the member
+     */
+    function getMemberUnits(address member) external view returns (uint128 units);
+
+    /**
      * @notice Helper function to get the claimable balance for a member at the current time
      * @param member The address of the member
      * @return claimableBalance The claimable balance for the member

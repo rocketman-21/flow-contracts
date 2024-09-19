@@ -12,6 +12,7 @@ import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/acc
 import { ERC20VotesUpgradeable } from "./base/erc20/ERC20VotesUpgradeable.sol";
 
 import { IERC20Mintable } from "./interfaces/IERC20Mintable.sol";
+import { IRewardPool } from "./interfaces/IRewardPool.sol";
 
 contract ERC20VotesMintable is
     IERC20Mintable,
@@ -25,6 +26,11 @@ contract ERC20VotesMintable is
 
     // Whether the minter can be updated
     bool public isMinterLocked;
+
+    // The address of the reward pool
+    address public rewardPool;
+
+    error POOL_UNITS_OVERFLOW();
 
     ///                                                          ///
     ///                          MODIFIERS                       ///
@@ -72,19 +78,23 @@ contract ERC20VotesMintable is
      * @notice Initializes an ERC-20 mintable token contract
      * @param _initialOwner The address of the initial owner
      * @param _minter The address of the minter
+     * @param _rewardPool The address of the reward pool
      * @param _name The name of the token
      * @param _symbol The symbol of the token
      */
     function initialize(
         address _initialOwner,
         address _minter,
+        address _rewardPool,
         string calldata _name,
         string calldata _symbol
     ) external initializer {
         if (_minter == address(0)) revert INVALID_ADDRESS_ZERO();
         if (_initialOwner == address(0)) revert INVALID_ADDRESS_ZERO();
+        if (_rewardPool == address(0)) revert INVALID_ADDRESS_ZERO();
 
         minter = _minter;
+        rewardPool = _rewardPool;
 
         __ERC20Mintable_init(_name, _symbol);
 
@@ -143,6 +153,34 @@ contract ERC20VotesMintable is
         isMinterLocked = true;
 
         emit MinterLocked();
+    }
+
+    /**
+     * @dev Move voting power when tokens are transferred.
+     *
+     * Emits a {IVotes-DelegateVotesChanged} event.
+     */
+    function _afterTokenTransfer(address from, address to, uint256 amount) internal virtual override {
+        super._afterTokenTransfer(from, to, amount);
+
+        // dont let people update rewards pool for same account
+        if (from == to) return;
+
+        uint128 fromUnits = IRewardPool(rewardPool).getMemberUnits(from);
+        uint128 toUnits = IRewardPool(rewardPool).getMemberUnits(to);
+
+        // update member units in the reward pool
+        // subtract from old account, add to new account
+
+        uint256 scaledUnits = amount / 1e14;
+        if (scaledUnits > type(uint128).max) revert POOL_UNITS_OVERFLOW();
+        uint128 transferredUnits = uint128(scaledUnits);
+
+        // if minting from 0 address, don't subtract member units from 0x0
+        if (from != address(0)) IRewardPool(rewardPool).updateMemberUnits(from, fromUnits - transferredUnits);
+
+        // if transferring to 0 address, don't add member units to 0x0
+        if (to != address(0)) IRewardPool(rewardPool).updateMemberUnits(to, toUnits + transferredUnits);
     }
 
     ///                                                          ///

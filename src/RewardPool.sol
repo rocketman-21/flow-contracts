@@ -101,6 +101,15 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     }
 
     /**
+     * @notice Retrieves the units for a specific member in the pool
+     * @param member The address of the member
+     * @return units The units assigned to the member
+     */
+    function getMemberUnits(address member) public view returns (uint128 units) {
+        units = rewardPool.getUnits(member);
+    }
+
+    /**
      * @notice Helper function to get the total flow rate of the pool
      * @return totalFlowRate The total flow rate of the pool
      */

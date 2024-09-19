@@ -95,7 +95,8 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             initialOwner: erc20Params.initialOwner,
             minter: erc20Params.minter,
             name: erc20Params.name,
-            symbol: erc20Params.symbol
+            symbol: erc20Params.symbol,
+            rewardPool: rewardPoolAddress
         });
 
         // Initialize the arbitrator
