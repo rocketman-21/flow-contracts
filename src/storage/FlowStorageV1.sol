@@ -82,17 +82,13 @@ interface FlowTypes {
 /// @author rocketman
 /// @notice The Flow storage contract
 contract FlowStorageV1 is FlowTypes {
+    /// The flow storage
+    Storage public fs; /// @dev Warning - don't update the slot without also changing the libraries that access it
+
     //todo move these to correct libraries
     /// @notice constant to scale uints into percentages (1e6 == 100%)
     uint32 public constant PERCENTAGE_SCALE = 1e6;
 
     /// The member units to assign to each recipient of the baseline salary pool
     uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
-
-    /// The Superfluid pool configuration
-    PoolConfig public poolConfig =
-        PoolConfig({ transferabilityForUnitsOwner: false, distributionFromAnyAddress: false });
-
-    /// The flow storage
-    Storage public fs;
 }

@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow } from "./interfaces/IFlow.sol";
+import { FlowRecipients } from "./library/FlowRecipients.sol";
 
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -12,9 +13,11 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
 abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable, FlowStorageV1 {
     using SuperTokenV1Library for ISuperToken;
+    using FlowRecipients for Storage;
 
     /**
      * @notice Initializes the Flow contract
@@ -58,6 +61,11 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.manager = _manager;
         fs.parent = _parent;
         fs.managerRewardPool = _managerRewardPool;
+
+        PoolConfig memory poolConfig = PoolConfig({
+            transferabilityForUnitsOwner: false,
+            distributionFromAnyAddress: false
+        });
 
         fs.superToken = ISuperToken(_superToken);
         fs.bonusPool = fs.superToken.createPool(address(this), poolConfig);
@@ -346,18 +354,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
     function removeRecipient(bytes32 recipientId) external onlyManager nonReentrant {
-        if (fs.recipients[recipientId].recipient == address(0)) revert INVALID_RECIPIENT_ID();
-        if (fs.recipients[recipientId].removed) revert RECIPIENT_ALREADY_REMOVED();
-
-        address recipientAddress = fs.recipients[recipientId].recipient;
-        fs.recipientExists[recipientAddress] = false;
+        address recipientAddress = fs.removeRecipient(recipientId);
 
         _removeFromPools(recipientAddress);
-
-        emit RecipientRemoved(recipientAddress, recipientId);
-
-        fs.recipients[recipientId].removed = true;
-        fs.activeRecipientCount--;
     }
 
     /**
