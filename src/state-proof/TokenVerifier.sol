@@ -50,10 +50,25 @@ contract TokenVerifier {
             if (result) return true;
         } catch {}
 
-        /// TODO try to handle no delegate case
-        // try this.validateDelegateState(owner, abi.encodePacked(bytes32(0)), proofParams) returns (bool result) {
-        //     if (result) return true;
-        // } catch {}
+        /// @notice Handles this case in the `delegates` function of NounsToken
+        /**
+         * @notice Overrides the standard `Comp.sol` delegates mapping to return
+         * the delegator's own address if they haven't delegated.
+         * This avoids having to delegate to oneself.
+         */
+        // function delegates(address delegator) public view returns (address) {
+        //     address current = _delegates[delegator];
+        //     return current == address(0) ? delegator : current;
+        // }
+        bool isDelegateSlotEmpty = StateVerifier.validateIsStorageSlotEmpty({
+            account: TOKEN_ADDRESS,
+            storageKey: abi.encodePacked(_getDelegateKey(owner)),
+            proofParams: proofParams
+        });
+        /// @notice Assumes that the owner of this token is verified to be correct
+        /// @notice This is true for NounsToken only
+        if (isDelegateSlotEmpty && owner == delegate) return true;
+
         return false;
     }
 

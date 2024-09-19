@@ -4,10 +4,10 @@ pragma solidity ^0.8.27;
 /// @author Wilson Cusack (https://github.com/wilsoncusack/state-proof-poc)
 
 import { RLPReader } from "optimism/packages/contracts-bedrock/src/libraries/rlp/RLPReader.sol";
-import { MerkleTrie } from "optimism/packages/contracts-bedrock/src/libraries/trie/MerkleTrie.sol";
-import { SecureMerkleTrie } from "optimism/packages/contracts-bedrock/src/libraries/trie/SecureMerkleTrie.sol";
 import { SSZ } from "eip-4788-proof/SSZ.sol";
 import { IStateProof } from "../interfaces/IStateProof.sol";
+import { MerkleTrie } from "./MerkleTrie.sol";
+import { SecureMerkleTrie } from "./SecureMerkleTrie.sol";
 
 library StateVerifier {
     using RLPReader for RLPReader.RLPItem;
@@ -21,6 +21,28 @@ library StateVerifier {
     error ExecutionStateRootMerkleProofFailed();
     error AccountProofVerificationFailed();
     error StorageProofVerificationFailed();
+
+    function validateIsStorageSlotEmpty(
+        address account,
+        bytes memory storageKey,
+        IStateProof.Parameters calldata proofParams
+    ) internal view returns (bool) {
+        _checkValidBeaconRoot(proofParams.beaconRoot, proofParams.beaconOracleTimestamp);
+        _checkValidStateRoot(proofParams.beaconRoot, proofParams.executionStateRoot, proofParams.stateRootProof);
+
+        // Verify account state
+        bytes memory accountKey = abi.encodePacked(keccak256(abi.encodePacked(account)));
+        bytes memory encodedAccount = _verifyAccountProof(
+            accountKey,
+            proofParams.accountProof,
+            proofParams.executionStateRoot
+        );
+
+        // Extract storage root from account data
+        bytes32 storageRoot = _extractStorageRoot(encodedAccount);
+
+        return SecureMerkleTrie.isStorageSlotEmpty(storageKey, proofParams.storageProof, storageRoot);
+    }
 
     function validateState(
         address account,
