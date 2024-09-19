@@ -354,9 +354,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
     function removeRecipient(bytes32 recipientId) external onlyManager nonReentrant {
-        _removeFromPools(fs.recipients[recipientId].recipient);
-
         fs.removeRecipient(recipientId);
+
+        _removeFromPools(fs.recipients[recipientId].recipient);
     }
 
     /**
