@@ -87,6 +87,15 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     }
 
     /**
+     * @notice Retrieves the flow rate for a specific member in the pool
+     * @param member The address of the member
+     * @return flowRate The flow rate for the member
+     */
+    function getMemberFlowRate(address member) public view returns (int96 flowRate) {
+        flowRate = rewardPool.getMemberFlowRate(member);
+    }
+
+    /**
      * @notice Helper function to get the total flow rate of the pool
      * @return totalFlowRate The total flow rate of the pool
      */
