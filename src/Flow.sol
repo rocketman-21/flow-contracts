@@ -103,7 +103,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         uint128 currentUnits = fs.bonusPool.getUnits(recipientAddress);
 
         // double check for overflow before casting
-        // and scale back by 1e15 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
+        // and scale back by 1e15
+        // per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
         // gives someone with 1 vote at least 1e3 units to work with
         uint256 scaledUnits = _scaleAmountByPercentage(totalWeight, bps) / 1e15;
         if (scaledUnits > type(uint128).max) revert OVERFLOW();
@@ -497,6 +498,23 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit BaselineFlowRatePercentUpdated(fs.baselinePoolFlowRatePercent, _baselineFlowRatePercent);
 
         fs.baselinePoolFlowRatePercent = _baselineFlowRatePercent;
+
+        // Update flow rates to reflect the new percentage
+        _setFlowRate(getTotalFlowRate());
+    }
+
+    /**
+     * @notice Sets the manager reward flow rate percentage
+     * @param _managerRewardFlowRatePercent The new manager reward flow rate percentage
+     * @dev Only callable by the owner or manager of the contract
+     * @dev Emits a ManagerRewardFlowRatePercentUpdated event with the old and new percentages
+     */
+    function setManagerRewardFlowRatePercent(uint32 _managerRewardFlowRatePercent) external onlyOwner nonReentrant {
+        if (_managerRewardFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_PERCENTAGE();
+
+        emit ManagerRewardFlowRatePercentUpdated(fs.managerRewardPoolFlowRatePercent, _managerRewardFlowRatePercent);
+
+        fs.managerRewardPoolFlowRatePercent = _managerRewardFlowRatePercent;
 
         // Update flow rates to reflect the new percentage
         _setFlowRate(getTotalFlowRate());
