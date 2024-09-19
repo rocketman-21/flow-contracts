@@ -22,6 +22,7 @@ contract ERC721Flow is IERC721Flow, Flow {
         address _superToken,
         address _flowImpl,
         address _manager,
+        address _managerRewardPool,
         address _parent,
         FlowParams calldata _flowParams,
         RecipientMetadata calldata _metadata
@@ -30,7 +31,16 @@ contract ERC721Flow is IERC721Flow, Flow {
 
         erc721Votes = IERC721Checkpointable(_nounsToken);
 
-        __Flow_init(_initialOwner, _superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
+        __Flow_init(
+            _initialOwner,
+            _superToken,
+            _flowImpl,
+            _manager,
+            _managerRewardPool,
+            _parent,
+            _flowParams,
+            _metadata
+        );
     }
 
     /**
@@ -70,11 +80,13 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @dev This function is virtual to allow for different deployment strategies in derived contracts
      * @param metadata The recipient's metadata like title, description, etc.
      * @param flowManager The address of the flow manager for the new contract
+     * @param managerRewardPool The address of the manager reward pool for the new contract
      * @return address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
         RecipientMetadata calldata metadata,
-        address flowManager
+        address flowManager,
+        address managerRewardPool
     ) internal override returns (address) {
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
@@ -85,6 +97,7 @@ contract ERC721Flow is IERC721Flow, Flow {
             superToken: address(superToken),
             flowImpl: flowImpl,
             manager: flowManager,
+            managerRewardPool: managerRewardPool,
             parent: address(this),
             flowParams: FlowParams({
                 tokenVoteWeight: tokenVoteWeight,

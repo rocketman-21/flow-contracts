@@ -21,7 +21,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         address flowManager = address(0x123);
 
         vm.prank(manager);
-        (, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager);
+        (, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager, address(rewardPool));
 
         ERC721Flow newFlow = ERC721Flow(newFlowAddress);
 
@@ -64,7 +64,11 @@ contract FlowRecipientTest is ERC721FlowTest {
             }),
             flow.owner()
         );
-        (bytes32 recipientId, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager);
+        (bytes32 recipientId, address newFlowAddress) = flow.addFlowRecipient(
+            metadata,
+            flowManager,
+            address(rewardPool)
+        );
 
         assertNotEq(newFlowAddress, address(0));
 
@@ -128,9 +132,24 @@ contract FlowRecipientTest is ERC721FlowTest {
         vm.startPrank(flow.owner());
 
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
-        flow.addFlowRecipient(metadata, emptyManager);
+        flow.addFlowRecipient(metadata, emptyManager, address(rewardPool));
 
         vm.stopPrank();
+    }
+
+    function testAddFlowRecipientEmptyRewardPool() public {
+        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+            "Flow Recipient",
+            "A new Flow contract",
+            "ipfs://image",
+            "Flow Recipient Tagline",
+            "https://flowrecipient.com"
+        );
+        address flowManager = address(0x123);
+
+        vm.prank(flow.owner());
+        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
+        flow.addFlowRecipient(metadata, flowManager, address(0));
     }
 
     function testAddFlowRecipientEmptyMetadata() public {
@@ -139,7 +158,7 @@ contract FlowRecipientTest is ERC721FlowTest {
 
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.INVALID_METADATA.selector);
-        flow.addFlowRecipient(emptyMetadata, flowManager);
+        flow.addFlowRecipient(emptyMetadata, flowManager, address(rewardPool));
     }
 
     function testAddFlowRecipientNonManager() public {
@@ -154,7 +173,7 @@ contract FlowRecipientTest is ERC721FlowTest {
 
         vm.prank(address(0xABC));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.addFlowRecipient(metadata, flowManager);
+        flow.addFlowRecipient(metadata, flowManager, address(rewardPool));
     }
 
     function testAddMultipleFlowRecipients() public {
@@ -177,8 +196,8 @@ contract FlowRecipientTest is ERC721FlowTest {
 
         vm.startPrank(flow.owner());
 
-        (, address newFlowAddress1) = flow.addFlowRecipient(metadata1, flowManager1);
-        (, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2);
+        (, address newFlowAddress1) = flow.addFlowRecipient(metadata1, flowManager1, address(rewardPool));
+        (, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2, address(rewardPool));
 
         assertNotEq(newFlowAddress1, newFlowAddress2);
         assertEq(flow.activeRecipientCount(), 2);

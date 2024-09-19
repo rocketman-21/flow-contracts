@@ -17,6 +17,8 @@ import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contra
 import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
 import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
+import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
 
 contract ERC721FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
@@ -24,6 +26,7 @@ contract ERC721FlowTest is Test {
     SuperToken internal superToken;
 
     ERC721Flow flow;
+    IRewardPool rewardPool;
     address flowImpl;
     address testUSDC;
     IFlow.FlowParams flowParams;
@@ -37,6 +40,7 @@ contract ERC721FlowTest is Test {
 
     function deployFlow(address erc721, address superTokenAddress) internal returns (ERC721Flow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+        rewardPool = deployRewardPool(superTokenAddress);
 
         vm.prank(address(manager));
         IERC721Flow(flowProxy).initialize({
@@ -44,7 +48,8 @@ contract ERC721FlowTest is Test {
             nounsToken: erc721,
             superToken: superTokenAddress,
             flowImpl: flowImpl,
-            manager: manager, // Add this line
+            manager: manager,
+            managerRewardPool: address(rewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: flowMetadata
@@ -75,6 +80,19 @@ contract ERC721FlowTest is Test {
         ISuperToken(address(superToken)).transfer(flowAddress, amount);
 
         vm.stopPrank();
+    }
+
+    function deployRewardPool(address superTokenAddress) internal returns (IRewardPool) {
+        // Deploy the implementation contract
+        address rewardPoolImpl = address(new RewardPool());
+
+        // Deploy the proxy contract
+        address rewardPoolProxy = address(new ERC1967Proxy(rewardPoolImpl, ""));
+
+        // Initialize the proxy
+        IRewardPool(rewardPoolProxy).initialize(ISuperToken(superTokenAddress));
+
+        return IRewardPool(rewardPoolProxy);
     }
 
     function deployMock721(string memory name, string memory symbol) public virtual returns (MockERC721) {

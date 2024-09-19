@@ -7,6 +7,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 /**
  * @title FlowTCR
@@ -107,9 +108,9 @@ contract FlowTCR is GeneralizedTCR {
             flowContract.addRecipient(recipient, metadata);
         } else if (recipientType == FlowStorageV1.RecipientType.FlowContract) {
             // temporarily set manager to owner
-            (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner());
+            (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner(), owner());
 
-            address newTCR = tcrFactory.deployFlowTCR(
+            (address newTCR, address arbitrator, address erc20, address rewardPool) = tcrFactory.deployFlowTCR(
                 ITCRFactory.FlowTCRParams({
                     flowContract: IManagedFlow(flowRecipient),
                     arbitratorExtraData: arbitratorExtraData,
@@ -124,11 +125,13 @@ contract FlowTCR is GeneralizedTCR {
                     stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier]
                 }),
                 arbitrator.getArbitratorParamsForFactory(),
-                ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }) // TODO update all
+                ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }), // TODO update all
+                ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) })
             );
 
-            // set manager to new TCR
+            // set manager to new TCR and manager reward pool
             flowContract.setManager(address(newTCR));
+            flowContract.setManagerRewardPool(rewardPool);
         }
     }
 }

@@ -10,7 +10,7 @@ import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/util
 import { console } from "forge-std/console.sol";
 import { IStateProof } from "../../src/interfaces/IStateProof.sol";
 
-contract VotingNounsFlowTest is NounsFlowTest {
+contract NounsVotingFlowTest is NounsFlowTest {
     using stdJson for string;
 
     function _setupTestParameters()

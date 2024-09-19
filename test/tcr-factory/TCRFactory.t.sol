@@ -12,6 +12,8 @@ import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 contract TCRFactoryTest is Test {
     // Contracts
@@ -19,6 +21,7 @@ contract TCRFactoryTest is Test {
     FlowTCR public flowTCRImpl;
     ERC20VotesMintable public erc20Impl;
     ERC20VotesArbitrator public arbitratorImpl;
+    RewardPool public rewardPoolImpl;
 
     // Addresses
     address public owner;
@@ -50,6 +53,7 @@ contract TCRFactoryTest is Test {
         flowTCRImpl = new FlowTCR();
         erc20Impl = new ERC20VotesMintable();
         arbitratorImpl = new ERC20VotesArbitrator();
+        rewardPoolImpl = new RewardPool();
 
         // Deploy TCRFactory
         TCRFactory tcrFactoryImpl = new TCRFactory();
@@ -57,7 +61,13 @@ contract TCRFactoryTest is Test {
         tcrFactory = TCRFactory(address(proxy));
 
         // Initialize TCRFactory
-        tcrFactory.initialize(owner, address(flowTCRImpl), address(arbitratorImpl), address(erc20Impl));
+        tcrFactory.initialize(
+            owner,
+            address(flowTCRImpl),
+            address(arbitratorImpl),
+            address(erc20Impl),
+            address(rewardPoolImpl)
+        );
     }
 
     // Start of Selection
@@ -93,8 +103,17 @@ contract TCRFactoryTest is Test {
             symbol: "TST"
         });
 
+        ITCRFactory.RewardPoolParams memory rewardPoolParams = ITCRFactory.RewardPoolParams({
+            superToken: ISuperToken(address(erc20Impl)) //todo update
+        });
+
         // Deploy FlowTCR ecosystem
-        address deployedTCR = tcrFactory.deployFlowTCR(flowParams, arbitratorParams, erc20Params);
+        (
+            address deployedTCR,
+            address deployedArbitrator,
+            address deployedERC20,
+            address deployedRewardPool
+        ) = tcrFactory.deployFlowTCR(flowParams, arbitratorParams, erc20Params, rewardPoolParams);
 
         // Verify deployment
         assertTrue(deployedTCR != address(0), "FlowTCR not deployed");
@@ -193,7 +212,5 @@ contract TCRFactoryTest is Test {
             address(erc20Token),
             "Voting token not set correctly in arbitrator"
         );
-
-        // Additional checks can be added here to verify other aspects of the deployment
     }
 }

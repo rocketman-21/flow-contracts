@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 /**
  * @title ITCRFactory
@@ -69,6 +70,14 @@ interface ITCRFactory {
         string symbol;
     }
 
+    /**
+     * @dev Parameters for initializing a RewardPool
+     * @param superToken The address of the SuperToken to be used
+     */
+    struct RewardPoolParams {
+        ISuperToken superToken;
+    }
+
     /// @notice Emitted when a new FlowTCR ecosystem is deployed
     event FlowTCRDeployed(
         address indexed sender,
@@ -76,6 +85,9 @@ interface ITCRFactory {
         address indexed arbitratorProxy,
         address erc20Proxy
     );
+
+    /// @notice Emitted when the RewardPool implementation address is updated
+    event RewardPoolImplementationUpdated(address oldImplementation, address newImplementation);
 
     /// @notice Emitted when the FlowTCR implementation address is updated
     event FlowTCRImplementationUpdated(address oldImplementation, address newImplementation);
@@ -109,13 +121,18 @@ interface ITCRFactory {
      * @param params Parameters for initializing the FlowTCR contract
      * @param arbitratorParams Parameters for initializing the Arbitrator contract
      * @param erc20Params Parameters for initializing the ERC20 contract
-     * @return The address of the newly deployed FlowTCR proxy contract
+     * @param rewardPoolParams Parameters for initializing the RewardPool contract
+     * @return tcrAddress The address of the newly deployed FlowTCR proxy contract
+     * @return arbitratorAddress The address of the newly deployed Arbitrator proxy contract
+     * @return erc20Address The address of the newly deployed ERC20 proxy contract
+     * @return rewardPoolAddress The address of the newly deployed RewardPool contract
      */
     function deployFlowTCR(
         FlowTCRParams memory params,
         ArbitratorParams memory arbitratorParams,
-        ERC20Params memory erc20Params
-    ) external returns (address);
+        ERC20Params memory erc20Params,
+        RewardPoolParams memory rewardPoolParams
+    ) external returns (address tcrAddress, address arbitratorAddress, address erc20Address, address rewardPoolAddress);
 
     /**
      * @dev Initializes the TCRFactory contract
@@ -123,11 +140,13 @@ interface ITCRFactory {
      * @param flowTCRImplementation_ The address of the FlowTCR implementation contract
      * @param arbitratorImplementation_ The address of the Arbitrator implementation contract
      * @param erc20Implementation_ The address of the ERC20 implementation contract
+     * @param rewardPoolImplementation_ The address of the RewardPool implementation contract
      */
     function initialize(
         address initialOwner,
         address flowTCRImplementation_,
         address arbitratorImplementation_,
-        address erc20Implementation_
+        address erc20Implementation_,
+        address rewardPoolImplementation_
     ) external;
 }

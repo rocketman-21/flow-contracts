@@ -17,6 +17,7 @@ import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { ERC721FlowTest } from "../erc721-flow/ERC721Flow.t.sol";
 import { TCRFactory } from "../../src/tcr/TCRFactory.sol";
 import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
 
 contract FlowTCRTest is ERC721FlowTest {
     // Contracts
@@ -71,6 +72,7 @@ contract FlowTCRTest is ERC721FlowTest {
         swingVoter = makeAddr("swingVoter");
         recipient = makeAddr("recipient");
 
+        address rewardPoolImpl = address(new RewardPool());
         address flowTCRImpl = address(new FlowTCR());
         address flowTCRProxy = address(new ERC1967Proxy(flowTCRImpl, ""));
         address arbitratorImpl = address(new ERC20VotesArbitrator());
@@ -85,7 +87,8 @@ contract FlowTCRTest is ERC721FlowTest {
             initialOwner: owner,
             flowTCRImplementation_: flowTCRImpl,
             arbitratorImplementation_: arbitratorImpl,
-            erc20Implementation_: erc20TokenImpl
+            erc20Implementation_: erc20TokenImpl,
+            rewardPoolImplementation_: rewardPoolImpl
         });
 
         ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowStorageV1.RecipientType.ExternalAccount);

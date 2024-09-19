@@ -21,6 +21,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param _initialOwner The address of the initial owner
      * @param _superToken The address of the SuperToken to be used for the pool
      * @param _manager The address of the flow manager
+     * @param _managerRewardPool The address of the manager reward pool
      * @param _parent The address of the parent flow contract (optional)
      * @param _flowParams The parameters for the flow contract
      * @param _metadata The metadata for the flow contract
@@ -30,6 +31,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         address _superToken,
         address _flowImpl,
         address _manager,
+        address _managerRewardPool,
         address _parent,
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
@@ -55,6 +57,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         flowImpl = _flowImpl;
         manager = _manager;
         parent = _parent;
+        managerRewardPool = _managerRewardPool;
 
         superToken = ISuperToken(_superToken);
         bonusPool = superToken.createPool(address(this), poolConfig);
@@ -72,7 +75,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             _updateBaselineMemberUnits(address(this), 1);
         }
 
-        emit FlowInitialized(msg.sender, _superToken, _flowImpl);
+        emit FlowInitialized(msg.sender, _superToken, _flowImpl, _manager, _managerRewardPool, _parent);
     }
 
     /**
@@ -321,11 +324,13 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function addFlowRecipient(
         RecipientMetadata calldata metadata,
-        address flowManager
+        address flowManager,
+        address managerRewardPool
     ) external onlyManager validMetadata(metadata) returns (bytes32, address) {
         if (flowManager == address(0)) revert ADDRESS_ZERO();
+        if (managerRewardPool == address(0)) revert ADDRESS_ZERO();
 
-        address recipient = _deployFlowRecipient(metadata, flowManager);
+        address recipient = _deployFlowRecipient(metadata, flowManager, managerRewardPool);
 
         // connect the new child contract to the pool!
         Flow(recipient).connectPool(bonusPool);
@@ -357,11 +362,13 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev This function is virtual to allow for different deployment strategies in derived contracts
      * @param metadata The metadata of the recipient
      * @param flowManager The address of the flow manager for the new contract
+     * @param managerRewardPool The address of the manager reward pool for the new contract
      * @return address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
         RecipientMetadata calldata metadata,
-        address flowManager
+        address flowManager,
+        address managerRewardPool
     ) internal virtual returns (address) {}
 
     /**
@@ -483,6 +490,28 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         address oldManager = manager;
         manager = _newManager;
         emit ManagerUpdated(oldManager, _newManager);
+    }
+
+    /**
+     * @notice Sets a new manager reward pool for the Flow contract
+     * @param _newManagerRewardPool The address of the new manager reward pool
+     * @dev Only callable by the current owner or manager
+     * @dev Emits a ManagerRewardPoolUpdated event with the old and new manager reward pool addresses
+     */
+    function setManagerRewardPool(address _newManagerRewardPool) external onlyOwnerOrManager nonReentrant {
+        if (_newManagerRewardPool == address(0)) revert ADDRESS_ZERO();
+
+        address oldManagerRewardPool = managerRewardPool;
+        managerRewardPool = _newManagerRewardPool;
+        emit ManagerRewardPoolUpdated(oldManagerRewardPool, _newManagerRewardPool);
+    }
+
+    /**
+     * @notice Returns the SuperToken address
+     * @return The address of the SuperToken
+     */
+    function getSuperToken() external view returns (address) {
+        return address(superToken);
     }
 
     /**

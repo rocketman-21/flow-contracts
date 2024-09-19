@@ -19,6 +19,8 @@ import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contra
 import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
 import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
+import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
 
 contract NounsFlowTest is Test {
     using stdJson for string;
@@ -33,7 +35,7 @@ contract NounsFlowTest is Test {
     IFlow.FlowParams flowParams;
 
     TokenVerifier verifier;
-
+    IRewardPool rewardPool;
     address manager = address(0x1998);
 
     FlowStorageV1.RecipientMetadata flowMetadata;
@@ -43,6 +45,7 @@ contract NounsFlowTest is Test {
 
     function deployFlow(address verifierAddress, address superTokenAddress) internal returns (NounsFlow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+        rewardPool = deployRewardPool(superTokenAddress);
 
         vm.prank(address(manager));
         INounsFlow(flowProxy).initialize({
@@ -51,6 +54,7 @@ contract NounsFlowTest is Test {
             superToken: superTokenAddress,
             flowImpl: flowImpl,
             manager: manager,
+            managerRewardPool: address(rewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: flowMetadata
@@ -63,6 +67,19 @@ contract NounsFlowTest is Test {
         IFlow(flowProxy).setFlowRate(385 * 10 ** 13); // 0.00385 tokens per second
 
         return NounsFlow(flowProxy);
+    }
+
+    function deployRewardPool(address superTokenAddress) internal returns (IRewardPool) {
+        // Deploy the implementation contract
+        address rewardPoolImpl = address(new RewardPool());
+
+        // Deploy the proxy contract
+        address rewardPoolProxy = address(new ERC1967Proxy(rewardPoolImpl, ""));
+
+        // Initialize the proxy
+        IRewardPool(rewardPoolProxy).initialize(ISuperToken(superTokenAddress));
+
+        return IRewardPool(rewardPoolProxy);
     }
 
     function _transferTestTokenToFlow(address flowAddress, uint256 amount) internal {

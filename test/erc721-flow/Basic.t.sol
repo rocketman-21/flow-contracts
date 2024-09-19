@@ -33,6 +33,9 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Check if the flowImpl is set correctly
         assertEq(flow.flowImpl(), address(flowImpl));
 
+        // Check if the reward pool is set correctly
+        assertEq(flow.managerRewardPool(), address(rewardPool));
+
         // Check if the contract is properly initialized as Ownable
         assertEq(flow.owner(), manager);
     }
@@ -40,7 +43,14 @@ contract BasicERC721FlowTest is ERC721FlowTest {
     function testInitializeEventEmission() public {
         // Check for event emission
         vm.expectEmit(true, true, true, true);
-        emit IFlowEvents.FlowInitialized(manager, address(superToken), flowImpl);
+        emit IFlowEvents.FlowInitialized(
+            manager,
+            address(superToken),
+            flowImpl,
+            manager,
+            address(rewardPool),
+            address(0)
+        );
 
         // Re-deploy the contract to emit the event
         address votingPowerAddress = address(0x1);
@@ -57,7 +67,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             nounsToken: address(0),
             superToken: address(superToken),
             flowImpl: flowImpl,
-            manager: manager, // Add this line
+            manager: manager,
+            managerRewardPool: address(rewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: FlowStorageV1.RecipientMetadata(
@@ -79,7 +90,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             nounsToken: address(0x1),
             superToken: address(superToken),
             flowImpl: address(0),
-            manager: manager, // Add this line
+            manager: manager,
+            managerRewardPool: address(rewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: FlowStorageV1.RecipientMetadata(
@@ -98,7 +110,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(0x1),
             address(superToken),
             address(flowImpl),
-            manager, // Add this line
+            manager,
+            address(rewardPool),
             address(0),
             flowParams,
             FlowStorageV1.RecipientMetadata(
@@ -117,7 +130,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(0x1),
             address(superToken),
             address(flowImpl),
-            manager, // Add this line
+            manager,
+            address(rewardPool),
             address(0),
             flowParams,
             FlowStorageV1.RecipientMetadata(
@@ -141,7 +155,11 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         address flowManager = address(0x123);
 
         vm.prank(manager);
-        (bytes32 recipientId, address newFlowRecipient) = flow.addFlowRecipient(metadata, flowManager);
+        (bytes32 recipientId, address newFlowRecipient) = flow.addFlowRecipient(
+            metadata,
+            flowManager,
+            address(rewardPool)
+        );
 
         assertNotEq(newFlowRecipient, address(0));
 
@@ -175,12 +193,12 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Test adding with zero address flowManager (should revert)
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
         vm.prank(manager);
-        flow.addFlowRecipient(metadata, address(0));
+        flow.addFlowRecipient(metadata, address(0), address(rewardPool));
 
         // Test adding with non-manager address (should revert)
         vm.prank(address(0xdead));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.addFlowRecipient(metadata, flowManager);
+        flow.addFlowRecipient(metadata, flowManager, address(rewardPool));
     }
 
     function testSetFlowRateAccessControl() public {
@@ -246,7 +264,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Add a flow recipient
         address flowManager = address(0x789);
         vm.prank(manager);
-        flow.addFlowRecipient(metadata, flowManager);
+        flow.addFlowRecipient(metadata, flowManager, address(rewardPool));
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding flow recipient");
 
         // Verify total recipient count

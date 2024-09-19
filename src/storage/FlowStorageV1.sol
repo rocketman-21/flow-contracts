@@ -30,6 +30,9 @@ contract FlowStorageV1 {
     /// The flow manager
     address public manager;
 
+    /// The manager reward pool
+    address public managerRewardPool;
+
     /// Counter for active recipients (not removed)
     uint256 public activeRecipientCount;
 

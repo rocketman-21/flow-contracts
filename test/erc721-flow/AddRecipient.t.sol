@@ -138,7 +138,8 @@ contract AddRecipientsTest is ERC721FlowTest {
                 "Flow Tagline",
                 "https://flow.com"
             ),
-            address(0x456) // flowManager address
+            address(0x456), // flowManager address
+            address(rewardPool)
         );
 
         // Check baseline member units for external recipient

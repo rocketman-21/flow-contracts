@@ -20,11 +20,21 @@ contract NounsFlow is INounsFlow, Flow {
         address _superToken,
         address _flowImpl,
         address _manager,
+        address _managerRewardPool,
         address _parent,
         FlowParams calldata _flowParams,
         RecipientMetadata calldata _metadata
     ) public initializer {
-        __Flow_init(_initialOwner, _superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
+        __Flow_init(
+            _initialOwner,
+            _superToken,
+            _flowImpl,
+            _manager,
+            _managerRewardPool,
+            _parent,
+            _flowParams,
+            _metadata
+        );
 
         verifier = ITokenVerifier(_verifier);
     }
@@ -140,7 +150,8 @@ contract NounsFlow is INounsFlow, Flow {
      */
     function _deployFlowRecipient(
         RecipientMetadata calldata metadata,
-        address flowManager
+        address flowManager,
+        address managerRewardPool
     ) internal override returns (address) {
         address recipient = address(new ERC1967Proxy(flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
@@ -151,6 +162,7 @@ contract NounsFlow is INounsFlow, Flow {
             superToken: address(superToken),
             flowImpl: flowImpl,
             manager: flowManager,
+            managerRewardPool: managerRewardPool,
             parent: address(this),
             flowParams: FlowParams({
                 tokenVoteWeight: tokenVoteWeight,

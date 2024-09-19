@@ -29,7 +29,17 @@ interface IFlowEvents {
     event FlowRecipientCreated(bytes32 indexed recipientId, address indexed recipient);
 
     /// @notice Emitted when the flow is initialized
-    event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
+    event FlowInitialized(
+        address indexed owner,
+        address indexed superToken,
+        address indexed flowImpl,
+        address manager,
+        address managerRewardPool,
+        address parent
+    );
+
+    /// @notice Emitted when the manager reward pool is updated
+    event ManagerRewardPoolUpdated(address indexed oldManagerRewardPool, address indexed newManagerRewardPool);
 
     /// @notice Emitted when a new grants recipient is set
     event RecipientCreated(
@@ -187,6 +197,13 @@ interface IFlow is IFlowEvents, IManagedFlow {
      * @dev Should emit a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) external;
+
+    /**
+     * @notice Sets the manager reward pool for the flow contract
+     * @param _managerRewardPool The address of the manager reward pool
+     * @dev Only callable by the owner
+     */
+    function setManagerRewardPool(address _managerRewardPool) external;
 }
 
 interface IERC721Flow is IFlow {
@@ -197,6 +214,7 @@ interface IERC721Flow is IFlow {
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
      * @param manager The address of the flow manager
+     * @param managerRewardPool The address of the manager reward pool
      * @param parent The address of the parent flow contract (optional)
      * @param flowParams The parameters for the flow contract
      * @param metadata The metadata for the flow contract
@@ -207,6 +225,7 @@ interface IERC721Flow is IFlow {
         address superToken,
         address flowImpl,
         address manager,
+        address managerRewardPool,
         address parent,
         FlowParams memory flowParams,
         FlowStorageV1.RecipientMetadata memory metadata
@@ -224,6 +243,7 @@ interface INounsFlow is IFlow {
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
      * @param manager The address of the flow manager
+     * @param managerRewardPool The address of the manager reward pool
      * @param parent The address of the parent flow contract (optional)
      * @param flowParams The parameters for the flow contract
      * @param metadata The metadata for the flow contract
@@ -234,6 +254,7 @@ interface INounsFlow is IFlow {
         address superToken,
         address flowImpl,
         address manager,
+        address managerRewardPool,
         address parent,
         FlowParams memory flowParams,
         FlowStorageV1.RecipientMetadata memory metadata
