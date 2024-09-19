@@ -60,7 +60,7 @@ contract TokenVerifier {
         //     address current = _delegates[delegator];
         //     return current == address(0) ? delegator : current;
         // }
-        bool isDelegateSlotEmpty = StateVerifier.validateIsStorageEmpty({
+        bool isDelegateSlotEmpty = StateVerifier.validateIsStorageSlotEmpty({
             account: TOKEN_ADDRESS,
             storageKey: abi.encodePacked(_getDelegateKey(owner)),
             proofParams: proofParams
