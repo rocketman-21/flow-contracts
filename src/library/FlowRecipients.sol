@@ -39,6 +39,8 @@ library FlowRecipients {
         address recipient,
         FlowTypes.RecipientMetadata memory metadata
     ) external returns (bytes32, address) {
+        validateMetadata(metadata);
+
         if (recipient == address(0)) revert IFlow.ADDRESS_ZERO();
         if (fs.recipientExists[recipient]) revert IFlow.RECIPIENT_ALREADY_EXISTS();
 
@@ -84,5 +86,15 @@ library FlowRecipients {
         fs.activeRecipientCount++;
 
         return recipientId;
+    }
+
+    /**
+     * @notice Modifier to validate the metadata for a recipient
+     * @param metadata The metadata to validate
+     */
+    function validateMetadata(FlowTypes.RecipientMetadata memory metadata) public pure {
+        if (bytes(metadata.title).length == 0) revert IFlow.INVALID_METADATA();
+        if (bytes(metadata.description).length == 0) revert IFlow.INVALID_METADATA();
+        if (bytes(metadata.image).length == 0) revert IFlow.INVALID_METADATA();
     }
 }

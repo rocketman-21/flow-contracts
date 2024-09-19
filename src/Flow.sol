@@ -241,17 +241,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Modifier to validate the metadata for a recipient
-     * @param metadata The metadata to validate
-     */
-    modifier validMetadata(RecipientMetadata memory metadata) {
-        if (bytes(metadata.title).length == 0) revert INVALID_METADATA();
-        if (bytes(metadata.description).length == 0) revert INVALID_METADATA();
-        if (bytes(metadata.image).length == 0) revert INVALID_METADATA();
-        _;
-    }
-
-    /**
      * @notice Adds an address to the list of approved recipients
      * @param recipient The address to be added as an approved recipient
      * @param metadata The metadata of the recipient
@@ -261,7 +250,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function addRecipient(
         address recipient,
         RecipientMetadata memory metadata
-    ) external onlyManager nonReentrant validMetadata(metadata) returns (bytes32, address) {
+    ) external onlyManager nonReentrant returns (bytes32, address) {
         (bytes32 recipientId, address recipientAddress) = fs.addRecipient(recipient, metadata);
 
         emit RecipientCreated(recipientId, fs.recipients[recipientId], msg.sender);
@@ -287,7 +276,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         RecipientMetadata calldata _metadata,
         address _flowManager,
         address _managerRewardPool
-    ) external onlyManager validMetadata(_metadata) returns (bytes32, address) {
+    ) external onlyManager returns (bytes32, address) {
+        FlowRecipients.validateMetadata(_metadata);
         if (_flowManager == address(0)) revert ADDRESS_ZERO();
         if (_managerRewardPool == address(0)) revert ADDRESS_ZERO();
 
