@@ -57,6 +57,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // Set the voting power info
         fs.tokenVoteWeight = _flowParams.tokenVoteWeight; // scaled by 1e18
         fs.baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
+        fs.managerRewardPoolFlowRatePercent = _flowParams.managerRewardPoolFlowRatePercent;
         fs.flowImpl = _flowImpl;
         fs.manager = _manager;
         fs.parent = _parent;
@@ -686,6 +687,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function managerRewardPool() external view returns (address) {
         return fs.managerRewardPool;
+    }
+
+    /**
+     * @notice Retrieves the rewards pool flow rate percentage
+     * @return uint256 The rewards pool flow rate percentage
+     */
+    function managerRewardPoolFlowRatePercent() external view returns (uint32) {
+        return fs.managerRewardPoolFlowRatePercent;
     }
 
     /**

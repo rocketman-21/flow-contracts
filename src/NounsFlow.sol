@@ -166,7 +166,8 @@ contract NounsFlow is INounsFlow, Flow {
             parent: address(this),
             flowParams: FlowParams({
                 tokenVoteWeight: fs.tokenVoteWeight,
-                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent
+                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent,
+                managerRewardPoolFlowRatePercent: fs.managerRewardPoolFlowRatePercent
             }),
             metadata: metadata
         });

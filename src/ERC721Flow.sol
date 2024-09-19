@@ -101,7 +101,8 @@ contract ERC721Flow is IERC721Flow, Flow {
             parent: address(this),
             flowParams: FlowParams({
                 tokenVoteWeight: fs.tokenVoteWeight,
-                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent
+                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent,
+                managerRewardPoolFlowRatePercent: fs.managerRewardPoolFlowRatePercent
             }),
             metadata: metadata
         });

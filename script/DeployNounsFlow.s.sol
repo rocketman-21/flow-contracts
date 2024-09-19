@@ -25,6 +25,7 @@ contract DeployNounsFlow is DeployScript {
         address parent = vm.envAddress("PARENT");
         uint256 tokenVoteWeight = vm.envUint("TOKEN_VOTE_WEIGHT");
         uint32 baselinePoolFlowRatePercent = uint32(vm.envUint("BASELINE_POOL_FLOW_RATE_PERCENT"));
+        uint32 managerRewardPoolFlowRatePercent = uint32(vm.envUint("REWARDS_POOL_FLOW_RATE_PERCENT"));
 
         // Deploy TokenVerifier
         TokenVerifier verifier = new TokenVerifier(tokenAddress);
@@ -40,7 +41,8 @@ contract DeployNounsFlow is DeployScript {
             parent,
             IFlow.FlowParams({
                 tokenVoteWeight: tokenVoteWeight,
-                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
+                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent,
+                managerRewardPoolFlowRatePercent: managerRewardPoolFlowRatePercent
             }),
             FlowTypes.RecipientMetadata({
                 title: "NounsFlow",

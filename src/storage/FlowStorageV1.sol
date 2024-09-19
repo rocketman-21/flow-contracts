@@ -45,8 +45,10 @@ interface FlowTypes {
     }
 
     struct Storage {
-        /// The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
+        /// The proportion of the total flow rate (minus rewards) that is allocated to the baseline salary pool in BPS
         uint32 baselinePoolFlowRatePercent;
+        /// THe proportion of the total flow rate that is allocated to the rewards pool in BPS
+        uint32 managerRewardPoolFlowRatePercent;
         /// The flow implementation
         address flowImpl;
         /// The parent flow contract (optional)

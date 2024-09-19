@@ -123,7 +123,8 @@ contract NounsFlowTest is Test {
 
         flowParams = IFlow.FlowParams({
             tokenVoteWeight: 1e18 * 1000, // Example token vote weight
-            baselinePoolFlowRatePercent: 1000 // 1000 BPS
+            baselinePoolFlowRatePercent: 5000, // 1000 BPS
+            managerRewardPoolFlowRatePercent: 1000 // 1000 BPS
         });
 
         vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
