@@ -241,8 +241,12 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     ) internal {
         uint256 weight = tokenVoteWeight;
 
-        // _getSum should overflow if sum != PERCENTAGE_SCALE
-        if (_getSum(percentAllocations) != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
+        uint256 sum = 0;
+        // overflow should be impossible in for-loop index
+        for (uint256 i = 0; i < percentAllocations.length; i++) {
+            sum += percentAllocations[i];
+        }
+        if (sum != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
 
         // update member units for previous votes
         _clearPreviousVotes(tokenId);
@@ -563,23 +567,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // Update flow rates to reflect the new percentage
         _setFlowRate(getTotalFlowRate());
-    }
-
-    /**
-     * @notice Sums array of uint32s
-     *  @param numbers Array of uint32s to sum
-     *  @return sum Sum of `numbers`.
-     */
-    function _getSum(uint32[] memory numbers) internal pure returns (uint32 sum) {
-        // overflow should be impossible in for-loop index
-        uint256 numbersLength = numbers.length;
-        for (uint256 i = 0; i < numbersLength; ) {
-            sum += numbers[i];
-            unchecked {
-                // overflow should be impossible in for-loop index
-                ++i;
-            }
-        }
     }
 
     /**
