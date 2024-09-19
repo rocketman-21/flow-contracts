@@ -355,8 +355,6 @@ contract ERC20VotesArbitrator is
         // fails otherwise
         IERC20(address(votingToken)).safeTransferFrom(address(arbitrable), address(this), costToAppeal);
 
-        // todo give winning voters tokens somehow
-
         emit AppealDecision(_disputeID, arbitrable);
         emit AppealRaised(_disputeID, newRound, msg.sender, costToAppeal);
 

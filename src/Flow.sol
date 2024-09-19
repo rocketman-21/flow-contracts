@@ -121,8 +121,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _vote(bytes32 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
         // calculate new member units for recipient
-        // make sure to add the current units to the new units
-        // todo check this
         RecipientType recipientType = recipients[recipientId].recipientType;
         address recipientAddress = recipients[recipientId].recipient;
         uint128 currentUnits = bonusPool.getUnits(recipientAddress);

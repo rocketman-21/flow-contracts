@@ -36,7 +36,6 @@ contract L2NounsDelegateVerifier is TokenVerifierTest {
         assertFalse(verifier.isDelegate(account, differentAccount, delegationParams));
     }
 
-    // TODO try to fix this
     // check that even if they have not explicitly delegated to self, they are still an owner delegate
     function test__isOwnerDelegateNotDelegated() public {
         address account = 0xbc3ed6B537f2980e66f396Fe14210A56ba3f72C4;
