@@ -92,7 +92,7 @@ library FlowRecipients {
      * @notice Modifier to validate the metadata for a recipient
      * @param metadata The metadata to validate
      */
-    function validateMetadata(FlowTypes.RecipientMetadata memory metadata) public pure {
+    function validateMetadata(FlowTypes.RecipientMetadata memory metadata) public {
         if (bytes(metadata.title).length == 0) revert IFlow.INVALID_METADATA();
         if (bytes(metadata.description).length == 0) revert IFlow.INVALID_METADATA();
         if (bytes(metadata.image).length == 0) revert IFlow.INVALID_METADATA();
