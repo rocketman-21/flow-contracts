@@ -262,29 +262,12 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         address recipient,
         RecipientMetadata memory metadata
     ) external onlyManager nonReentrant validMetadata(metadata) returns (bytes32, address) {
-        if (recipient == address(0)) revert ADDRESS_ZERO();
-        if (fs.recipientExists[recipient]) revert RECIPIENT_ALREADY_EXISTS();
+        (bytes32 recipientId, address recipientAddress) = fs.addRecipient(recipient, metadata);
 
-        bytes32 recipientId = keccak256(abi.encode(recipient, metadata, RecipientType.ExternalAccount));
-        if (fs.recipients[recipientId].recipient != address(0)) revert RECIPIENT_ALREADY_EXISTS();
+        _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
+        _updateBonusMemberUnits(recipientAddress, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
-        fs.recipientExists[recipient] = true;
-
-        fs.recipients[recipientId] = FlowRecipient({
-            recipientType: RecipientType.ExternalAccount,
-            removed: false,
-            recipient: recipient,
-            metadata: metadata
-        });
-
-        fs.activeRecipientCount++;
-
-        _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
-        _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
-
-        emit RecipientCreated(recipientId, fs.recipients[recipientId], msg.sender);
-
-        return (recipientId, recipient);
+        return (recipientId, recipientAddress);
     }
 
     /**
