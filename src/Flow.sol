@@ -52,19 +52,19 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _transferOwnership(_initialOwner);
 
         // Set the voting power info
-        tokenVoteWeight = _flowParams.tokenVoteWeight; // scaled by 1e18
-        baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
-        flowImpl = _flowImpl;
-        manager = _manager;
-        parent = _parent;
-        managerRewardPool = _managerRewardPool;
+        fs.tokenVoteWeight = _flowParams.tokenVoteWeight; // scaled by 1e18
+        fs.baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
+        fs.flowImpl = _flowImpl;
+        fs.manager = _manager;
+        fs.parent = _parent;
+        fs.managerRewardPool = _managerRewardPool;
 
-        superToken = ISuperToken(_superToken);
-        bonusPool = superToken.createPool(address(this), poolConfig);
-        baselinePool = superToken.createPool(address(this), poolConfig);
+        fs.superToken = ISuperToken(_superToken);
+        fs.bonusPool = fs.superToken.createPool(address(this), poolConfig);
+        fs.baselinePool = fs.superToken.createPool(address(this), poolConfig);
 
         // Set the metadata
-        metadata = _metadata;
+        fs.metadata = _metadata;
 
         // if total member units is 0, set 1 member unit to address(this)
         // do this to prevent distribution pool from resetting flow rate to 0
@@ -386,7 +386,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // Call setFlowRate on the child contract
         // only set if buffer required is less than balance of contract
-        if (superToken.getBufferAmountByFlowRate(memberFlowRate) < superToken.balanceOf(childAddress)) {
+        if (superToken.getBufferAmountByFlowRate(memberFlowRate) < fs.superToken.balanceOf(childAddress)) {
             IFlow(childAddress).setFlowRate(memberFlowRate);
         }
     }
@@ -400,7 +400,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function connectPool(ISuperfluidPool poolAddress) external onlyOwnerOrParent nonReentrant {
         if (address(poolAddress) == address(0)) revert ADDRESS_ZERO();
 
-        bool success = superToken.connectPool(poolAddress);
+        bool success = fs.superToken.connectPool(poolAddress);
         if (!success) revert POOL_CONNECTION_FAILED();
     }
 
@@ -411,7 +411,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
      */
     function _updateBonusMemberUnits(address member, uint128 units) internal {
-        bool success = superToken.updateMemberUnits(bonusPool, member, units);
+        bool success = fs.superToken.updateMemberUnits(bonusPool, member, units);
 
         if (!success) revert UNITS_UPDATE_FAILED();
     }
@@ -423,7 +423,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
      */
     function _updateBaselineMemberUnits(address member, uint128 units) internal {
-        bool success = superToken.updateMemberUnits(baselinePool, member, units);
+        bool success = fs.superToken.updateMemberUnits(baselinePool, member, units);
 
         if (!success) revert UNITS_UPDATE_FAILED();
     }
@@ -493,7 +493,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function _setFlowRate(int96 _flowRate) internal {
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
-        int256 baselineFlowRate256 = int256(_scaleAmountByPercentage(uint96(_flowRate), baselinePoolFlowRatePercent));
+        int256 baselineFlowRate256 = int256(
+            _scaleAmountByPercentage(uint96(_flowRate), fs.baselinePoolFlowRatePercent)
+        );
 
         if (baselineFlowRate256 > type(int96).max) revert FLOW_RATE_TOO_HIGH();
 
@@ -503,8 +505,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         emit FlowRateUpdated(getTotalFlowRate(), _flowRate, baselineFlowRate, bonusFlowRate);
 
-        superToken.distributeFlow(address(this), bonusPool, bonusFlowRate);
-        superToken.distributeFlow(address(this), baselinePool, baselineFlowRate);
+        fs.superToken.distributeFlow(address(this), bonusPool, bonusFlowRate);
+        fs.superToken.distributeFlow(address(this), baselinePool, baselineFlowRate);
     }
 
     /**
@@ -516,9 +518,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function setBaselineFlowRatePercent(uint32 _baselineFlowRatePercent) external onlyOwnerOrManager nonReentrant {
         if (_baselineFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_PERCENTAGE();
 
-        emit BaselineFlowRatePercentUpdated(baselinePoolFlowRatePercent, _baselineFlowRatePercent);
+        emit BaselineFlowRatePercentUpdated(fs.baselinePoolFlowRatePercent, _baselineFlowRatePercent);
 
-        baselinePoolFlowRatePercent = _baselineFlowRatePercent;
+        fs.baselinePoolFlowRatePercent = _baselineFlowRatePercent;
 
         // Update flow rates to reflect the new percentage
         _setFlowRate(getTotalFlowRate());
