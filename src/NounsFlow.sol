@@ -153,20 +153,20 @@ contract NounsFlow is INounsFlow, Flow {
         address flowManager,
         address managerRewardPool
     ) internal override returns (address) {
-        address recipient = address(new ERC1967Proxy(flowImpl, ""));
+        address recipient = address(new ERC1967Proxy(fs.flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
 
         INounsFlow(recipient).initialize({
             initialOwner: owner(),
             verifier: address(verifier),
-            superToken: address(superToken),
-            flowImpl: flowImpl,
+            superToken: address(fs.superToken),
+            flowImpl: fs.flowImpl,
             manager: flowManager,
             managerRewardPool: managerRewardPool,
             parent: address(this),
             flowParams: FlowParams({
-                tokenVoteWeight: tokenVoteWeight,
-                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
+                tokenVoteWeight: fs.tokenVoteWeight,
+                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent
             }),
             metadata: metadata
         });

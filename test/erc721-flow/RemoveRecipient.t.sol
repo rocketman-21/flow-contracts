@@ -24,9 +24,9 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.removeRecipient(recipientId);
 
         // Verify recipient was removed correctly
-        (address storedRecipient, bool removed, , ) = flow.recipients(recipientId);
-        assertEq(storedRecipient, recipient);
-        assertEq(removed, true);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+        assertEq(storedRecipient.recipient, recipient);
+        assertEq(storedRecipient.removed, true);
         assertEq(flow.recipientExists(recipient), false);
 
         // Verify recipient count remains the same
@@ -46,9 +46,9 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.removeRecipient(bytes32(uint256(1))); // Using ID 1, which is invalid as we only added one recipient (ID 0)
 
         // Verify that the valid recipient (ID 0) still exists and is not removed
-        (address storedRecipient, bool removed, , ) = flow.recipients(recipientId);
-        assertEq(storedRecipient, recipient);
-        assertEq(removed, false);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+        assertEq(storedRecipient.recipient, recipient);
+        assertEq(storedRecipient.removed, false);
     }
 
     function testRemoveRecipientAlreadyRemoved() public {
@@ -107,17 +107,17 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.removeRecipient(recipientId1);
 
         // Verify first recipient was removed
-        (address storedRecipient1, bool removed1, , ) = flow.recipients(recipientId1);
-        assertEq(storedRecipient1, recipient1);
-        assertEq(removed1, true);
+        FlowTypes.FlowRecipient memory storedRecipient1 = flow.getRecipientById(recipientId1);
+        assertEq(storedRecipient1.recipient, recipient1);
+        assertEq(storedRecipient1.removed, true);
 
         // Remove second recipient
         flow.removeRecipient(recipientId2);
 
         // Verify second recipient was removed
-        (address storedRecipient2, bool removed2, , ) = flow.recipients(recipientId2);
-        assertEq(storedRecipient2, recipient2);
-        assertEq(removed2, true);
+        FlowTypes.FlowRecipient memory storedRecipient2 = flow.getRecipientById(recipientId2);
+        assertEq(storedRecipient2.recipient, recipient2);
+        assertEq(storedRecipient2.removed, true);
 
         // Verify recipient count remains the same
         assertEq(flow.activeRecipientCount(), 0);

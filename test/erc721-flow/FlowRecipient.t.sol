@@ -74,20 +74,15 @@ contract FlowRecipientTest is ERC721FlowTest {
 
         // Verify recipient was added correctly
         assertNotEq(newFlowAddress, address(0));
-        (
-            address storedRecipient,
-            bool removed,
-            FlowTypes.RecipientType recipientType,
-            FlowTypes.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(recipientId);
-        assertEq(storedRecipient, newFlowAddress);
-        assertEq(removed, false);
-        assertEq(uint8(recipientType), uint8(FlowTypes.RecipientType.FlowContract));
-        assertEq(storedMetadata.title, metadata.title);
-        assertEq(storedMetadata.description, metadata.description);
-        assertEq(storedMetadata.image, metadata.image);
-        assertEq(storedMetadata.tagline, metadata.tagline);
-        assertEq(storedMetadata.url, metadata.url);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+        assertEq(storedRecipient.recipient, newFlowAddress);
+        assertEq(storedRecipient.removed, false);
+        assertEq(uint8(storedRecipient.recipientType), uint8(FlowTypes.RecipientType.FlowContract));
+        assertEq(storedRecipient.metadata.title, metadata.title);
+        assertEq(storedRecipient.metadata.description, metadata.description);
+        assertEq(storedRecipient.metadata.image, metadata.image);
+        assertEq(storedRecipient.metadata.tagline, metadata.tagline);
+        assertEq(storedRecipient.metadata.url, metadata.url);
 
         // Verify recipient count increased
         assertEq(flow.activeRecipientCount(), 1);
@@ -99,18 +94,12 @@ contract FlowRecipientTest is ERC721FlowTest {
         assertEq(newFlow.flowImpl(), flow.flowImpl());
         assertEq(newFlow.manager(), flowManager); // Check that the manager is set to the new flowManager
         assertEq(newFlow.tokenVoteWeight(), flow.tokenVoteWeight());
-        (
-            string memory title,
-            string memory description,
-            string memory image,
-            string memory tagline,
-            string memory url
-        ) = newFlow.metadata();
-        assertEq(title, metadata.title);
-        assertEq(description, metadata.description);
-        assertEq(image, metadata.image);
-        assertEq(tagline, metadata.tagline);
-        assertEq(url, metadata.url);
+        FlowTypes.RecipientMetadata memory newFlowMetadata = newFlow.flowMetadata();
+        assertEq(newFlowMetadata.title, metadata.title);
+        assertEq(newFlowMetadata.description, metadata.description);
+        assertEq(newFlowMetadata.image, metadata.image);
+        assertEq(newFlowMetadata.tagline, metadata.tagline);
+        assertEq(newFlowMetadata.url, metadata.url);
         vm.stopPrank();
 
         // Verify that ownership has been accepted

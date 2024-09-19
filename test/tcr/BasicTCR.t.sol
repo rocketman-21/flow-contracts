@@ -116,8 +116,12 @@ contract BasicTCRTest is FlowTCRTest {
         assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
 
         // Optionally, you can also check the recipient's details in the flow contract
-        (address actualRecipient, , , ) = flow.recipients(keccak256(ITEM_DATA));
-        assertEq(actualRecipient, recipientAddress, "Flow recipient address should match the one in ITEM_DATA");
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(ITEM_DATA));
+        assertEq(
+            storedRecipient.recipient,
+            recipientAddress,
+            "Flow recipient address should match the one in ITEM_DATA"
+        );
         // check member units > 0 and flow rate > 0
         assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
     }
@@ -195,8 +199,12 @@ contract BasicTCRTest is FlowTCRTest {
         assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
 
         // Optionally, you can also check the recipient's details in the flow contract
-        (address actualRecipient, , , ) = flow.recipients(keccak256(ITEM_DATA));
-        assertEq(actualRecipient, recipientAddress, "Flow recipient address should match the one in ITEM_DATA");
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(ITEM_DATA));
+        assertEq(
+            storedRecipient.recipient,
+            recipientAddress,
+            "Flow recipient address should match the one in ITEM_DATA"
+        );
         // check member units > 0 and flow rate > 0
         assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
     }

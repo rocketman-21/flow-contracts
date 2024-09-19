@@ -187,20 +187,15 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(newFlow.tokenVoteWeight(), flow.tokenVoteWeight());
 
         // Check if the recipient is added to the main flow contract
-        (
-            address recipient,
-            bool removed,
-            FlowTypes.RecipientType recipientType,
-            FlowTypes.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(recipientId);
-        assertEq(uint(recipientType), uint(FlowTypes.RecipientType.FlowContract));
-        assertEq(removed, false);
-        assertEq(recipient, newFlowRecipient);
-        assertEq(storedMetadata.title, metadata.title);
-        assertEq(storedMetadata.description, metadata.description);
-        assertEq(storedMetadata.image, metadata.image);
-        assertEq(storedMetadata.tagline, metadata.tagline);
-        assertEq(storedMetadata.url, metadata.url);
+        FlowTypes.FlowRecipient memory recipient = flow.getRecipientById(recipientId);
+        assertEq(uint(recipient.recipientType), uint(FlowTypes.RecipientType.FlowContract));
+        assertEq(recipient.removed, false);
+        assertEq(recipient.recipient, newFlowRecipient);
+        assertEq(recipient.metadata.title, metadata.title);
+        assertEq(recipient.metadata.description, metadata.description);
+        assertEq(recipient.metadata.image, metadata.image);
+        assertEq(recipient.metadata.tagline, metadata.tagline);
+        assertEq(recipient.metadata.url, metadata.url);
 
         // Test adding with zero address flowManager (should revert)
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);

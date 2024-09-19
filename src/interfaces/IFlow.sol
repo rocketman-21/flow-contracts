@@ -80,6 +80,9 @@ interface IFlow is IFlowEvents, IManagedFlow {
     /// @dev Reverts if unit updates fail
     error UNITS_UPDATE_FAILED();
 
+    /// @dev Reverts if the recipient is not found
+    error RECIPIENT_NOT_FOUND();
+
     /// @dev Reverts if the recipient already exists
     error RECIPIENT_ALREADY_EXISTS();
 

@@ -29,18 +29,13 @@ contract AddRecipientsTest is ERC721FlowTest {
         (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
         // Verify recipient was added correctly
-        (
-            address storedRecipient,
-            bool removed,
-            FlowTypes.RecipientType recipientType,
-            FlowTypes.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(recipientId);
-        assertEq(storedRecipient, recipient);
-        assertEq(removed, false);
-        assertEq(uint8(recipientType), uint8(FlowTypes.RecipientType.ExternalAccount));
-        assertEq(storedMetadata.title, recipientMetadata.title);
-        assertEq(storedMetadata.description, recipientMetadata.description);
-        assertEq(storedMetadata.image, recipientMetadata.image);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+        assertEq(storedRecipient.recipient, recipient);
+        assertEq(storedRecipient.removed, false);
+        assertEq(uint8(storedRecipient.recipientType), uint8(FlowTypes.RecipientType.ExternalAccount));
+        assertEq(storedRecipient.metadata.title, recipientMetadata.title);
+        assertEq(storedRecipient.metadata.description, recipientMetadata.description);
+        assertEq(storedRecipient.metadata.image, recipientMetadata.image);
         assertEq(flow.recipientExists(recipient), true);
 
         // Verify recipient count increased
@@ -101,17 +96,13 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Verify both recipients were added correctly
         assertEq(flow.activeRecipientCount(), 2);
 
-        (address storedRecipient1, , , FlowTypes.RecipientMetadata memory storedMetadata1) = flow.recipients(
-            recipientId1
-        );
-        (address storedRecipient2, , , FlowTypes.RecipientMetadata memory storedMetadata2) = flow.recipients(
-            recipientId2
-        );
+        FlowTypes.FlowRecipient memory storedRecipient1 = flow.getRecipientById(recipientId1);
+        FlowTypes.FlowRecipient memory storedRecipient2 = flow.getRecipientById(recipientId2);
 
-        assertEq(storedRecipient1, recipient1);
-        assertEq(storedRecipient2, recipient2);
-        assertEq(storedMetadata1.title, metadata1.title);
-        assertEq(storedMetadata2.title, metadata2.title);
+        assertEq(storedRecipient1.recipient, recipient1);
+        assertEq(storedRecipient2.recipient, recipient2);
+        assertEq(storedRecipient1.metadata.title, metadata1.title);
+        assertEq(storedRecipient2.metadata.title, metadata2.title);
     }
 
     function testBaselineMemberUnitsAfterAddingRecipients() public {
