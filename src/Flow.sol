@@ -79,53 +79,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Sets the address of the grants implementation contract
-     * @param _flowImpl The new address of the grants implementation contract
-     */
-    function setFlowImpl(address _flowImpl) external onlyOwner nonReentrant {
-        if (_flowImpl == address(0)) revert ADDRESS_ZERO();
-
-        flowImpl = _flowImpl;
-        emit FlowImplementationSet(_flowImpl);
-    }
-
-    /**
-     * @notice Retrieves all vote allocations for a given ERC721 tokenId
-     * @param tokenId The tokenId of the account to retrieve votes for
-     * @return allocations An array of VoteAllocation structs representing each vote made by the token
-     */
-    function getVotesForTokenId(uint256 tokenId) external view returns (VoteAllocation[] memory allocations) {
-        return votes[tokenId];
-    }
-
-    /**
-     * @notice Retrieves all vote allocations for multiple ERC721 tokenIds
-     * @param tokenIds An array of tokenIds to retrieve votes for
-     * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
-     */
-    function getVotesForTokenIds(
-        uint256[] calldata tokenIds
-    ) public view returns (VoteAllocation[][] memory allocations) {
-        allocations = new VoteAllocation[][](tokenIds.length);
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            allocations[i] = votes[tokenIds[i]];
-        }
-        return allocations;
-    }
-
-    /**
-     * @notice Retrieves the claimable balance from both pools for a member address
-     * @param member The address of the member to check the claimable balance for
-     * @return claimable The claimable balance from both pools
-     */
-    function getClaimableBalance(address member) external view returns (uint256) {
-        (int256 baselineClaimable, ) = baselinePool.getClaimableNow(member);
-        (int256 bonusClaimable, ) = bonusPool.getClaimableNow(member);
-
-        return uint256(baselineClaimable) + uint256(bonusClaimable);
-    }
-
-    /**
      * @notice Cast a vote for a specific grant address.
      * @param recipientId The id of the grant recipient.
      * @param bps The basis points of the vote to be split with the recipient.
@@ -320,7 +273,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         activeRecipientCount++;
 
-        _initializeBaselineMemberUnits(recipient);
+        _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         emit RecipientCreated(recipientId, recipients[recipientId], msg.sender);
@@ -352,7 +305,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         Flow(recipient).connectPool(bonusPool);
         Flow(recipient).connectPool(baselinePool);
 
-        _initializeBaselineMemberUnits(recipient);
+        _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
         _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         // functionality equivalent to addItem _itemID in GeneralizedTCR.sol (keccak256(bytes calldata _item))
@@ -476,15 +429,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Updates the member units for the baseline Superfluid pool
-     * @param member The address of the member whose units are being updated
-     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
-     */
-    function _initializeBaselineMemberUnits(address member) internal {
-        _updateBaselineMemberUnits(member, BASELINE_MEMBER_UNITS);
-    }
-
-    /**
      * @notice Sets the flow rate for the Superfluid pool
      * @param _flowRate The new flow rate to be set
      * @dev Only callable by the owner or parent of the contract
@@ -492,6 +436,17 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function setFlowRate(int96 _flowRate) external onlyOwnerOrParent nonReentrant {
         _setFlowRate(_flowRate);
+    }
+
+    /**
+     * @notice Sets the address of the grants implementation contract
+     * @param _flowImpl The new address of the grants implementation contract
+     */
+    function setFlowImpl(address _flowImpl) external onlyOwner nonReentrant {
+        if (_flowImpl == address(0)) revert ADDRESS_ZERO();
+
+        flowImpl = _flowImpl;
+        emit FlowImplementationSet(_flowImpl);
     }
 
     /**
@@ -622,6 +577,42 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function getTotalFlowRate() public view returns (int96 totalFlowRate) {
         totalFlowRate = bonusPool.getTotalFlowRate() + baselinePool.getTotalFlowRate();
+    }
+
+    /**
+     * @notice Retrieves all vote allocations for a given ERC721 tokenId
+     * @param tokenId The tokenId of the account to retrieve votes for
+     * @return allocations An array of VoteAllocation structs representing each vote made by the token
+     */
+    function getVotesForTokenId(uint256 tokenId) external view returns (VoteAllocation[] memory allocations) {
+        return votes[tokenId];
+    }
+
+    /**
+     * @notice Retrieves all vote allocations for multiple ERC721 tokenIds
+     * @param tokenIds An array of tokenIds to retrieve votes for
+     * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
+     */
+    function getVotesForTokenIds(
+        uint256[] calldata tokenIds
+    ) public view returns (VoteAllocation[][] memory allocations) {
+        allocations = new VoteAllocation[][](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            allocations[i] = votes[tokenIds[i]];
+        }
+        return allocations;
+    }
+
+    /**
+     * @notice Retrieves the claimable balance from both pools for a member address
+     * @param member The address of the member to check the claimable balance for
+     * @return claimable The claimable balance from both pools
+     */
+    function getClaimableBalance(address member) external view returns (uint256) {
+        (int256 baselineClaimable, ) = baselinePool.getClaimableNow(member);
+        (int256 bonusClaimable, ) = bonusPool.getClaimableNow(member);
+
+        return uint256(baselineClaimable) + uint256(bonusClaimable);
     }
 
     /**
