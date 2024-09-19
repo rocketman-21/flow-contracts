@@ -172,7 +172,11 @@ contract ERC20VotesMintable is
         // update member units in the reward pool
         // subtract from old account, add to new account
 
+        // double check for overflow before casting
+        // and scale back by 1e14 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
+        // gives someone with 1 token at least 1e4 units to work with
         uint256 scaledUnits = amount / 1e14;
+
         if (scaledUnits > type(uint128).max) revert POOL_UNITS_OVERFLOW();
         uint128 transferredUnits = uint128(scaledUnits);
 
