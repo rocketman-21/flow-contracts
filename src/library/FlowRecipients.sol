@@ -58,4 +58,31 @@ library FlowRecipients {
 
         return (recipientId, recipient);
     }
+
+    /**
+     * @notice Adds an Flow address to the list of approved recipients
+     * @param fs The storage of the Flow contract
+     * @param recipient The address to be added as an approved recipient
+     * @param metadata The metadata of the recipient
+     * @return bytes32 The recipientId of the newly created recipient
+     */
+    function addFlowRecipient(
+        FlowTypes.Storage storage fs,
+        address recipient,
+        FlowTypes.RecipientMetadata memory metadata
+    ) external returns (bytes32) {
+        // functionality equivalent to addItem _itemID in GeneralizedTCR.sol (keccak256(bytes calldata _item))
+        bytes32 recipientId = keccak256(abi.encode(recipient, metadata, FlowTypes.RecipientType.FlowContract));
+
+        fs.recipients[recipientId] = FlowTypes.FlowRecipient({
+            recipientType: FlowTypes.RecipientType.FlowContract,
+            removed: false,
+            recipient: recipient,
+            metadata: metadata
+        });
+
+        fs.activeRecipientCount++;
+
+        return recipientId;
+    }
 }

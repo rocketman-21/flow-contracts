@@ -293,29 +293,29 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         address recipient = _deployFlowRecipient(_metadata, _flowManager, _managerRewardPool);
 
-        // connect the new child contract to the pool!
-        Flow(recipient).connectPool(fs.bonusPool);
-        Flow(recipient).connectPool(fs.baselinePool);
+        _connectAndInitializeFlow(recipient);
 
-        _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
-        _updateBonusMemberUnits(recipient, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
-
-        // functionality equivalent to addItem _itemID in GeneralizedTCR.sol (keccak256(bytes calldata _item))
-        bytes32 recipientId = keccak256(abi.encode(recipient, _metadata, RecipientType.FlowContract));
-
-        fs.recipients[recipientId] = FlowRecipient({
-            recipientType: RecipientType.FlowContract,
-            removed: false,
-            recipient: recipient,
-            metadata: _metadata
-        });
-
-        fs.activeRecipientCount++;
+        bytes32 recipientId = fs.addFlowRecipient(recipient, _metadata);
 
         emit RecipientCreated(recipientId, fs.recipients[recipientId], msg.sender);
         emit FlowRecipientCreated(recipientId, recipient);
 
         return (recipientId, recipient);
+    }
+
+    /**
+     * @notice Connects a new Flow contract to both pools and initializes its member units
+     * @param recipient The address of the new Flow contract
+     */
+    function _connectAndInitializeFlow(address recipient) internal {
+        // Connect the new child contract to both pools
+        Flow(recipient).connectPool(fs.bonusPool);
+        Flow(recipient).connectPool(fs.baselinePool);
+
+        // Initialize member units
+        _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
+        // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipient, 1);
     }
 
     /**
