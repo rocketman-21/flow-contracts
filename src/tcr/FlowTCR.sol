@@ -110,7 +110,7 @@ contract FlowTCR is GeneralizedTCR {
             // temporarily set manager to owner
             (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner(), owner());
 
-            (address newTCR, address arbitrator, address erc20, address rewardPool) = tcrFactory.deployFlowTCR(
+            (address newTCR, , , address rewardPool) = tcrFactory.deployFlowTCR(
                 ITCRFactory.FlowTCRParams({
                     flowContract: IManagedFlow(flowRecipient),
                     arbitratorExtraData: arbitratorExtraData,

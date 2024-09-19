@@ -53,8 +53,20 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         );
 
         // Re-deploy the contract to emit the event
-        address votingPowerAddress = address(0x1);
-        deployFlow(votingPowerAddress, address(superToken));
+        address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+
+        vm.prank(address(manager));
+        IERC721Flow(flowProxy).initialize({
+            initialOwner: address(manager),
+            nounsToken: address(nounsToken),
+            superToken: address(superToken),
+            flowImpl: flowImpl,
+            manager: manager,
+            managerRewardPool: address(rewardPool),
+            parent: address(0),
+            flowParams: flowParams,
+            metadata: flowMetadata
+        });
     }
 
     function testInitializeFailures() public {
