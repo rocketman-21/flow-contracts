@@ -68,10 +68,10 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // if total member units is 0, set 1 member unit to address(this)
         // do this to prevent distribution pool from resetting flow rate to 0
-        if (bonusPool.getTotalUnits() == 0) {
+        if (fs.bonusPool.getTotalUnits() == 0) {
             _updateBonusMemberUnits(address(this), 1);
         }
-        if (baselinePool.getTotalUnits() == 0) {
+        if (fs.baselinePool.getTotalUnits() == 0) {
             _updateBaselineMemberUnits(address(this), 1);
         }
 
@@ -91,7 +91,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // calculate new member units for recipient
         RecipientType recipientType = recipients[recipientId].recipientType;
         address recipientAddress = recipients[recipientId].recipient;
-        uint128 currentUnits = bonusPool.getUnits(recipientAddress);
+        uint128 currentUnits = fs.bonusPool.getUnits(recipientAddress);
 
         // double check for overflow before casting
         // and scale back by 1e15 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
@@ -132,7 +132,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             if (recipients[recipientId].removed) continue;
 
             address recipientAddress = recipients[recipientId].recipient;
-            uint128 currentUnits = bonusPool.getUnits(recipientAddress);
+            uint128 currentUnits = fs.bonusPool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
             RecipientType recipientType = recipients[recipientId].recipientType;
 
@@ -549,7 +549,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @return flowRate The flow rate for the member
      */
     function getMemberTotalFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        flowRate = bonusPool.getMemberFlowRate(memberAddr) + baselinePool.getMemberFlowRate(memberAddr);
+        flowRate = fs.bonusPool.getMemberFlowRate(memberAddr) + fs.baselinePool.getMemberFlowRate(memberAddr);
     }
 
     /**
@@ -558,7 +558,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @return totalUnits The total units for the member
      */
     function getTotalMemberUnits(address memberAddr) public view returns (uint256 totalUnits) {
-        totalUnits = bonusPool.getUnits(memberAddr) + baselinePool.getUnits(memberAddr);
+        totalUnits = fs.bonusPool.getUnits(memberAddr) + fs.baselinePool.getUnits(memberAddr);
     }
 
     /**
@@ -568,15 +568,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function getTotalReceivedByMember(address memberAddr) external view returns (uint256 totalAmountReceived) {
         totalAmountReceived =
-            bonusPool.getTotalAmountReceivedByMember(memberAddr) +
-            baselinePool.getTotalAmountReceivedByMember(memberAddr);
+            fs.bonusPool.getTotalAmountReceivedByMember(memberAddr) +
+            fs.baselinePool.getTotalAmountReceivedByMember(memberAddr);
     }
 
     /**
      * @return totalFlowRate The total flow rate of the pools
      */
     function getTotalFlowRate() public view returns (int96 totalFlowRate) {
-        totalFlowRate = bonusPool.getTotalFlowRate() + baselinePool.getTotalFlowRate();
+        totalFlowRate = fs.bonusPool.getTotalFlowRate() + fs.baselinePool.getTotalFlowRate();
     }
 
     /**
@@ -609,8 +609,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @return claimable The claimable balance from both pools
      */
     function getClaimableBalance(address member) external view returns (uint256) {
-        (int256 baselineClaimable, ) = baselinePool.getClaimableNow(member);
-        (int256 bonusClaimable, ) = bonusPool.getClaimableNow(member);
+        (int256 baselineClaimable, ) = fs.baselinePool.getClaimableNow(member);
+        (int256 bonusClaimable, ) = fs.bonusPool.getClaimableNow(member);
 
         return uint256(baselineClaimable) + uint256(bonusClaimable);
     }
