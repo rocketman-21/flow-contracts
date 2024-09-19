@@ -44,6 +44,8 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      */
     function initialize(ISuperToken _superToken, address _manager) public initializer {
         if (address(_superToken) == address(0)) revert ADDRESS_ZERO();
+        if (_manager == address(0)) revert ADDRESS_ZERO();
+
         __Ownable2Step_init();
         __ReentrancyGuard_init();
         superToken = _superToken;
@@ -67,19 +69,19 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      * @dev Member units represent the share of each recipient in the pool
      * @param _member The address of the pool recipient
      * @param _units The new member units to assign to the recipient
+     * @dev Ensure _member is not address(0)
      */
     function updateMemberUnits(address _member, uint128 _units) external onlyManagerOrOwner nonReentrant {
-        if (_member == address(0)) revert ADDRESS_ZERO();
-
-        uint128 totalUnitsBefore = rewardPool.getTotalUnits();
-
         bool success = superToken.updateMemberUnits(rewardPool, _member, _units);
         if (!success) revert UNITS_UPDATE_FAILED();
+    }
 
-        uint128 totalUnitsAfter = rewardPool.getTotalUnits();
-
-        // limitation of superfluid means that when total member units decrease, you must call `distributeFlow` again
-        if (totalUnitsBefore > totalUnitsAfter) setFlowRate(getTotalFlowRate());
+    /**
+     * @notice Resets the flow rate of the pool to its current total flow rate
+     * @dev This function can only be called by the owner or manager
+     */
+    function resetFlowRate() external onlyManagerOrOwner nonReentrant {
+        setFlowRate(getTotalFlowRate());
     }
 
     /**

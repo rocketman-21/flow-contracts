@@ -38,6 +38,11 @@ interface IRewardPool {
     function getMemberUnits(address member) external view returns (uint128 units);
 
     /**
+     * @notice Resets the flow rate of the pool to its current total flow rate
+     */
+    function resetFlowRate() external;
+
+    /**
      * @notice Helper function to get the claimable balance for a member at the current time
      * @param member The address of the member
      * @return claimableBalance The claimable balance for the member

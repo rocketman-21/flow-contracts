@@ -177,10 +177,18 @@ contract ERC20VotesMintable is
         uint128 transferredUnits = uint128(scaledUnits);
 
         // if minting from 0 address, don't subtract member units from 0x0
-        if (from != address(0)) IRewardPool(rewardPool).updateMemberUnits(from, fromUnits - transferredUnits);
+        if (from != address(0)) {
+            IRewardPool(rewardPool).updateMemberUnits(from, fromUnits - transferredUnits);
+        }
 
         // if transferring to 0 address, don't add member units to 0x0
-        if (to != address(0)) IRewardPool(rewardPool).updateMemberUnits(to, toUnits + transferredUnits);
+        if (to != address(0)) {
+            IRewardPool(rewardPool).updateMemberUnits(to, toUnits + transferredUnits);
+        } else {
+            // burning tokens here since to is the 0 address
+            // limitation of superfluid means that when total member units decrease, you must call `distributeFlow` again
+            IRewardPool(rewardPool).resetFlowRate();
+        }
     }
 
     ///                                                          ///
