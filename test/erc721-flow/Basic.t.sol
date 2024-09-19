@@ -297,8 +297,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
         // Verify flow rates are updated
         int96 totalFlowRate = flow.getTotalFlowRate();
-        int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(address(flow));
-        int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(address(flow));
+        int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(flow.managerRewardPool());
+        int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(flow.managerRewardPool());
 
         assertEq(totalFlowRate, initialFlowRate, "Total flow rate should remain unchanged");
         assertEq(
