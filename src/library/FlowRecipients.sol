@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
-import { IFlowEvents, IFlow } from "../interfaces/IFlow.sol";
+import { IFlow } from "../interfaces/IFlow.sol";
 
 library FlowRecipients {
     /**
@@ -11,18 +11,19 @@ library FlowRecipients {
      * @param recipientId The ID of the recipient to be approved
      * @dev Only callable by the manager of the contract
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
+     * @return address The address of the removed recipient
      */
-    function removeRecipient(FlowTypes.Storage storage fs, bytes32 recipientId) external {
+    function removeRecipient(FlowTypes.Storage storage fs, bytes32 recipientId) external returns (address) {
         if (fs.recipients[recipientId].recipient == address(0)) revert IFlow.INVALID_RECIPIENT_ID();
         if (fs.recipients[recipientId].removed) revert IFlow.RECIPIENT_ALREADY_REMOVED();
 
         address recipientAddress = fs.recipients[recipientId].recipient;
         fs.recipientExists[recipientAddress] = false;
 
-        emit IFlowEvents.RecipientRemoved(recipientAddress, recipientId);
-
         fs.recipients[recipientId].removed = true;
         fs.activeRecipientCount--;
+
+        return recipientAddress;
     }
 
     /**
@@ -54,8 +55,6 @@ library FlowRecipients {
         });
 
         fs.activeRecipientCount++;
-
-        emit IFlowEvents.RecipientCreated(recipientId, fs.recipients[recipientId], msg.sender);
 
         return (recipientId, recipient);
     }

@@ -264,6 +264,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     ) external onlyManager nonReentrant validMetadata(metadata) returns (bytes32, address) {
         (bytes32 recipientId, address recipientAddress) = fs.addRecipient(recipient, metadata);
 
+        emit RecipientCreated(recipientId, fs.recipients[recipientId], msg.sender);
+
         _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
         _updateBonusMemberUnits(recipientAddress, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
@@ -337,9 +339,11 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
     function removeRecipient(bytes32 recipientId) external onlyManager nonReentrant {
-        fs.removeRecipient(recipientId);
+        address recipientAddress = fs.removeRecipient(recipientId);
 
-        _removeFromPools(fs.recipients[recipientId].recipient);
+        emit RecipientRemoved(recipientAddress, recipientId);
+
+        _removeFromPools(recipientAddress);
     }
 
     /**
