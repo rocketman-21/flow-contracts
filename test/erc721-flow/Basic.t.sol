@@ -34,7 +34,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(flow.flowImpl(), address(flowImpl));
 
         // Check if the reward pool is set correctly
-        assertEq(flow.managerRewardPool(), address(rewardPool));
+        assertEq(flow.managerRewardPool(), address(dummyRewardPool));
 
         // Check if the contract is properly initialized as Ownable
         assertEq(flow.owner(), manager);
@@ -48,7 +48,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(superToken),
             flowImpl,
             manager,
-            address(rewardPool),
+            address(dummyRewardPool),
             address(0)
         );
 
@@ -62,7 +62,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             superToken: address(superToken),
             flowImpl: flowImpl,
             manager: manager,
-            managerRewardPool: address(rewardPool),
+            managerRewardPool: address(dummyRewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: flowMetadata
@@ -80,7 +80,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             superToken: address(superToken),
             flowImpl: flowImpl,
             manager: manager,
-            managerRewardPool: address(rewardPool),
+            managerRewardPool: address(dummyRewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: FlowTypes.RecipientMetadata(
@@ -103,7 +103,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             superToken: address(superToken),
             flowImpl: address(0),
             manager: manager,
-            managerRewardPool: address(rewardPool),
+            managerRewardPool: address(dummyRewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: FlowTypes.RecipientMetadata(
@@ -123,7 +123,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(superToken),
             address(flowImpl),
             manager,
-            address(rewardPool),
+            address(dummyRewardPool),
             address(0),
             flowParams,
             FlowTypes.RecipientMetadata(
@@ -143,7 +143,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(superToken),
             address(flowImpl),
             manager,
-            address(rewardPool),
+            address(dummyRewardPool),
             address(0),
             flowParams,
             FlowTypes.RecipientMetadata(
@@ -170,7 +170,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         (bytes32 recipientId, address newFlowRecipient) = flow.addFlowRecipient(
             metadata,
             flowManager,
-            address(rewardPool)
+            address(dummyRewardPool)
         );
 
         assertNotEq(newFlowRecipient, address(0));
@@ -200,12 +200,12 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Test adding with zero address flowManager (should revert)
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
         vm.prank(manager);
-        flow.addFlowRecipient(metadata, address(0), address(rewardPool));
+        flow.addFlowRecipient(metadata, address(0), address(dummyRewardPool));
 
         // Test adding with non-manager address (should revert)
         vm.prank(address(0xdead));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.addFlowRecipient(metadata, flowManager, address(rewardPool));
+        flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
     }
 
     function testSetFlowRateAccessControl() public {
@@ -271,7 +271,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Add a flow recipient
         address flowManager = address(0x789);
         vm.prank(manager);
-        flow.addFlowRecipient(metadata, flowManager, address(rewardPool));
+        flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding flow recipient");
 
         // Verify total recipient count

@@ -234,7 +234,7 @@ contract VotingFlowTest is ERC721FlowTest {
         (bytes32 flowRecipientId, address flowRecipient) = flow.addFlowRecipient(
             recipientMetadata,
             manager,
-            address(rewardPool)
+            address(dummyRewardPool)
         );
         vm.stopPrank();
 
@@ -280,7 +280,7 @@ contract VotingFlowTest is ERC721FlowTest {
         (bytes32 recipientId, address flowRecipient) = flow.addFlowRecipient(
             recipientMetadata,
             manager,
-            address(rewardPool)
+            address(dummyRewardPool)
         );
         vm.stopPrank();
 

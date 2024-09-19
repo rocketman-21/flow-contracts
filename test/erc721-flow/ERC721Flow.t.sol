@@ -24,9 +24,9 @@ contract ERC721FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
     SuperfluidFrameworkDeployer internal deployer;
     SuperToken internal superToken;
+    RewardPool internal dummyRewardPool;
 
     ERC721Flow flow;
-    IRewardPool rewardPool;
     address flowImpl;
     address testUSDC;
     IFlow.FlowParams flowParams;
@@ -40,7 +40,7 @@ contract ERC721FlowTest is Test {
 
     function deployFlow(address erc721, address superTokenAddress) internal returns (ERC721Flow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
-        rewardPool = deployRewardPool(superTokenAddress);
+        dummyRewardPool = deployRewardPool(superTokenAddress, manager);
 
         vm.prank(address(manager));
         IERC721Flow(flowProxy).initialize({
@@ -49,7 +49,7 @@ contract ERC721FlowTest is Test {
             superToken: superTokenAddress,
             flowImpl: flowImpl,
             manager: manager,
-            managerRewardPool: address(rewardPool),
+            managerRewardPool: address(dummyRewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: flowMetadata
@@ -82,7 +82,7 @@ contract ERC721FlowTest is Test {
         vm.stopPrank();
     }
 
-    function deployRewardPool(address superTokenAddress) internal returns (IRewardPool) {
+    function deployRewardPool(address superTokenAddress, address poolManager) internal returns (RewardPool) {
         // Deploy the implementation contract
         address rewardPoolImpl = address(new RewardPool());
 
@@ -90,9 +90,9 @@ contract ERC721FlowTest is Test {
         address rewardPoolProxy = address(new ERC1967Proxy(rewardPoolImpl, ""));
 
         // Initialize the proxy
-        IRewardPool(rewardPoolProxy).initialize(ISuperToken(superTokenAddress), manager);
+        IRewardPool(rewardPoolProxy).initialize(ISuperToken(superTokenAddress), poolManager);
 
-        return IRewardPool(rewardPoolProxy);
+        return RewardPool(rewardPoolProxy);
     }
 
     function deployMock721(string memory name, string memory symbol) public virtual returns (MockERC721) {

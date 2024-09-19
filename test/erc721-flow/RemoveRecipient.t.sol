@@ -362,12 +362,12 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         (bytes32 recipientId1, address flowRecipient1) = flow.addFlowRecipient(
             metadata1,
             flowManager1,
-            address(rewardPool)
+            address(dummyRewardPool)
         );
         (bytes32 recipientId2, address flowRecipient2) = flow.addFlowRecipient(
             metadata2,
             flowManager2,
-            address(rewardPool)
+            address(dummyRewardPool)
         );
         vm.stopPrank();
 
@@ -430,7 +430,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         (bytes32 recipientId3, address flowRecipient3) = flow.addFlowRecipient(
             metadata3,
             flowManager3,
-            address(rewardPool)
+            address(dummyRewardPool)
         );
 
         assertEq(

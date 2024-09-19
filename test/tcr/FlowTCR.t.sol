@@ -24,6 +24,7 @@ contract FlowTCRTest is ERC721FlowTest {
     FlowTCR public flowTCR;
     ERC20VotesMintable public erc20Token;
     ERC20VotesArbitrator public arbitrator;
+    RewardPool public rewardPool;
 
     // Addresses
     address public owner;
@@ -82,6 +83,8 @@ contract FlowTCRTest is ERC721FlowTest {
 
         address tcrFactoryImpl = address(new TCRFactory());
         address tcrFactoryProxy = address(new ERC1967Proxy(tcrFactoryImpl, ""));
+
+        rewardPool = deployRewardPool(address(superToken), erc20TokenProxy);
 
         ITCRFactory(tcrFactoryProxy).initialize({
             initialOwner: owner,
