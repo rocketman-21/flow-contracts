@@ -8,15 +8,56 @@ import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/in
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
+interface FlowTypes {
+    // Struct to hold the recipientId and their corresponding BPS for a vote
+    struct VoteAllocation {
+        bytes32 recipientId;
+        uint32 bps;
+        uint128 memberUnits;
+    }
+
+    // Enum to handle type of grant recipient, either address or flow contract
+    // Helpful to set a flow rate if recipient is flow contract
+    enum RecipientType {
+        ExternalAccount,
+        FlowContract
+    }
+
+    // Struct to hold metadata for the flow contract itself
+    struct RecipientMetadata {
+        string title;
+        string description;
+        string image;
+        string tagline;
+        string url;
+    }
+
+    // Struct to handle potential recipients
+    struct FlowRecipient {
+        // the account to stream funds to
+        address recipient;
+        // whether or not the recipient has been removed
+        bool removed;
+        // the type of recipient, either account or flow contract
+        RecipientType recipientType;
+        // the metadata of the recipient
+        RecipientMetadata metadata;
+    }
+}
+
 /// @notice Flow Storage V1
 /// @author rocketman
 /// @notice The Flow storage contract
-contract FlowStorageV1 {
+contract FlowStorageV1 is FlowTypes {
     /// @notice constant to scale uints into percentages (1e6 == 100%)
     uint32 public constant PERCENTAGE_SCALE = 1e6;
 
     /// The member units to assign to each recipient of the baseline salary pool
     uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
+
+    /// The Superfluid pool configuration
+    PoolConfig public poolConfig =
+        PoolConfig({ transferabilityForUnitsOwner: false, distributionFromAnyAddress: false });
 
     /// The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
     uint32 public baselinePoolFlowRatePercent;
@@ -57,48 +98,9 @@ contract FlowStorageV1 {
     /// The mapping of a tokenId to the member units assigned to each recipient they voted for
     mapping(uint256 => mapping(address => uint256)) public tokenIdToRecipientMemberUnits;
 
-    /// The Superfluid pool configuration
-    PoolConfig public poolConfig =
-        PoolConfig({ transferabilityForUnitsOwner: false, distributionFromAnyAddress: false });
-
     // The weight of the 721 voting token
     uint256 public tokenVoteWeight;
 
     // The mapping of a token to a list of votes allocations (recipient, BPS)
     mapping(uint256 => VoteAllocation[]) public votes;
-
-    // Struct to hold the recipientId and their corresponding BPS for a vote
-    struct VoteAllocation {
-        bytes32 recipientId;
-        uint32 bps;
-        uint128 memberUnits;
-    }
-
-    // Enum to handle type of grant recipient, either address or flow contract
-    // Helpful to set a flow rate if recipient is flow contract
-    enum RecipientType {
-        ExternalAccount,
-        FlowContract
-    }
-
-    // Struct to hold metadata for the flow contract itself
-    struct RecipientMetadata {
-        string title;
-        string description;
-        string image;
-        string tagline;
-        string url;
-    }
-
-    // Struct to handle potential recipients
-    struct FlowRecipient {
-        // the account to stream funds to
-        address recipient;
-        // whether or not the recipient has been removed
-        bool removed;
-        // the type of recipient, either account or flow contract
-        RecipientType recipientType;
-        // the metadata of the recipient
-        RecipientMetadata metadata;
-    }
 }

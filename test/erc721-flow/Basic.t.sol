@@ -5,7 +5,7 @@ import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 import { IFlowEvents, IFlow, IERC721Flow } from "../../src/interfaces/IFlow.sol";
 import { ERC721Flow } from "../../src/ERC721Flow.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 
 contract BasicERC721FlowTest is ERC721FlowTest {
@@ -83,7 +83,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             managerRewardPool: address(rewardPool),
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata(
+            metadata: FlowTypes.RecipientMetadata(
                 "Test Flow",
                 "ipfs://test",
                 "Test Description",
@@ -106,7 +106,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             managerRewardPool: address(rewardPool),
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata(
+            metadata: FlowTypes.RecipientMetadata(
                 "Test Flow",
                 "ipfs://test",
                 "Test Description",
@@ -126,7 +126,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(rewardPool),
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata(
+            FlowTypes.RecipientMetadata(
                 "Test Flow",
                 "ipfs://test",
                 "Test Description",
@@ -146,7 +146,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(rewardPool),
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata(
+            FlowTypes.RecipientMetadata(
                 "Test Flow",
                 "ipfs://test",
                 "Test Description",
@@ -157,7 +157,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipient() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata({
             title: "Test Flow Recipient",
             description: "A test flow recipient",
             image: "ipfs://testimage",
@@ -190,10 +190,10 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         (
             address recipient,
             bool removed,
-            FlowStorageV1.RecipientType recipientType,
-            FlowStorageV1.RecipientMetadata memory storedMetadata
+            FlowTypes.RecipientType recipientType,
+            FlowTypes.RecipientMetadata memory storedMetadata
         ) = flow.recipients(recipientId);
-        assertEq(uint(recipientType), uint(FlowStorageV1.RecipientType.FlowContract));
+        assertEq(uint(recipientType), uint(FlowTypes.RecipientType.FlowContract));
         assertEq(removed, false);
         assertEq(recipient, newFlowRecipient);
         assertEq(storedMetadata.title, metadata.title);
@@ -237,7 +237,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(flow.activeRecipientCount(), 0, "Initial active recipient count should be 0");
 
         // Add a recipient
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata({
             title: "Test Recipient",
             description: "A test recipient",
             image: "ipfs://test",

@@ -18,7 +18,7 @@ import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/
 import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
 import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
 import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
 
@@ -38,8 +38,8 @@ contract NounsFlowTest is Test {
     IRewardPool rewardPool;
     address manager = address(0x1998);
 
-    FlowStorageV1.RecipientMetadata flowMetadata;
-    FlowStorageV1.RecipientMetadata recipientMetadata;
+    FlowTypes.RecipientMetadata flowMetadata;
+    FlowTypes.RecipientMetadata recipientMetadata;
 
     address NOUNS_TOKEN_ADDRESS = 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03;
 
@@ -102,7 +102,7 @@ contract NounsFlowTest is Test {
 
     function _setUpWithForkBlock(uint256 blockNumber) public virtual {
         vm.createSelectFork("https://mainnet.base.org", blockNumber);
-        flowMetadata = FlowStorageV1.RecipientMetadata({
+        flowMetadata = FlowTypes.RecipientMetadata({
             title: "Test Flow",
             description: "A test flow",
             image: "ipfs://image",
@@ -110,7 +110,7 @@ contract NounsFlowTest is Test {
             url: "https://testflow.com"
         });
 
-        recipientMetadata = FlowStorageV1.RecipientMetadata({
+        recipientMetadata = FlowTypes.RecipientMetadata({
             title: "Test Recipient",
             description: "A test recipient",
             image: "ipfs://image",

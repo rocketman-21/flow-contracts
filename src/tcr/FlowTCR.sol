@@ -5,7 +5,7 @@ import { GeneralizedTCR } from "./GeneralizedTCR.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
-import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
+import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
@@ -97,16 +97,13 @@ contract FlowTCR is GeneralizedTCR {
     function _onItemRegistered(bytes32, bytes memory _item) internal override {
         // Note: The unused variable has been removed
         // Decode the item data
-        (
-            address recipient,
-            FlowStorageV1.RecipientMetadata memory metadata,
-            FlowStorageV1.RecipientType recipientType
-        ) = abi.decode(_item, (address, FlowStorageV1.RecipientMetadata, FlowStorageV1.RecipientType));
+        (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType) = abi
+            .decode(_item, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
 
         // Add the recipient to the Flow contract
-        if (recipientType == FlowStorageV1.RecipientType.ExternalAccount) {
+        if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
             flowContract.addRecipient(recipient, metadata);
-        } else if (recipientType == FlowStorageV1.RecipientType.FlowContract) {
+        } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
             // temporarily set manager to owner
             (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner(), owner());
 

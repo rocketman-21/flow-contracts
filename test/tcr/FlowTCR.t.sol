@@ -12,7 +12,7 @@ import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { ArbitratorStorageV1 } from "../../src/tcr/storage/ArbitratorStorageV1.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { ERC721FlowTest } from "../erc721-flow/ERC721Flow.t.sol";
 import { TCRFactory } from "../../src/tcr/TCRFactory.sol";
@@ -91,7 +91,7 @@ contract FlowTCRTest is ERC721FlowTest {
             rewardPoolImplementation_: rewardPoolImpl
         });
 
-        ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowStorageV1.RecipientType.ExternalAccount);
+        ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowTypes.RecipientType.ExternalAccount);
 
         flowTCR = FlowTCR(flowTCRProxy);
         flowTCR.initialize(

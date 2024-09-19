@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 
 contract RemoveRecipientsTest is ERC721FlowTest {
     function setUp() public override {
@@ -83,14 +83,14 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveMultipleRecipients() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Recipient 1",
             "Description 1",
             "ipfs://image1",
             "Tagline 1",
             "https://recipient1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Recipient 2",
             "Description 2",
             "ipfs://image2",
@@ -185,7 +185,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // Verify that no votes were cast
-        FlowStorageV1.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
+        FlowTypes.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
         assertEq(votes.length, 0);
 
         // Verify that member units remain at 0
@@ -219,7 +219,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // Verify the vote was cast
-        FlowStorageV1.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
+        FlowTypes.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
         assertEq(votes.length, 1);
         assertEq(votes[0].recipientId, recipientId1);
         assertEq(votes[0].bps, 1e6);
@@ -248,14 +248,14 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveRecipientBaselineMemberUnits() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Recipient 1",
             "Description 1",
             "ipfs://image1",
             "Tagline 1",
             "https://recipient1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Recipient 2",
             "Description 2",
             "ipfs://image2",
@@ -317,7 +317,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a new recipient and verify units are assigned correctly
         address recipient3 = address(0x789);
-        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata3 = FlowTypes.RecipientMetadata(
             "Recipient 3",
             "Description 3",
             "ipfs://image3",
@@ -342,14 +342,14 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveFlowRecipient() public {
         address flowManager1 = address(0x123);
         address flowManager2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Flow Recipient 1",
             "Description 1",
             "ipfs://image1",
             "Tagline 1",
             "https://flowrecipient1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Flow Recipient 2",
             "Description 2",
             "ipfs://image2",
@@ -419,7 +419,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a new flow recipient and verify units are assigned correctly
         address flowManager3 = address(0x789);
-        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata3 = FlowTypes.RecipientMetadata(
             "Flow Recipient 3",
             "Description 3",
             "ipfs://image3",

@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
 import { ERC721Flow } from "../../src/ERC721Flow.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 
 contract FlowRecipientTest is ERC721FlowTest {
@@ -11,7 +11,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         super.setUp();
     }
     function testAddFlowRecipientParent() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -41,7 +41,7 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipient() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -56,8 +56,8 @@ contract FlowRecipientTest is ERC721FlowTest {
         vm.expectEmit(false, true, false, false);
         emit IFlowEvents.RecipientCreated(
             0,
-            FlowStorageV1.FlowRecipient({
-                recipientType: FlowStorageV1.RecipientType.FlowContract,
+            FlowTypes.FlowRecipient({
+                recipientType: FlowTypes.RecipientType.FlowContract,
                 removed: false,
                 recipient: address(0),
                 metadata: metadata
@@ -77,12 +77,12 @@ contract FlowRecipientTest is ERC721FlowTest {
         (
             address storedRecipient,
             bool removed,
-            FlowStorageV1.RecipientType recipientType,
-            FlowStorageV1.RecipientMetadata memory storedMetadata
+            FlowTypes.RecipientType recipientType,
+            FlowTypes.RecipientMetadata memory storedMetadata
         ) = flow.recipients(recipientId);
         assertEq(storedRecipient, newFlowAddress);
         assertEq(removed, false);
-        assertEq(uint8(recipientType), uint8(FlowStorageV1.RecipientType.FlowContract));
+        assertEq(uint8(recipientType), uint8(FlowTypes.RecipientType.FlowContract));
         assertEq(storedMetadata.title, metadata.title);
         assertEq(storedMetadata.description, metadata.description);
         assertEq(storedMetadata.image, metadata.image);
@@ -120,7 +120,7 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipientEmptyManager() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -138,7 +138,7 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipientEmptyRewardPool() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -153,7 +153,7 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipientEmptyMetadata() public {
-        FlowStorageV1.RecipientMetadata memory emptyMetadata = FlowStorageV1.RecipientMetadata("", "", "", "", "");
+        FlowTypes.RecipientMetadata memory emptyMetadata = FlowTypes.RecipientMetadata("", "", "", "", "");
         address flowManager = address(0x123);
 
         vm.prank(flow.owner());
@@ -162,7 +162,7 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipientNonManager() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -177,14 +177,14 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddMultipleFlowRecipients() public {
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Flow Recipient 1",
             "First Flow contract",
             "ipfs://image1",
             "Tagline 1",
             "https://flow1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Flow Recipient 2",
             "Second Flow contract",
             "ipfs://image2",

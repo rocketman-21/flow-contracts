@@ -5,7 +5,7 @@ import { DeployScript } from "./DeployScript.s.sol";
 import { NounsFlow } from "../src/NounsFlow.sol";
 import { Flow } from "../src/Flow.sol";
 import { IFlow } from "../src/interfaces/IFlow.sol";
-import { FlowStorageV1 } from "../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../src/storage/FlowStorageV1.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { TokenVerifier } from "../src/state-proof/TokenVerifier.sol";
 
@@ -42,7 +42,7 @@ contract DeployNounsFlow is DeployScript {
                 tokenVoteWeight: tokenVoteWeight,
                 baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
             }),
-            FlowStorageV1.RecipientMetadata({
+            FlowTypes.RecipientMetadata({
                 title: "NounsFlow",
                 description: "NounsFlow deployment",
                 image: "ipfs://QmNounsFlowImageHash",

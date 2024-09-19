@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
+import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { IManagedFlow } from "./IManagedFlow.sol";
 
 /**
@@ -42,11 +42,7 @@ interface IFlowEvents {
     event ManagerRewardPoolUpdated(address indexed oldManagerRewardPool, address indexed newManagerRewardPool);
 
     /// @notice Emitted when a new grants recipient is set
-    event RecipientCreated(
-        bytes32 indexed recipientId,
-        FlowStorageV1.FlowRecipient recipient,
-        address indexed approvedBy
-    );
+    event RecipientCreated(bytes32 indexed recipientId, FlowTypes.FlowRecipient recipient, address indexed approvedBy);
 
     /// @notice Emitted when the flow rate is updated
     event FlowRateUpdated(
@@ -228,7 +224,7 @@ interface IERC721Flow is IFlow {
         address managerRewardPool,
         address parent,
         FlowParams memory flowParams,
-        FlowStorageV1.RecipientMetadata memory metadata
+        FlowTypes.RecipientMetadata memory metadata
     ) external;
 }
 
@@ -257,6 +253,6 @@ interface INounsFlow is IFlow {
         address managerRewardPool,
         address parent,
         FlowParams memory flowParams,
-        FlowStorageV1.RecipientMetadata memory metadata
+        FlowTypes.RecipientMetadata memory metadata
     ) external;
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
+import { FlowTypes } from "../storage/FlowStorageV1.sol";
 
 interface IManagedFlow {
     /**
@@ -13,7 +13,7 @@ interface IManagedFlow {
      */
     function addRecipient(
         address recipient,
-        FlowStorageV1.RecipientMetadata memory metadata
+        FlowTypes.RecipientMetadata memory metadata
     ) external returns (bytes32 recipientId, address recipientAddress);
 
     /**
@@ -25,7 +25,7 @@ interface IManagedFlow {
      * @return recipientAddress The address of the newly created Flow contract
      */
     function addFlowRecipient(
-        FlowStorageV1.RecipientMetadata memory metadata,
+        FlowTypes.RecipientMetadata memory metadata,
         address flowManager,
         address managerRewardPool
     ) external returns (bytes32 recipientId, address recipientAddress);
