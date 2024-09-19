@@ -114,6 +114,18 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
+     * @notice Retrieves the claimable balance from both pools for a member address
+     * @param member The address of the member to check the claimable balance for
+     * @return claimable The claimable balance from both pools
+     */
+    function getClaimableBalance(address member) external view returns (uint256) {
+        (int256 baselineClaimable, ) = baselinePool.getClaimableNow(member);
+        (int256 bonusClaimable, ) = bonusPool.getClaimableNow(member);
+
+        return uint256(baselineClaimable) + uint256(bonusClaimable);
+    }
+
+    /**
      * @notice Cast a vote for a specific grant address.
      * @param recipientId The id of the grant recipient.
      * @param bps The basis points of the vote to be split with the recipient.
