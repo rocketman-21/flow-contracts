@@ -182,6 +182,8 @@ contract ERC20VotesMintable is
 
         // if minting from 0 address, don't subtract member units from 0x0
         if (from != address(0)) {
+            // shouldn't ever happen but to be safe
+            if (fromUnits < transferredUnits) revert POOL_UNITS_OVERFLOW();
             IRewardPool(rewardPool).updateMemberUnits(from, fromUnits - transferredUnits);
         }
 

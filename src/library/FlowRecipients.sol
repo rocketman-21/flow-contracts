@@ -73,6 +73,8 @@ library FlowRecipients {
         address recipient,
         FlowTypes.RecipientMetadata memory metadata
     ) external returns (bytes32) {
+        if (fs.recipientExists[recipient]) revert IFlow.RECIPIENT_ALREADY_EXISTS();
+
         // functionality equivalent to addItem _itemID in GeneralizedTCR.sol (keccak256(bytes calldata _item))
         bytes32 recipientId = keccak256(abi.encode(recipient, metadata, FlowTypes.RecipientType.FlowContract));
 
@@ -82,6 +84,8 @@ library FlowRecipients {
             recipient: recipient,
             metadata: metadata
         });
+
+        fs.recipientExists[recipient] = true;
 
         fs.activeRecipientCount++;
 
