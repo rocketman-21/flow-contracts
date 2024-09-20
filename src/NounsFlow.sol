@@ -6,10 +6,13 @@ import { INounsFlow } from "./interfaces/IFlow.sol";
 import { ITokenVerifier } from "./interfaces/ITokenVerifier.sol";
 import { IStateProof } from "./interfaces/IStateProof.sol";
 import { IRewardPool } from "./interfaces/IRewardPool.sol";
+import { FlowVotes } from "./library/FlowVotes.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract NounsFlow is INounsFlow, Flow {
+    using FlowVotes for Storage;
+
     ITokenVerifier public verifier;
 
     constructor() payable initializer {}
@@ -57,7 +60,9 @@ contract NounsFlow is INounsFlow, Flow {
         IStateProof.BaseParameters calldata baseProofParams,
         bytes[][][] calldata ownershipStorageProofs,
         bytes[][] calldata delegateStorageProofs
-    ) external nonReentrant validVotes(recipientIds, percentAllocations) {
+    ) external nonReentrant {
+        fs.validateVotes(recipientIds, percentAllocations);
+
         // if the timestamp is more than 5 minutes old, it is invalid
         // TODO check through security considerations if this is a valid assumption
         if (baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();

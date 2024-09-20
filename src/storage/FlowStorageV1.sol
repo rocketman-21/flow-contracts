@@ -84,13 +84,15 @@ interface FlowTypes {
 /// @author rocketman
 /// @notice The Flow storage contract
 contract FlowStorageV1 is FlowTypes {
-    /// The flow storage
-    Storage public fs; /// @dev Warning - don't update the slot without also changing the libraries that access it
+    /// @dev Warning - don't update the slot / position of these variables in the FlowStorageV1 contract
+    /// without also changing the libraries that access them
+    Storage public fs;
 
-    //todo move these to correct libraries
     /// @notice constant to scale uints into percentages (1e6 == 100%)
+    /// @dev Heed warning above
     uint32 public constant PERCENTAGE_SCALE = 1e6;
 
     /// The member units to assign to each recipient of the baseline salary pool
+    /// @dev Heed warning above
     uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
 }

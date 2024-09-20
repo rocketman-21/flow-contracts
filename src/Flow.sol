@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow } from "./interfaces/IFlow.sol";
 import { FlowRecipients } from "./library/FlowRecipients.sol";
+import { FlowVotes } from "./library/FlowVotes.sol";
 
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -18,6 +19,7 @@ import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/app
 abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable, FlowStorageV1 {
     using SuperTokenV1Library for ISuperToken;
     using FlowRecipients for Storage;
+    using FlowVotes for Storage;
 
     /**
      * @notice Initializes the Flow contract
@@ -97,23 +99,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * Emits a VoteCast event upon successful execution.
      */
     function _vote(bytes32 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
-        // calculate new member units for recipient
-        RecipientType recipientType = fs.recipients[recipientId].recipientType;
-        address recipientAddress = fs.recipients[recipientId].recipient;
-        uint128 currentUnits = fs.bonusPool.getUnits(recipientAddress);
-
-        // double check for overflow before casting
-        // and scale back by 1e15
-        // per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
-        // gives someone with 1 vote at least 1e3 units to work with
-        uint256 scaledUnits = _scaleAmountByPercentage(totalWeight, bps) / 1e15;
-        if (scaledUnits > type(uint128).max) revert OVERFLOW();
-        uint128 newUnits = uint128(scaledUnits);
-
-        uint128 memberUnits = currentUnits + newUnits;
-
-        // update votes, track recipient, bps, and total member units assigned
-        fs.votes[tokenId].push(VoteAllocation({ recipientId: recipientId, bps: bps, memberUnits: newUnits }));
+        // calculate new member units for recipient and create vote
+        (uint128 memberUnits, address recipientAddress, RecipientType recipientType) = fs.createVote(
+            recipientId,
+            bps,
+            tokenId,
+            totalWeight,
+            PERCENTAGE_SCALE
+        );
 
         // update member units
         _updateBonusMemberUnits(recipientAddress, memberUnits);
@@ -162,33 +155,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // Clear out the votes for the tokenId
         delete fs.votes[tokenId];
-    }
-
-    /**
-     * @notice Checks that the recipients and percentAllocations are valid
-     * @param recipientIds The recipientIds of the grant recipients.
-     * @param percentAllocations The basis points of the vote to be split with the recipients.
-     */
-    modifier validVotes(bytes32[] memory recipientIds, uint32[] memory percentAllocations) {
-        // must have recipientIds
-        if (recipientIds.length < 1) {
-            revert TOO_FEW_RECIPIENTS();
-        }
-
-        // recipientIds & percentAllocations must be equal length
-        if (recipientIds.length != percentAllocations.length) {
-            revert RECIPIENTS_ALLOCATIONS_MISMATCH(recipientIds.length, percentAllocations.length);
-        }
-
-        // ensure recipients are not 0 address and allocations are > 0
-        for (uint256 i = 0; i < recipientIds.length; i++) {
-            bytes32 recipientId = recipientIds[i];
-            if (fs.recipients[recipientId].recipient == address(0)) revert INVALID_RECIPIENT_ID();
-            if (fs.recipients[recipientId].removed == true) revert NOT_APPROVED_RECIPIENT();
-            if (percentAllocations[i] == 0) revert ALLOCATION_MUST_BE_POSITIVE();
-        }
-
-        _;
     }
 
     /**
@@ -285,7 +251,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         address recipient = _deployFlowRecipient(_metadata, _flowManager, _managerRewardPool);
 
-        _connectAndInitializeFlow(recipient);
+        _connectAndInitializeFlowRecipient(recipient);
 
         bytes32 recipientId = fs.addFlowRecipient(recipient, _metadata);
 
@@ -299,7 +265,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Connects a new Flow contract to both pools and initializes its member units
      * @param recipient The address of the new Flow contract
      */
-    function _connectAndInitializeFlow(address recipient) internal {
+    function _connectAndInitializeFlowRecipient(address recipient) internal {
         // Connect the new child contract to both pools
         Flow(recipient).connectPool(fs.bonusPool);
         Flow(recipient).connectPool(fs.baselinePool);

@@ -5,10 +5,13 @@ import { Flow } from "./Flow.sol";
 import { IERC721Flow } from "./interfaces/IFlow.sol";
 import { IERC721Checkpointable } from "./interfaces/IERC721Checkpointable.sol";
 import { IRewardPool } from "./interfaces/IRewardPool.sol";
+import { FlowVotes } from "./library/FlowVotes.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ERC721Flow is IERC721Flow, Flow {
+    using FlowVotes for Storage;
+
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
 
@@ -51,7 +54,8 @@ contract ERC721Flow is IERC721Flow, Flow {
         uint256[] calldata tokenIds,
         bytes32[] calldata recipientIds,
         uint32[] calldata percentAllocations
-    ) external nonReentrant validVotes(recipientIds, percentAllocations) {
+    ) external nonReentrant {
+        fs.validateVotes(recipientIds, percentAllocations);
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
             _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
