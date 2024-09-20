@@ -462,7 +462,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function _setFlowRate(int96 _flowRate) internal {
-        // @0x52 there's a weird bug where the flow rates round down as more and more recipients are removed. 1e3 removed leads to ~1e8 in the total flow rate.
+        // @0x52 there's a weird bug where the flow rates round down as more and more recipients are removed. 1e3 removed leads to ~1e8 rounded down in the total flow rate.
 
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
         int96 oldTotalFlowRate = getTotalFlowRate();

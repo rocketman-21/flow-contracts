@@ -20,8 +20,8 @@ library FlowVotes {
         // double check for overflow before casting
         // and scale back by 1e15
         // per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
-        // gives someone with 1 vote at least 1e2 units to work with
-        uint256 scaledUnits = _scaleAmountByPercentage(totalWeight, bps, percentageScale) / 1e16;
+        // gives someone with 1 vote at least 1e3 units to work with
+        uint256 scaledUnits = _scaleAmountByPercentage(totalWeight, bps, percentageScale) / 1e15;
         if (scaledUnits > type(uint128).max) revert IFlow.OVERFLOW();
         uint128 newUnits = uint128(scaledUnits);
 
