@@ -321,7 +321,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param recipientAddress The address of the removed recipient
      */
     function _removeFromPools(address recipientAddress) internal {
-        // Set member units to 0
         _updateBonusMemberUnits(recipientAddress, 0);
         _updateBaselineMemberUnits(recipientAddress, 0);
 
@@ -463,7 +462,10 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function _setFlowRate(int96 _flowRate) internal {
+        // @0x52 there's a weird bug where the flow rates round down as more and more recipients are removed. 1e3 removed leads to ~1e8 in the total flow rate.
+
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
+        int96 oldTotalFlowRate = getTotalFlowRate();
 
         int256 managerRewardFlowRatePercent = int256(
             _scaleAmountByPercentage(uint96(_flowRate), fs.managerRewardPoolFlowRatePercent)
@@ -487,7 +489,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // cannot be negative because remainingFlowRate will always be greater than baselineFlowRate
         int96 bonusFlowRate = remainingFlowRate - baselineFlowRate;
 
-        emit FlowRateUpdated(getTotalFlowRate(), _flowRate, baselineFlowRate, bonusFlowRate, managerRewardFlowRate);
+        emit FlowRateUpdated(oldTotalFlowRate, _flowRate, baselineFlowRate, bonusFlowRate, managerRewardFlowRate);
 
         fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
