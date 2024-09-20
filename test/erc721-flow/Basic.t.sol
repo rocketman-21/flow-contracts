@@ -309,8 +309,6 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         int256 expectedBaselineFlow = (int256(initialFlowRateMinusRewardPool) * int256(uint256(newPercent))) /
             flowScale;
 
-        emit log_named_int("expectedBaselineFlow", expectedBaselineFlow);
-
         assertEq(totalFlowRate, initialFlowRate, "Total flow rate should remain unchanged");
         assertEq(baselineFlowRate, expectedBaselineFlow, "Baseline flow rate should be updated");
         assertEq(

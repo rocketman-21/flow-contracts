@@ -472,8 +472,24 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         return address(fs.superToken);
     }
 
+    function _setFlowToManagerRewardPool(int96 _newManagerRewardFlowRate) internal {
+        int96 rewardPoolFlowRate = fs.superToken.getFlowRate(address(this), fs.managerRewardPool);
+
+        if (_newManagerRewardFlowRate > 0) {
+            // if flow to reward pool is 0, create a flow, otherwise update the flow
+            if (rewardPoolFlowRate == 0) {
+                fs.superToken.createFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
+            } else {
+                fs.superToken.updateFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
+            }
+        } else if (rewardPoolFlowRate > 0) {
+            fs.superToken.deleteFlow(fs.managerRewardPool, address(this));
+        }
+        _afterRewardPoolFlowUpdate(_newManagerRewardFlowRate);
+    }
+
     /**
-     * @notice Internal function to set the flow rate for the Superfluid pool
+     * @notice Internal function to set the flow rate for the Superfluid pools and the manager reward pool
      * @param _flowRate The new flow rate to be set
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
@@ -488,17 +504,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         int96 managerRewardFlowRate = int96(managerRewardFlowRatePercent);
 
-        // if getFlowRate to reward pool is 0, create a flow, otherwise update the flow
-        if (managerRewardFlowRate > 0) {
-            if (fs.superToken.getFlowRate(address(this), fs.managerRewardPool) == 0) {
-                fs.superToken.createFlow(fs.managerRewardPool, managerRewardFlowRate);
-            } else {
-                fs.superToken.updateFlow(fs.managerRewardPool, managerRewardFlowRate);
-            }
-        } else {
-            fs.superToken.deleteFlow(fs.managerRewardPool, address(this));
-        }
-        _afterRewardPoolFlowUpdate(managerRewardFlowRate);
+        _setFlowToManagerRewardPool(managerRewardFlowRate);
 
         int96 remainingFlowRate = _flowRate - managerRewardFlowRate;
 
