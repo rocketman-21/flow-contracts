@@ -300,13 +300,24 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(flow.managerRewardPool());
         int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(flow.managerRewardPool());
 
+        int256 flowScale = int256(uint256(flow.PERCENTAGE_SCALE()));
+
+        int256 initialFlowRateMinusRewardPool = initialFlowRate -
+            (initialFlowRate * int256(uint256(flow.managerRewardPoolFlowRatePercent()))) /
+            flowScale;
+
+        int256 expectedBaselineFlow = (int256(initialFlowRateMinusRewardPool) * int256(uint256(newPercent))) /
+            flowScale;
+
+        emit log_named_int("expectedBaselineFlow", expectedBaselineFlow);
+
         assertEq(totalFlowRate, initialFlowRate, "Total flow rate should remain unchanged");
+        assertEq(baselineFlowRate, expectedBaselineFlow, "Baseline flow rate should be updated");
         assertEq(
-            baselineFlowRate,
-            int96((int256(initialFlowRate) * int256(uint256(newPercent))) / int256(uint256(flow.PERCENTAGE_SCALE()))),
-            "Baseline flow rate should be updated"
+            bonusFlowRate,
+            initialFlowRateMinusRewardPool - baselineFlowRate,
+            "Bonus flow rate should be the remainder"
         );
-        assertEq(bonusFlowRate, initialFlowRate - baselineFlowRate, "Bonus flow rate should be the remainder");
 
         // Test setting percentage to 100%
         uint32 percent = flow.PERCENTAGE_SCALE();

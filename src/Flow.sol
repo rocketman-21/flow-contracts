@@ -325,6 +325,16 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     ) internal virtual returns (address);
 
     /**
+     * @notice Virtual function to be called after updating the reward pool flow
+     * @dev This function can be overridden in derived contracts to implement custom logic
+     * @param newFlowRate The new flow rate to the reward pool
+     */
+    function _afterRewardPoolFlowUpdate(int96 newFlowRate) internal virtual {
+        // Default implementation does nothing
+        // Derived contracts can override this function to add custom logic
+    }
+
+    /**
      * @notice Removes a recipient for receiving funds
      * @param recipientId The ID of the recipient to be approved
      * @dev Only callable by the manager of the contract
@@ -470,17 +480,39 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function _setFlowRate(int96 _flowRate) internal {
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
+        int256 managerRewardFlowRatePercent = int256(
+            _scaleAmountByPercentage(uint96(_flowRate), fs.managerRewardPoolFlowRatePercent)
+        );
+
+        if (managerRewardFlowRatePercent > type(int96).max) revert FLOW_RATE_TOO_HIGH();
+
+        int96 managerRewardFlowRate = int96(managerRewardFlowRatePercent);
+
+        // if getFlowRate to reward pool is 0, create a flow, otherwise update the flow
+        if (managerRewardFlowRate > 0) {
+            if (fs.superToken.getFlowRate(address(this), fs.managerRewardPool) == 0) {
+                fs.superToken.createFlow(fs.managerRewardPool, managerRewardFlowRate);
+            } else {
+                fs.superToken.updateFlow(fs.managerRewardPool, managerRewardFlowRate);
+            }
+        } else {
+            fs.superToken.deleteFlow(fs.managerRewardPool, address(this));
+        }
+        _afterRewardPoolFlowUpdate(managerRewardFlowRate);
+
+        int96 remainingFlowRate = _flowRate - managerRewardFlowRate;
+
         int256 baselineFlowRate256 = int256(
-            _scaleAmountByPercentage(uint96(_flowRate), fs.baselinePoolFlowRatePercent)
+            _scaleAmountByPercentage(uint96(remainingFlowRate), fs.baselinePoolFlowRatePercent)
         );
 
         if (baselineFlowRate256 > type(int96).max) revert FLOW_RATE_TOO_HIGH();
 
         int96 baselineFlowRate = int96(baselineFlowRate256);
-        // cannot be negative because _flowRate will always be greater than baselineFlowRate
-        int96 bonusFlowRate = _flowRate - baselineFlowRate;
+        // cannot be negative because remainingFlowRate will always be greater than baselineFlowRate
+        int96 bonusFlowRate = remainingFlowRate - baselineFlowRate;
 
-        emit FlowRateUpdated(getTotalFlowRate(), _flowRate, baselineFlowRate, bonusFlowRate);
+        emit FlowRateUpdated(getTotalFlowRate(), _flowRate, baselineFlowRate, bonusFlowRate, managerRewardFlowRate);
 
         fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
@@ -569,10 +601,13 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @return totalFlowRate The total flow rate of the pools
+     * @return totalFlowRate The total flow rate of the pools and the manager reward pool
      */
     function getTotalFlowRate() public view returns (int96 totalFlowRate) {
-        totalFlowRate = fs.bonusPool.getTotalFlowRate() + fs.baselinePool.getTotalFlowRate();
+        totalFlowRate =
+            fs.bonusPool.getTotalFlowRate() +
+            fs.baselinePool.getTotalFlowRate() +
+            fs.superToken.getFlowRate(address(this), fs.managerRewardPool);
     }
 
     /**

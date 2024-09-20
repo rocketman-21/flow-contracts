@@ -59,7 +59,8 @@ interface IFlowEvents {
         int96 oldTotalFlowRate,
         int96 newTotalFlowRate,
         int96 baselinePoolFlowRate,
-        int96 bonusPoolFlowRate
+        int96 bonusPoolFlowRate,
+        int96 managerRewardFlowRatePercent
     );
 
     /// @notice Emitted when a new flow implementation is set
