@@ -174,8 +174,10 @@ contract ERC20VotesMintable is
 
         // double check for overflow before casting
         // and scale back by 1e14 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
-        // gives someone with 1 token at least 1e4 units to work with
-        uint256 scaledUnits = amount / 1e14;
+        // gives someone with 1 token at least 1e6 units to work with
+        uint256 scaledUnits = amount / 1e12;
+
+        // todo investigate whether small token transfers can let someone transfer without transfering member units
 
         if (scaledUnits > type(uint128).max) revert POOL_UNITS_OVERFLOW();
         uint128 transferredUnits = uint128(scaledUnits);
