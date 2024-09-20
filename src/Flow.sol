@@ -45,6 +45,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         if (_flowImpl == address(0)) revert ADDRESS_ZERO();
         if (_manager == address(0)) revert ADDRESS_ZERO();
         if (_superToken == address(0)) revert ADDRESS_ZERO();
+        if (_managerRewardPool == address(0)) revert ADDRESS_ZERO();
         if (_flowParams.tokenVoteWeight == 0) revert INVALID_VOTE_WEIGHT();
         if (bytes(_metadata.title).length == 0) revert INVALID_METADATA();
         if (bytes(_metadata.description).length == 0) revert INVALID_METADATA();
@@ -444,12 +445,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         if (_newManagerRewardFlowRate > 0) {
             // if flow to reward pool is 0, create a flow, otherwise update the flow
             if (rewardPoolFlowRate == 0) {
+                // todo need to check this - could it go to 0, then back to > 0 without needing to create a new flow?
                 fs.superToken.createFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
             } else {
                 fs.superToken.updateFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
             }
-        } else if (rewardPoolFlowRate > 0) {
-            fs.superToken.deleteFlow(fs.managerRewardPool, address(this));
+        } else if (rewardPoolFlowRate > 0 && _newManagerRewardFlowRate == 0) {
+            // only delete if the flow rate is going to 0 and reward pool flow rate is currently > 0
+            fs.superToken.deleteFlow(address(this), fs.managerRewardPool);
         }
         _afterRewardPoolFlowUpdate(_newManagerRewardFlowRate);
     }

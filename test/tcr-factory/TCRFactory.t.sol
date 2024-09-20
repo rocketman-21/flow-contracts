@@ -137,18 +137,18 @@ contract TCRFactoryTest is Test {
         });
 
         // Deploy FlowTCR ecosystem
-        (
-            address deployedTCR,
-            address deployedArbitrator,
-            address deployedERC20,
-            address deployedRewardPool
-        ) = tcrFactory.deployFlowTCR(flowParams, arbitratorParams, erc20Params, rewardPoolParams);
+        ITCRFactory.DeployedContracts memory deployedContracts = tcrFactory.deployFlowTCR(
+            flowParams,
+            arbitratorParams,
+            erc20Params,
+            rewardPoolParams
+        );
 
         // Verify deployment
-        assertTrue(deployedTCR != address(0), "FlowTCR not deployed");
+        assertTrue(deployedContracts.tcrAddress != address(0), "FlowTCR not deployed");
 
         // Check if RewardPool is properly initialized
-        RewardPool rewardPool = RewardPool(deployedRewardPool);
+        RewardPool rewardPool = RewardPool(deployedContracts.rewardPoolAddress);
         assertEq(address(rewardPool.superToken()), address(superToken), "SuperToken not set correctly in RewardPool");
 
         // Verify the Superfluid pool was created
@@ -159,7 +159,7 @@ contract TCRFactoryTest is Test {
         assertEq(address(superfluidPool.superToken()), address(superToken), "Incorrect SuperToken in Superfluid pool");
 
         // Check if ERC20VotesMintable is properly initialized
-        ERC20VotesMintable erc20 = ERC20VotesMintable(deployedERC20);
+        ERC20VotesMintable erc20 = ERC20VotesMintable(deployedContracts.erc20Address);
         assertEq(erc20.name(), "Test Token", "ERC20 name not set correctly");
         assertEq(erc20.symbol(), "TST", "ERC20 symbol not set correctly");
         assertEq(erc20.decimals(), 18, "ERC20 decimals not set correctly");
@@ -168,7 +168,7 @@ contract TCRFactoryTest is Test {
         assertFalse(erc20.isMinterLocked(), "ERC20 minter should not be locked initially");
 
         // Check if ERC20VotesArbitrator is properly initialized
-        ERC20VotesArbitrator erc20VotesArbitrator = ERC20VotesArbitrator(deployedArbitrator);
+        ERC20VotesArbitrator erc20VotesArbitrator = ERC20VotesArbitrator(deployedContracts.arbitratorAddress);
         assertEq(erc20VotesArbitrator.owner(), governor, "Arbitrator owner not set correctly");
         assertEq(
             address(erc20VotesArbitrator.votingToken()),
@@ -199,7 +199,7 @@ contract TCRFactoryTest is Test {
         );
 
         // Check if FlowTCR is properly initialized
-        FlowTCR flowTCR = FlowTCR(deployedTCR);
+        FlowTCR flowTCR = FlowTCR(deployedContracts.tcrAddress);
         assertEq(address(flowTCR.flowContract()), flowContract, "FlowContract not set correctly");
         assertEq(flowTCR.governor(), governor, "Governor not set correctly");
         assertEq(address(flowTCR.tcrFactory()), address(tcrFactory), "TCRFactory not set correctly");

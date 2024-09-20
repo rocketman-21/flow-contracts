@@ -27,55 +27,26 @@ contract FlowTCR is GeneralizedTCR {
 
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
-     * @param _initialOwner The initial owner of the contract
-     * @param _flowContract The address of the Flow contract this TCR will manage
-     * @param _arbitrator The arbitrator to resolve disputes
-     * @param _tcrFactory The address of the TCR factory
-     * @param _arbitratorExtraData Extra data for the arbitrator
-     * @param _registrationMetaEvidence MetaEvidence for registration requests
-     * @param _clearingMetaEvidence MetaEvidence for removal requests
-     * @param _governor The governor of this contract
-     * @param _erc20 The ERC20 token used for deposits and challenges
-     * @param _submissionBaseDeposit Base deposit for submitting an item
-     * @param _removalBaseDeposit Base deposit for removing an item
-     * @param _submissionChallengeBaseDeposit Base deposit for challenging a submission
-     * @param _removalChallengeBaseDeposit Base deposit for challenging a removal
-     * @param _challengePeriodDuration Duration of the challenge period
-     * @param _stakeMultipliers Multipliers for appeals
+     * @param _contractParams Struct containing address parameters and interfaces
+     * @param _tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
      */
-    function initialize(
-        address _initialOwner,
-        IManagedFlow _flowContract,
-        IArbitrator _arbitrator,
-        ITCRFactory _tcrFactory,
-        bytes memory _arbitratorExtraData,
-        string memory _registrationMetaEvidence,
-        string memory _clearingMetaEvidence,
-        address _governor,
-        IERC20 _erc20,
-        uint _submissionBaseDeposit,
-        uint _removalBaseDeposit,
-        uint _submissionChallengeBaseDeposit,
-        uint _removalChallengeBaseDeposit,
-        uint _challengePeriodDuration,
-        uint[3] memory _stakeMultipliers
-    ) public initializer {
-        flowContract = _flowContract;
-        tcrFactory = _tcrFactory;
+    function initialize(ContractParams memory _contractParams, TCRParams memory _tcrParams) public initializer {
+        flowContract = _contractParams.flowContract;
+        tcrFactory = _contractParams.tcrFactory;
         __GeneralizedTCR_init(
-            _initialOwner,
-            _arbitrator,
-            _arbitratorExtraData,
-            _registrationMetaEvidence,
-            _clearingMetaEvidence,
-            _governor,
-            _erc20,
-            _submissionBaseDeposit,
-            _removalBaseDeposit,
-            _submissionChallengeBaseDeposit,
-            _removalChallengeBaseDeposit,
-            _challengePeriodDuration,
-            _stakeMultipliers
+            _contractParams.initialOwner,
+            _contractParams.arbitrator,
+            _tcrParams.arbitratorExtraData,
+            _tcrParams.registrationMetaEvidence,
+            _tcrParams.clearingMetaEvidence,
+            _contractParams.governor,
+            _contractParams.erc20,
+            _tcrParams.submissionBaseDeposit,
+            _tcrParams.removalBaseDeposit,
+            _tcrParams.submissionChallengeBaseDeposit,
+            _tcrParams.removalChallengeBaseDeposit,
+            _tcrParams.challengePeriodDuration,
+            _tcrParams.stakeMultipliers
         );
     }
 
@@ -107,7 +78,7 @@ contract FlowTCR is GeneralizedTCR {
             // temporarily set manager to owner
             (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner(), owner());
 
-            (address newTCR, , , address rewardPool) = tcrFactory.deployFlowTCR(
+            ITCRFactory.DeployedContracts memory deployedContracts = tcrFactory.deployFlowTCR(
                 ITCRFactory.FlowTCRParams({
                     flowContract: IManagedFlow(flowRecipient),
                     arbitratorExtraData: arbitratorExtraData,
@@ -127,8 +98,8 @@ contract FlowTCR is GeneralizedTCR {
             );
 
             // set manager to new TCR and manager reward pool
-            flowContract.setManager(address(newTCR));
-            flowContract.setManagerRewardPool(rewardPool);
+            flowContract.setManager(deployedContracts.tcrAddress);
+            flowContract.setManagerRewardPool(deployedContracts.rewardPoolAddress);
         }
     }
 }

@@ -57,6 +57,17 @@ interface ITCRFactory {
     }
 
     /**
+     * @notice Struct to hold the return values of deployFlowTCR function
+     * @dev Contains addresses of deployed contracts in the FlowTCR ecosystem
+     */
+    struct DeployedContracts {
+        address tcrAddress;
+        address arbitratorAddress;
+        address erc20Address;
+        address rewardPoolAddress;
+    }
+
+    /**
      * @dev Parameters for initializing an ERC20 token
      * @param initialOwner The initial owner of the token
      * @param minter The address with minting rights
@@ -122,17 +133,14 @@ interface ITCRFactory {
      * @param arbitratorParams Parameters for initializing the Arbitrator contract
      * @param erc20Params Parameters for initializing the ERC20 contract
      * @param rewardPoolParams Parameters for initializing the RewardPool contract
-     * @return tcrAddress The address of the newly deployed FlowTCR proxy contract
-     * @return arbitratorAddress The address of the newly deployed Arbitrator proxy contract
-     * @return erc20Address The address of the newly deployed ERC20 proxy contract
-     * @return rewardPoolAddress The address of the newly deployed RewardPool contract
+     * @return deployedContracts The addresses of the deployed contracts
      */
     function deployFlowTCR(
         FlowTCRParams memory params,
         ArbitratorParams memory arbitratorParams,
         ERC20Params memory erc20Params,
         RewardPoolParams memory rewardPoolParams
-    ) external returns (address tcrAddress, address arbitratorAddress, address erc20Address, address rewardPoolAddress);
+    ) external returns (DeployedContracts memory deployedContracts);
 
     /**
      * @dev Initializes the TCRFactory contract

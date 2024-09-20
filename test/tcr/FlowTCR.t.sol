@@ -18,6 +18,7 @@ import { ERC721FlowTest } from "../erc721-flow/ERC721Flow.t.sol";
 import { TCRFactory } from "../../src/tcr/TCRFactory.sol";
 import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
+import { GeneralizedTCRStorageV1 } from "../../src/tcr/storage/GeneralizedTCRStorageV1.sol";
 
 contract FlowTCRTest is ERC721FlowTest {
     // Contracts
@@ -98,21 +99,25 @@ contract FlowTCRTest is ERC721FlowTest {
 
         flowTCR = FlowTCR(flowTCRProxy);
         flowTCR.initialize(
-            address(owner),
-            IManagedFlow(address(flow)),
-            IArbitrator(arbitratorProxy),
-            ITCRFactory(tcrFactoryProxy),
-            ARBITRATOR_EXTRA_DATA,
-            REGISTRATION_META_EVIDENCE,
-            CLEARING_META_EVIDENCE,
-            governor,
-            IERC20(erc20TokenProxy),
-            SUBMISSION_BASE_DEPOSIT,
-            REMOVAL_BASE_DEPOSIT,
-            SUBMISSION_CHALLENGE_BASE_DEPOSIT,
-            REMOVAL_CHALLENGE_BASE_DEPOSIT,
-            CHALLENGE_PERIOD,
-            STAKE_MULTIPLIERS
+            GeneralizedTCRStorageV1.ContractParams({
+                initialOwner: address(owner),
+                governor: governor,
+                flowContract: IManagedFlow(address(flow)),
+                arbitrator: IArbitrator(arbitratorProxy),
+                tcrFactory: ITCRFactory(tcrFactoryProxy),
+                erc20: IERC20(erc20TokenProxy)
+            }),
+            GeneralizedTCRStorageV1.TCRParams({
+                submissionBaseDeposit: SUBMISSION_BASE_DEPOSIT,
+                removalBaseDeposit: REMOVAL_BASE_DEPOSIT,
+                submissionChallengeBaseDeposit: SUBMISSION_CHALLENGE_BASE_DEPOSIT,
+                removalChallengeBaseDeposit: REMOVAL_CHALLENGE_BASE_DEPOSIT,
+                challengePeriodDuration: CHALLENGE_PERIOD,
+                stakeMultipliers: STAKE_MULTIPLIERS,
+                arbitratorExtraData: ARBITRATOR_EXTRA_DATA,
+                registrationMetaEvidence: REGISTRATION_META_EVIDENCE,
+                clearingMetaEvidence: CLEARING_META_EVIDENCE
+            })
         );
 
         erc20Token = ERC20VotesMintable(erc20TokenProxy);

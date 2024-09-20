@@ -13,6 +13,7 @@ import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/acc
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
 import { IRewardPool } from "../interfaces/IRewardPool.sol";
+import { GeneralizedTCRStorageV1 } from "./storage/GeneralizedTCRStorageV1.sol";
 
 /**
  * @title TCRFactory
@@ -64,31 +65,25 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
      * @param params Parameters for initializing the FlowTCR contract
      * @param arbitratorParams Parameters for initializing the ERC20VotesArbitrator contract
      * @param erc20Params Parameters for initializing the ERC20VotesMintable contract
-     * @return tcrAddress The address of the newly deployed FlowTCR proxy contract
-     * @return arbitratorAddress The address of the newly deployed Arbitrator proxy contract
-     * @return erc20Address The address of the newly deployed ERC20 proxy contract
-     * @return rewardPoolAddress The address of the newly deployed RewardPool contract
+     * @return deployedContracts The deployed contracts
      */
     function deployFlowTCR(
         FlowTCRParams memory params,
         ArbitratorParams memory arbitratorParams,
         ERC20Params memory erc20Params,
         RewardPoolParams memory rewardPoolParams
-    )
-        external
-        returns (address tcrAddress, address arbitratorAddress, address erc20Address, address rewardPoolAddress)
-    {
+    ) external returns (DeployedContracts memory deployedContracts) {
         // Deploy FlowTCR proxy
-        tcrAddress = address(new ERC1967Proxy(flowTCRImplementation, ""));
+        address tcrAddress = address(new ERC1967Proxy(flowTCRImplementation, ""));
 
         // Deploy ERC20VotesArbitrator proxy
-        arbitratorAddress = address(new ERC1967Proxy(arbitratorImplementation, ""));
+        address arbitratorAddress = address(new ERC1967Proxy(arbitratorImplementation, ""));
 
         // Deploy ERC20VotesMintable proxy
-        erc20Address = address(new ERC1967Proxy(erc20Implementation, ""));
+        address erc20Address = address(new ERC1967Proxy(erc20Implementation, ""));
 
         // Deploy RewardPool proxy
-        rewardPoolAddress = address(new ERC1967Proxy(rewardPoolImplementation, ""));
+        address rewardPoolAddress = address(new ERC1967Proxy(rewardPoolImplementation, ""));
 
         // Initialize the ERC20VotesMintable token
         IERC20Mintable(erc20Address).initialize({
@@ -113,23 +108,27 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         });
 
         // Initialize the FlowTCR
-        IFlowTCR(tcrAddress).initialize({
-            initialOwner: params.governor,
-            flowContract: params.flowContract,
-            arbitrator: IArbitrator(arbitratorAddress),
-            tcrFactory: address(this),
-            arbitratorExtraData: params.arbitratorExtraData,
-            registrationMetaEvidence: params.registrationMetaEvidence,
-            clearingMetaEvidence: params.clearingMetaEvidence,
-            governor: params.governor,
-            erc20: IERC20(address(erc20Address)),
-            submissionBaseDeposit: params.submissionBaseDeposit,
-            removalBaseDeposit: params.removalBaseDeposit,
-            submissionChallengeBaseDeposit: params.submissionChallengeBaseDeposit,
-            removalChallengeBaseDeposit: params.removalChallengeBaseDeposit,
-            challengePeriodDuration: params.challengePeriodDuration,
-            stakeMultipliers: params.stakeMultipliers
-        });
+        IFlowTCR(tcrAddress).initialize(
+            GeneralizedTCRStorageV1.ContractParams({
+                initialOwner: params.governor,
+                governor: params.governor,
+                flowContract: params.flowContract,
+                arbitrator: IArbitrator(arbitratorAddress),
+                tcrFactory: ITCRFactory(address(this)),
+                erc20: IERC20(address(erc20Address))
+            }),
+            GeneralizedTCRStorageV1.TCRParams({
+                submissionBaseDeposit: params.submissionBaseDeposit,
+                removalBaseDeposit: params.removalBaseDeposit,
+                submissionChallengeBaseDeposit: params.submissionChallengeBaseDeposit,
+                removalChallengeBaseDeposit: params.removalChallengeBaseDeposit,
+                challengePeriodDuration: params.challengePeriodDuration,
+                stakeMultipliers: params.stakeMultipliers,
+                arbitratorExtraData: params.arbitratorExtraData,
+                registrationMetaEvidence: params.registrationMetaEvidence,
+                clearingMetaEvidence: params.clearingMetaEvidence
+            })
+        );
 
         // Initialize the RewardPool
         IRewardPool(rewardPoolAddress).initialize({
@@ -140,7 +139,12 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
 
         emit FlowTCRDeployed(msg.sender, tcrAddress, arbitratorAddress, erc20Address);
 
-        return (tcrAddress, arbitratorAddress, erc20Address, rewardPoolAddress);
+        deployedContracts = DeployedContracts({
+            tcrAddress: tcrAddress,
+            arbitratorAddress: arbitratorAddress,
+            erc20Address: erc20Address,
+            rewardPoolAddress: rewardPoolAddress
+        });
     }
 
     /**
