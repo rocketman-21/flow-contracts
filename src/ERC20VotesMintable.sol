@@ -31,6 +31,7 @@ contract ERC20VotesMintable is
     address public rewardPool;
 
     error POOL_UNITS_OVERFLOW();
+    error INVALID_AMOUNT_FOR_MEMBER_UNITS();
 
     ///                                                          ///
     ///                          MODIFIERS                       ///
@@ -178,6 +179,7 @@ contract ERC20VotesMintable is
         uint256 scaledUnits = amount / 1e12;
 
         // todo investigate whether small token transfers can let someone transfer without transfering member units
+        if (scaledUnits == 0) revert INVALID_AMOUNT_FOR_MEMBER_UNITS();
 
         if (scaledUnits > type(uint128).max) revert POOL_UNITS_OVERFLOW();
         uint128 transferredUnits = uint128(scaledUnits);
