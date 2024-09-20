@@ -168,11 +168,11 @@ interface IGeneralizedTCR {
 interface IFlowTCR is IGeneralizedTCR {
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
-     * @param _contractParams Struct containing address parameters and interfaces
-     * @param _tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
+     * @param contractParams Struct containing address parameters and interfaces
+     * @param tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
      */
     function initialize(
-        GeneralizedTCRStorageV1.ContractParams memory _contractParams,
-        GeneralizedTCRStorageV1.TCRParams memory _tcrParams
+        GeneralizedTCRStorageV1.ContractParams memory contractParams,
+        GeneralizedTCRStorageV1.TCRParams memory tcrParams
     ) external;
 }

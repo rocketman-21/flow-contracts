@@ -2,13 +2,13 @@
 pragma solidity ^0.8.27;
 
 /**
- * @title IERC20Mintable
+ * @title IERC20VotesMintable
  * @dev Interface for an ERC20 token with minting capabilities
  *
  * This interface defines the events, errors, and functions for an ERC20 token
  * that can be minted and has a minter role that can be updated or locked.
  */
-interface IERC20Mintable {
+interface IERC20VotesMintable {
     /**
      * @dev Emitted when the minter address is updated
      * @param minter The new minter address

@@ -11,11 +11,11 @@ import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/acc
 
 import { ERC20VotesUpgradeable } from "./base/erc20/ERC20VotesUpgradeable.sol";
 
-import { IERC20Mintable } from "./interfaces/IERC20Mintable.sol";
+import { IERC20VotesMintable } from "./interfaces/IERC20VotesMintable.sol";
 import { IRewardPool } from "./interfaces/IRewardPool.sol";
 
 contract ERC20VotesMintable is
-    IERC20Mintable,
+    IERC20VotesMintable,
     UUPSUpgradeable,
     Ownable2StepUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -117,7 +117,7 @@ contract ERC20VotesMintable is
      * no way affects any of the arithmetic of the contract, including
      * {IERC20-balanceOf} and {IERC20-transfer}.
      */
-    function decimals() public view virtual override(ERC20Upgradeable, IERC20Mintable) returns (uint8) {
+    function decimals() public view virtual override(ERC20Upgradeable, IERC20VotesMintable) returns (uint8) {
         return 18;
     }
 

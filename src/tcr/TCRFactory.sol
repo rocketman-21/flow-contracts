@@ -6,7 +6,7 @@ import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFlowTCR } from "./interfaces/IGeneralizedTCR.sol";
-import { IERC20Mintable } from "../interfaces/IERC20Mintable.sol";
+import { IERC20VotesMintable } from "../interfaces/IERC20VotesMintable.sol";
 import { IOwnable2Step } from "../interfaces/IOwnable2Step.sol";
 import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
@@ -86,7 +86,7 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         address rewardPoolAddress = address(new ERC1967Proxy(rewardPoolImplementation, ""));
 
         // Initialize the ERC20VotesMintable token
-        IERC20Mintable(erc20Address).initialize({
+        IERC20VotesMintable(erc20Address).initialize({
             initialOwner: erc20Params.initialOwner,
             minter: erc20Params.minter,
             name: erc20Params.name,
