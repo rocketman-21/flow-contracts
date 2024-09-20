@@ -18,7 +18,9 @@ import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/
 import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
 import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
+import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
 
 contract NounsFlowTest is Test {
     using stdJson for string;
@@ -33,16 +35,17 @@ contract NounsFlowTest is Test {
     IFlow.FlowParams flowParams;
 
     TokenVerifier verifier;
-
+    IRewardPool rewardPool;
     address manager = address(0x1998);
 
-    FlowStorageV1.RecipientMetadata flowMetadata;
-    FlowStorageV1.RecipientMetadata recipientMetadata;
+    FlowTypes.RecipientMetadata flowMetadata;
+    FlowTypes.RecipientMetadata recipientMetadata;
 
     address NOUNS_TOKEN_ADDRESS = 0x9C8fF314C9Bc7F6e59A9d9225Fb22946427eDC03;
 
     function deployFlow(address verifierAddress, address superTokenAddress) internal returns (NounsFlow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+        rewardPool = deployRewardPool(superTokenAddress, flowProxy);
 
         vm.prank(address(manager));
         INounsFlow(flowProxy).initialize({
@@ -51,6 +54,7 @@ contract NounsFlowTest is Test {
             superToken: superTokenAddress,
             flowImpl: flowImpl,
             manager: manager,
+            managerRewardPool: address(rewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: flowMetadata
@@ -63,6 +67,19 @@ contract NounsFlowTest is Test {
         IFlow(flowProxy).setFlowRate(385 * 10 ** 13); // 0.00385 tokens per second
 
         return NounsFlow(flowProxy);
+    }
+
+    function deployRewardPool(address superTokenAddress, address flowAddress) internal returns (IRewardPool) {
+        // Deploy the implementation contract
+        address rewardPoolImpl = address(new RewardPool());
+
+        // Deploy the proxy contract
+        address rewardPoolProxy = address(new ERC1967Proxy(rewardPoolImpl, ""));
+
+        // Initialize the proxy
+        IRewardPool(rewardPoolProxy).initialize(ISuperToken(superTokenAddress), manager, flowAddress);
+
+        return IRewardPool(rewardPoolProxy);
     }
 
     function _transferTestTokenToFlow(address flowAddress, uint256 amount) internal {
@@ -85,7 +102,7 @@ contract NounsFlowTest is Test {
 
     function _setUpWithForkBlock(uint256 blockNumber) public virtual {
         vm.createSelectFork("https://mainnet.base.org", blockNumber);
-        flowMetadata = FlowStorageV1.RecipientMetadata({
+        flowMetadata = FlowTypes.RecipientMetadata({
             title: "Test Flow",
             description: "A test flow",
             image: "ipfs://image",
@@ -93,7 +110,7 @@ contract NounsFlowTest is Test {
             url: "https://testflow.com"
         });
 
-        recipientMetadata = FlowStorageV1.RecipientMetadata({
+        recipientMetadata = FlowTypes.RecipientMetadata({
             title: "Test Recipient",
             description: "A test recipient",
             image: "ipfs://image",
@@ -106,7 +123,8 @@ contract NounsFlowTest is Test {
 
         flowParams = IFlow.FlowParams({
             tokenVoteWeight: 1e18 * 1000, // Example token vote weight
-            baselinePoolFlowRatePercent: 1000 // 1000 BPS
+            baselinePoolFlowRatePercent: 5000, // 1000 BPS
+            managerRewardPoolFlowRatePercent: 1000 // 1000 BPS
         });
 
         vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);

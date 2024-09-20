@@ -5,7 +5,7 @@ import { FlowTCRTest } from "./FlowTCR.t.sol";
 import { IGeneralizedTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 
 contract BasicTCRTest is FlowTCRTest {
     // Test Cases
@@ -110,14 +110,18 @@ contract BasicTCRTest is FlowTCRTest {
         assertEq(numberOfRequests, 1);
 
         // Decode the ITEM_DATA to get the recipient address
-        (address recipientAddress, , ) = abi.decode(ITEM_DATA, (address, string, FlowStorageV1.RecipientType));
+        (address recipientAddress, , ) = abi.decode(ITEM_DATA, (address, string, FlowTypes.RecipientType));
 
         // Check if a flow recipient was created for the item
         assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
 
         // Optionally, you can also check the recipient's details in the flow contract
-        (address actualRecipient, , , ) = flow.recipients(keccak256(ITEM_DATA));
-        assertEq(actualRecipient, recipientAddress, "Flow recipient address should match the one in ITEM_DATA");
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(ITEM_DATA));
+        assertEq(
+            storedRecipient.recipient,
+            recipientAddress,
+            "Flow recipient address should match the one in ITEM_DATA"
+        );
         // check member units > 0 and flow rate > 0
         assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
     }
@@ -189,14 +193,18 @@ contract BasicTCRTest is FlowTCRTest {
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered), "Status should be Registered");
 
         // Decode the ITEM_DATA to get the recipient address
-        (address recipientAddress, , ) = abi.decode(ITEM_DATA, (address, string, FlowStorageV1.RecipientType));
+        (address recipientAddress, , ) = abi.decode(ITEM_DATA, (address, string, FlowTypes.RecipientType));
 
         // Check if a flow recipient was created for the item
         assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
 
         // Optionally, you can also check the recipient's details in the flow contract
-        (address actualRecipient, , , ) = flow.recipients(keccak256(ITEM_DATA));
-        assertEq(actualRecipient, recipientAddress, "Flow recipient address should match the one in ITEM_DATA");
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(ITEM_DATA));
+        assertEq(
+            storedRecipient.recipient,
+            recipientAddress,
+            "Flow recipient address should match the one in ITEM_DATA"
+        );
         // check member units > 0 and flow rate > 0
         assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
     }

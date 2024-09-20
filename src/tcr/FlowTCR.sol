@@ -5,8 +5,9 @@ import { GeneralizedTCR } from "./GeneralizedTCR.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
-import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
+import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 /**
  * @title FlowTCR
@@ -26,55 +27,26 @@ contract FlowTCR is GeneralizedTCR {
 
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
-     * @param _initialOwner The initial owner of the contract
-     * @param _flowContract The address of the Flow contract this TCR will manage
-     * @param _arbitrator The arbitrator to resolve disputes
-     * @param _tcrFactory The address of the TCR factory
-     * @param _arbitratorExtraData Extra data for the arbitrator
-     * @param _registrationMetaEvidence MetaEvidence for registration requests
-     * @param _clearingMetaEvidence MetaEvidence for removal requests
-     * @param _governor The governor of this contract
-     * @param _erc20 The ERC20 token used for deposits and challenges
-     * @param _submissionBaseDeposit Base deposit for submitting an item
-     * @param _removalBaseDeposit Base deposit for removing an item
-     * @param _submissionChallengeBaseDeposit Base deposit for challenging a submission
-     * @param _removalChallengeBaseDeposit Base deposit for challenging a removal
-     * @param _challengePeriodDuration Duration of the challenge period
-     * @param _stakeMultipliers Multipliers for appeals
+     * @param _contractParams Struct containing address parameters and interfaces
+     * @param _tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
      */
-    function initialize(
-        address _initialOwner,
-        IManagedFlow _flowContract,
-        IArbitrator _arbitrator,
-        ITCRFactory _tcrFactory,
-        bytes memory _arbitratorExtraData,
-        string memory _registrationMetaEvidence,
-        string memory _clearingMetaEvidence,
-        address _governor,
-        IERC20 _erc20,
-        uint _submissionBaseDeposit,
-        uint _removalBaseDeposit,
-        uint _submissionChallengeBaseDeposit,
-        uint _removalChallengeBaseDeposit,
-        uint _challengePeriodDuration,
-        uint[3] memory _stakeMultipliers
-    ) public initializer {
-        flowContract = _flowContract;
-        tcrFactory = _tcrFactory;
+    function initialize(ContractParams memory _contractParams, TCRParams memory _tcrParams) public initializer {
+        flowContract = _contractParams.flowContract;
+        tcrFactory = _contractParams.tcrFactory;
         __GeneralizedTCR_init(
-            _initialOwner,
-            _arbitrator,
-            _arbitratorExtraData,
-            _registrationMetaEvidence,
-            _clearingMetaEvidence,
-            _governor,
-            _erc20,
-            _submissionBaseDeposit,
-            _removalBaseDeposit,
-            _submissionChallengeBaseDeposit,
-            _removalChallengeBaseDeposit,
-            _challengePeriodDuration,
-            _stakeMultipliers
+            _contractParams.initialOwner,
+            _contractParams.arbitrator,
+            _tcrParams.arbitratorExtraData,
+            _tcrParams.registrationMetaEvidence,
+            _tcrParams.clearingMetaEvidence,
+            _contractParams.governor,
+            _contractParams.erc20,
+            _tcrParams.submissionBaseDeposit,
+            _tcrParams.removalBaseDeposit,
+            _tcrParams.submissionChallengeBaseDeposit,
+            _tcrParams.removalChallengeBaseDeposit,
+            _tcrParams.challengePeriodDuration,
+            _tcrParams.stakeMultipliers
         );
     }
 
@@ -96,20 +68,17 @@ contract FlowTCR is GeneralizedTCR {
     function _onItemRegistered(bytes32, bytes memory _item) internal override {
         // Note: The unused variable has been removed
         // Decode the item data
-        (
-            address recipient,
-            FlowStorageV1.RecipientMetadata memory metadata,
-            FlowStorageV1.RecipientType recipientType
-        ) = abi.decode(_item, (address, FlowStorageV1.RecipientMetadata, FlowStorageV1.RecipientType));
+        (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType) = abi
+            .decode(_item, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
 
         // Add the recipient to the Flow contract
-        if (recipientType == FlowStorageV1.RecipientType.ExternalAccount) {
+        if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
             flowContract.addRecipient(recipient, metadata);
-        } else if (recipientType == FlowStorageV1.RecipientType.FlowContract) {
+        } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
             // temporarily set manager to owner
-            (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner());
+            (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner(), owner());
 
-            address newTCR = tcrFactory.deployFlowTCR(
+            ITCRFactory.DeployedContracts memory deployedContracts = tcrFactory.deployFlowTCR(
                 ITCRFactory.FlowTCRParams({
                     flowContract: IManagedFlow(flowRecipient),
                     arbitratorExtraData: arbitratorExtraData,
@@ -124,11 +93,13 @@ contract FlowTCR is GeneralizedTCR {
                     stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier]
                 }),
                 arbitrator.getArbitratorParamsForFactory(),
-                ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }) // TODO update all
+                ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }), // TODO update all
+                ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) })
             );
 
-            // set manager to new TCR
-            flowContract.setManager(address(newTCR));
+            // set manager to new TCR and manager reward pool
+            flowContract.setManager(deployedContracts.tcrAddress);
+            flowContract.setManagerRewardPool(deployedContracts.rewardPoolAddress);
         }
     }
 }

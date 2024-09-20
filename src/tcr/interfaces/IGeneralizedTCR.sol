@@ -4,6 +4,7 @@ import { IArbitrable } from "./IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
 import { IArbitrator } from "./IArbitrator.sol";
+import { GeneralizedTCRStorageV1 } from "../storage/GeneralizedTCRStorageV1.sol";
 
 interface IGeneralizedTCR {
     /* Errors */
@@ -167,37 +168,11 @@ interface IGeneralizedTCR {
 interface IFlowTCR is IGeneralizedTCR {
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
-     * @param initialOwner The address of the initial owner
-     * @param flowContract The address of the Flow contract this TCR will manage
-     * @param arbitrator The arbitrator to resolve disputes
-     * @param tcrFactory The address of the TCR factory
-     * @param arbitratorExtraData Extra data for the arbitrator
-     * @param registrationMetaEvidence MetaEvidence for registration requests
-     * @param clearingMetaEvidence MetaEvidence for removal requests
-     * @param governor The governor of this contract
-     * @param erc20 The ERC20 token used for deposits and challenges
-     * @param submissionBaseDeposit Base deposit for submitting an item
-     * @param removalBaseDeposit Base deposit for removing an item
-     * @param submissionChallengeBaseDeposit Base deposit for challenging a submission
-     * @param removalChallengeBaseDeposit Base deposit for challenging a removal
-     * @param challengePeriodDuration Duration of the challenge period
-     * @param stakeMultipliers Multipliers for appeals
+     * @param _contractParams Struct containing address parameters and interfaces
+     * @param _tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
      */
     function initialize(
-        address initialOwner,
-        IManagedFlow flowContract,
-        IArbitrator arbitrator,
-        address tcrFactory,
-        bytes memory arbitratorExtraData,
-        string memory registrationMetaEvidence,
-        string memory clearingMetaEvidence,
-        address governor,
-        IERC20 erc20,
-        uint submissionBaseDeposit,
-        uint removalBaseDeposit,
-        uint submissionChallengeBaseDeposit,
-        uint removalChallengeBaseDeposit,
-        uint challengePeriodDuration,
-        uint[3] memory stakeMultipliers
+        GeneralizedTCRStorageV1.ContractParams memory _contractParams,
+        GeneralizedTCRStorageV1.TCRParams memory _tcrParams
     ) external;
 }

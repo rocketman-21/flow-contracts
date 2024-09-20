@@ -2,15 +2,16 @@
 pragma solidity ^0.8.27;
 
 import { Flow } from "./Flow.sol";
-import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
-import { IFlow, IERC721Flow } from "./interfaces/IFlow.sol";
+import { IERC721Flow } from "./interfaces/IFlow.sol";
 import { IERC721Checkpointable } from "./interfaces/IERC721Checkpointable.sol";
-
-import { IOwnable2Step } from "./interfaces/IOwnable2Step.sol";
+import { IRewardPool } from "./interfaces/IRewardPool.sol";
+import { FlowVotes } from "./library/FlowVotes.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ERC721Flow is IERC721Flow, Flow {
+    using FlowVotes for Storage;
+
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
 
@@ -22,6 +23,7 @@ contract ERC721Flow is IERC721Flow, Flow {
         address _superToken,
         address _flowImpl,
         address _manager,
+        address _managerRewardPool,
         address _parent,
         FlowParams calldata _flowParams,
         RecipientMetadata calldata _metadata
@@ -30,7 +32,16 @@ contract ERC721Flow is IERC721Flow, Flow {
 
         erc721Votes = IERC721Checkpointable(_nounsToken);
 
-        __Flow_init(_initialOwner, _superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
+        __Flow_init(
+            _initialOwner,
+            _superToken,
+            _flowImpl,
+            _manager,
+            _managerRewardPool,
+            _parent,
+            _flowParams,
+            _metadata
+        );
     }
 
     /**
@@ -43,7 +54,8 @@ contract ERC721Flow is IERC721Flow, Flow {
         uint256[] calldata tokenIds,
         bytes32[] calldata recipientIds,
         uint32[] calldata percentAllocations
-    ) external nonReentrant validVotes(recipientIds, percentAllocations) {
+    ) external nonReentrant {
+        fs.validateVotes(recipientIds, percentAllocations);
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
             _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
@@ -70,29 +82,50 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @dev This function is virtual to allow for different deployment strategies in derived contracts
      * @param metadata The recipient's metadata like title, description, etc.
      * @param flowManager The address of the flow manager for the new contract
+     * @param managerRewardPool The address of the manager reward pool for the new contract
      * @return address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
         RecipientMetadata calldata metadata,
-        address flowManager
+        address flowManager,
+        address managerRewardPool
     ) internal override returns (address) {
-        address recipient = address(new ERC1967Proxy(flowImpl, ""));
+        address recipient = address(new ERC1967Proxy(fs.flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
 
         IERC721Flow(recipient).initialize({
             initialOwner: owner(),
             nounsToken: address(erc721Votes),
-            superToken: address(superToken),
-            flowImpl: flowImpl,
+            superToken: address(fs.superToken),
+            flowImpl: fs.flowImpl,
             manager: flowManager,
+            managerRewardPool: managerRewardPool,
             parent: address(this),
             flowParams: FlowParams({
-                tokenVoteWeight: tokenVoteWeight,
-                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
+                tokenVoteWeight: fs.tokenVoteWeight,
+                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent,
+                managerRewardPoolFlowRatePercent: fs.managerRewardPoolFlowRatePercent
             }),
             metadata: metadata
         });
 
         return recipient;
+    }
+
+    /**
+     * @notice Function to be called after updating the reward pool flow rate in Flow.sol
+     * @dev This is used to update the rewards for ERC20 curators automatically when the flow rate changes
+     */
+    function _afterRewardPoolFlowUpdate(int96) internal virtual override {
+        address rewardPool = fs.managerRewardPool;
+        if (rewardPool == address(0)) revert ADDRESS_ZERO();
+
+        int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate();
+
+        // Call setFlowRate on the child contract
+        // only set if buffer required is less than balance of contract
+        if (getManagerRewardPoolBufferAmount() < fs.superToken.balanceOf(rewardPool)) {
+            IRewardPool(rewardPool).setFlowRate(managerRewardPoolFlowRate);
+        }
     }
 }

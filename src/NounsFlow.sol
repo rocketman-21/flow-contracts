@@ -5,11 +5,14 @@ import { Flow } from "./Flow.sol";
 import { INounsFlow } from "./interfaces/IFlow.sol";
 import { ITokenVerifier } from "./interfaces/ITokenVerifier.sol";
 import { IStateProof } from "./interfaces/IStateProof.sol";
+import { IRewardPool } from "./interfaces/IRewardPool.sol";
+import { FlowVotes } from "./library/FlowVotes.sol";
 
-import { IOwnable2Step } from "./interfaces/IOwnable2Step.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract NounsFlow is INounsFlow, Flow {
+    using FlowVotes for Storage;
+
     ITokenVerifier public verifier;
 
     constructor() payable initializer {}
@@ -20,11 +23,21 @@ contract NounsFlow is INounsFlow, Flow {
         address _superToken,
         address _flowImpl,
         address _manager,
+        address _managerRewardPool,
         address _parent,
         FlowParams calldata _flowParams,
         RecipientMetadata calldata _metadata
     ) public initializer {
-        __Flow_init(_initialOwner, _superToken, _flowImpl, _manager, _parent, _flowParams, _metadata);
+        __Flow_init(
+            _initialOwner,
+            _superToken,
+            _flowImpl,
+            _manager,
+            _managerRewardPool,
+            _parent,
+            _flowParams,
+            _metadata
+        );
 
         verifier = ITokenVerifier(_verifier);
     }
@@ -47,7 +60,9 @@ contract NounsFlow is INounsFlow, Flow {
         IStateProof.BaseParameters calldata baseProofParams,
         bytes[][][] calldata ownershipStorageProofs,
         bytes[][] calldata delegateStorageProofs
-    ) external nonReentrant validVotes(recipientIds, percentAllocations) {
+    ) external nonReentrant {
+        fs.validateVotes(recipientIds, percentAllocations);
+
         // if the timestamp is more than 5 minutes old, it is invalid
         // TODO check through security considerations if this is a valid assumption
         if (baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
@@ -140,25 +155,46 @@ contract NounsFlow is INounsFlow, Flow {
      */
     function _deployFlowRecipient(
         RecipientMetadata calldata metadata,
-        address flowManager
+        address flowManager,
+        address managerRewardPool
     ) internal override returns (address) {
-        address recipient = address(new ERC1967Proxy(flowImpl, ""));
+        address recipient = address(new ERC1967Proxy(fs.flowImpl, ""));
         if (recipient == address(0)) revert ADDRESS_ZERO();
 
         INounsFlow(recipient).initialize({
             initialOwner: owner(),
             verifier: address(verifier),
-            superToken: address(superToken),
-            flowImpl: flowImpl,
+            superToken: address(fs.superToken),
+            flowImpl: fs.flowImpl,
             manager: flowManager,
+            managerRewardPool: managerRewardPool,
             parent: address(this),
             flowParams: FlowParams({
-                tokenVoteWeight: tokenVoteWeight,
-                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
+                tokenVoteWeight: fs.tokenVoteWeight,
+                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent,
+                managerRewardPoolFlowRatePercent: fs.managerRewardPoolFlowRatePercent
             }),
             metadata: metadata
         });
 
         return recipient;
+    }
+
+    /**
+     * @notice Function to be called after updating the reward pool flow rate in Flow.sol
+     * @dev This is used to update the rewards for ERC20 curators automatically when the flow rate changes
+     * @param newFlowRate The new flow rate to the reward pool
+     */
+    function _afterRewardPoolFlowUpdate(int96 newFlowRate) internal virtual override {
+        address rewardPool = fs.managerRewardPool;
+        if (rewardPool == address(0)) revert ADDRESS_ZERO();
+
+        int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate();
+
+        // Call setFlowRate on the child contract
+        // only set if buffer required is less than balance of contract
+        if (getManagerRewardPoolBufferAmount() < fs.superToken.balanceOf(rewardPool)) {
+            IRewardPool(rewardPool).setFlowRate(managerRewardPoolFlowRate);
+        }
     }
 }

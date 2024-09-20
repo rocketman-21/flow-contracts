@@ -5,7 +5,7 @@ import { DeployScript } from "./DeployScript.s.sol";
 import { NounsFlow } from "../src/NounsFlow.sol";
 import { Flow } from "../src/Flow.sol";
 import { IFlow } from "../src/interfaces/IFlow.sol";
-import { FlowStorageV1 } from "../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../src/storage/FlowStorageV1.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { TokenVerifier } from "../src/state-proof/TokenVerifier.sol";
 
@@ -25,6 +25,7 @@ contract DeployNounsFlow is DeployScript {
         address parent = vm.envAddress("PARENT");
         uint256 tokenVoteWeight = vm.envUint("TOKEN_VOTE_WEIGHT");
         uint32 baselinePoolFlowRatePercent = uint32(vm.envUint("BASELINE_POOL_FLOW_RATE_PERCENT"));
+        uint32 managerRewardPoolFlowRatePercent = uint32(vm.envUint("REWARDS_POOL_FLOW_RATE_PERCENT"));
 
         // Deploy TokenVerifier
         TokenVerifier verifier = new TokenVerifier(tokenAddress);
@@ -40,9 +41,10 @@ contract DeployNounsFlow is DeployScript {
             parent,
             IFlow.FlowParams({
                 tokenVoteWeight: tokenVoteWeight,
-                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent
+                baselinePoolFlowRatePercent: baselinePoolFlowRatePercent,
+                managerRewardPoolFlowRatePercent: managerRewardPoolFlowRatePercent
             }),
-            FlowStorageV1.RecipientMetadata({
+            FlowTypes.RecipientMetadata({
                 title: "NounsFlow",
                 description: "NounsFlow deployment",
                 image: "ipfs://QmNounsFlowImageHash",

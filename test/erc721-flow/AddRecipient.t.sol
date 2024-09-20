@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
 import { Flow } from "../../src/Flow.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 
 contract AddRecipientsTest is ERC721FlowTest {
@@ -17,9 +17,9 @@ contract AddRecipientsTest is ERC721FlowTest {
         vm.startPrank(flow.owner());
         vm.expectEmit(true, true, true, true);
         emit IFlowEvents.RecipientCreated(
-            keccak256(abi.encode(recipient, recipientMetadata, FlowStorageV1.RecipientType.ExternalAccount)),
-            FlowStorageV1.FlowRecipient({
-                recipientType: FlowStorageV1.RecipientType.ExternalAccount,
+            keccak256(abi.encode(recipient, recipientMetadata, FlowTypes.RecipientType.ExternalAccount)),
+            FlowTypes.FlowRecipient({
+                recipientType: FlowTypes.RecipientType.ExternalAccount,
                 removed: false,
                 recipient: recipient,
                 metadata: recipientMetadata
@@ -29,18 +29,13 @@ contract AddRecipientsTest is ERC721FlowTest {
         (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
 
         // Verify recipient was added correctly
-        (
-            address storedRecipient,
-            bool removed,
-            FlowStorageV1.RecipientType recipientType,
-            FlowStorageV1.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(recipientId);
-        assertEq(storedRecipient, recipient);
-        assertEq(removed, false);
-        assertEq(uint8(recipientType), uint8(FlowStorageV1.RecipientType.ExternalAccount));
-        assertEq(storedMetadata.title, recipientMetadata.title);
-        assertEq(storedMetadata.description, recipientMetadata.description);
-        assertEq(storedMetadata.image, recipientMetadata.image);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+        assertEq(storedRecipient.recipient, recipient);
+        assertEq(storedRecipient.removed, false);
+        assertEq(uint8(storedRecipient.recipientType), uint8(FlowTypes.RecipientType.ExternalAccount));
+        assertEq(storedRecipient.metadata.title, recipientMetadata.title);
+        assertEq(storedRecipient.metadata.description, recipientMetadata.description);
+        assertEq(storedRecipient.metadata.image, recipientMetadata.image);
         assertEq(flow.recipientExists(recipient), true);
 
         // Verify recipient count increased
@@ -60,7 +55,7 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Test adding a recipient with empty metadata (should revert)
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.INVALID_METADATA.selector);
-        flow.addRecipient(recipient, FlowStorageV1.RecipientMetadata("", "", "", "", ""));
+        flow.addRecipient(recipient, FlowTypes.RecipientMetadata("", "", "", "", ""));
     }
 
     function testAddRecipientNonManager() public {
@@ -75,14 +70,14 @@ contract AddRecipientsTest is ERC721FlowTest {
     function testAddMultipleRecipients() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Recipient 1",
             "Description 1",
             "ipfs://image1",
             "Tagline 1",
             "https://recipient1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Recipient 2",
             "Description 2",
             "ipfs://image2",
@@ -101,22 +96,18 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Verify both recipients were added correctly
         assertEq(flow.activeRecipientCount(), 2);
 
-        (address storedRecipient1, , , FlowStorageV1.RecipientMetadata memory storedMetadata1) = flow.recipients(
-            recipientId1
-        );
-        (address storedRecipient2, , , FlowStorageV1.RecipientMetadata memory storedMetadata2) = flow.recipients(
-            recipientId2
-        );
+        FlowTypes.FlowRecipient memory storedRecipient1 = flow.getRecipientById(recipientId1);
+        FlowTypes.FlowRecipient memory storedRecipient2 = flow.getRecipientById(recipientId2);
 
-        assertEq(storedRecipient1, recipient1);
-        assertEq(storedRecipient2, recipient2);
-        assertEq(storedMetadata1.title, metadata1.title);
-        assertEq(storedMetadata2.title, metadata2.title);
+        assertEq(storedRecipient1.recipient, recipient1);
+        assertEq(storedRecipient2.recipient, recipient2);
+        assertEq(storedRecipient1.metadata.title, metadata1.title);
+        assertEq(storedRecipient2.metadata.title, metadata2.title);
     }
 
     function testBaselineMemberUnitsAfterAddingRecipients() public {
         address externalRecipient = address(0x123);
-        FlowStorageV1.RecipientMetadata memory externalMetadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory externalMetadata = FlowTypes.RecipientMetadata(
             "External Recipient",
             "Description",
             "ipfs://image1",
@@ -131,14 +122,15 @@ contract AddRecipientsTest is ERC721FlowTest {
         // Add flow recipient
         vm.prank(flow.owner());
         (, address flowRecipient) = flow.addFlowRecipient(
-            FlowStorageV1.RecipientMetadata(
+            FlowTypes.RecipientMetadata(
                 "Flow Recipient",
                 "Description",
                 "ipfs://image2",
                 "Flow Tagline",
                 "https://flow.com"
             ),
-            address(0x456) // flowManager address
+            address(0x456), // flowManager address
+            address(dummyRewardPool)
         );
 
         // Check baseline member units for external recipient
@@ -164,7 +156,7 @@ contract AddRecipientsTest is ERC721FlowTest {
 
     function testAddDuplicateRecipient() public {
         address recipient = address(0x123);
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata({
             title: "Recipient",
             description: "Description",
             image: "ipfs://image",

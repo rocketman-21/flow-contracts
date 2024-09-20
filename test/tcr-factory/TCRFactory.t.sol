@@ -12,6 +12,15 @@ import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
+import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
+import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
+import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
+import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 
 contract TCRFactoryTest is Test {
     // Contracts
@@ -19,6 +28,7 @@ contract TCRFactoryTest is Test {
     FlowTCR public flowTCRImpl;
     ERC20VotesMintable public erc20Impl;
     ERC20VotesArbitrator public arbitratorImpl;
+    RewardPool public rewardPoolImpl;
 
     // Addresses
     address public owner;
@@ -41,6 +51,12 @@ contract TCRFactoryTest is Test {
     uint256 public constant APPEAL_COST = 1e18 / 10_000;
     uint256 public constant ARBITRATION_COST = 1e18 / 10_000;
 
+    // Superfluid
+    SuperfluidFrameworkDeployer.Framework internal sf;
+    SuperfluidFrameworkDeployer internal deployer;
+    SuperToken internal superToken;
+    address testUSDC;
+
     function setUp() public {
         owner = address(this);
         governor = makeAddr("governor");
@@ -50,6 +66,7 @@ contract TCRFactoryTest is Test {
         flowTCRImpl = new FlowTCR();
         erc20Impl = new ERC20VotesMintable();
         arbitratorImpl = new ERC20VotesArbitrator();
+        rewardPoolImpl = new RewardPool();
 
         // Deploy TCRFactory
         TCRFactory tcrFactoryImpl = new TCRFactory();
@@ -57,10 +74,32 @@ contract TCRFactoryTest is Test {
         tcrFactory = TCRFactory(address(proxy));
 
         // Initialize TCRFactory
-        tcrFactory.initialize(owner, address(flowTCRImpl), address(arbitratorImpl), address(erc20Impl));
+        tcrFactory.initialize(
+            owner,
+            address(flowTCRImpl),
+            address(arbitratorImpl),
+            address(erc20Impl),
+            address(rewardPoolImpl)
+        );
+
+        // Setup Superfluid
+        vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
+
+        deployer = new SuperfluidFrameworkDeployer();
+        deployer.deployTestFramework();
+        sf = deployer.getFramework();
+        (TestToken underlyingToken, SuperToken token) = deployer.deployWrapperSuperToken(
+            "MR Token",
+            "MRx",
+            18,
+            1e18 * 1e9,
+            owner
+        );
+
+        superToken = token;
+        testUSDC = address(underlyingToken);
     }
 
-    // Start of Selection
     function testDeployFlowTCR() public {
         // Prepare parameters
         ITCRFactory.FlowTCRParams memory flowParams = ITCRFactory.FlowTCRParams({
@@ -93,14 +132,74 @@ contract TCRFactoryTest is Test {
             symbol: "TST"
         });
 
+        ITCRFactory.RewardPoolParams memory rewardPoolParams = ITCRFactory.RewardPoolParams({
+            superToken: ISuperToken(address(superToken))
+        });
+
         // Deploy FlowTCR ecosystem
-        address deployedTCR = tcrFactory.deployFlowTCR(flowParams, arbitratorParams, erc20Params);
+        ITCRFactory.DeployedContracts memory deployedContracts = tcrFactory.deployFlowTCR(
+            flowParams,
+            arbitratorParams,
+            erc20Params,
+            rewardPoolParams
+        );
 
         // Verify deployment
-        assertTrue(deployedTCR != address(0), "FlowTCR not deployed");
+        assertTrue(deployedContracts.tcrAddress != address(0), "FlowTCR not deployed");
+
+        // Check if RewardPool is properly initialized
+        RewardPool rewardPool = RewardPool(deployedContracts.rewardPoolAddress);
+        assertEq(address(rewardPool.superToken()), address(superToken), "SuperToken not set correctly in RewardPool");
+
+        // Verify the Superfluid pool was created
+        assertTrue(address(rewardPool.rewardPool()) != address(0), "Superfluid pool not created in RewardPool");
+
+        // Check if the Superfluid pool is using the correct SuperToken
+        ISuperfluidPool superfluidPool = rewardPool.rewardPool();
+        assertEq(address(superfluidPool.superToken()), address(superToken), "Incorrect SuperToken in Superfluid pool");
+
+        // Check if ERC20VotesMintable is properly initialized
+        ERC20VotesMintable erc20 = ERC20VotesMintable(deployedContracts.erc20Address);
+        assertEq(erc20.name(), "Test Token", "ERC20 name not set correctly");
+        assertEq(erc20.symbol(), "TST", "ERC20 symbol not set correctly");
+        assertEq(erc20.decimals(), 18, "ERC20 decimals not set correctly");
+        assertEq(erc20.owner(), governor, "ERC20 owner not set correctly");
+        assertEq(erc20.minter(), governor, "ERC20 minter not set correctly");
+        assertFalse(erc20.isMinterLocked(), "ERC20 minter should not be locked initially");
+
+        // Check if ERC20VotesArbitrator is properly initialized
+        ERC20VotesArbitrator erc20VotesArbitrator = ERC20VotesArbitrator(deployedContracts.arbitratorAddress);
+        assertEq(erc20VotesArbitrator.owner(), governor, "Arbitrator owner not set correctly");
+        assertEq(
+            address(erc20VotesArbitrator.votingToken()),
+            address(erc20),
+            "Voting token not set correctly in Arbitrator"
+        );
+        assertEq(
+            erc20VotesArbitrator._votingPeriod(),
+            arbitratorParams.votingPeriod,
+            "Voting period not set correctly"
+        );
+        assertEq(erc20VotesArbitrator._votingDelay(), arbitratorParams.votingDelay, "Voting delay not set correctly");
+        assertEq(
+            erc20VotesArbitrator._revealPeriod(),
+            arbitratorParams.revealPeriod,
+            "Reveal period not set correctly"
+        );
+        assertEq(
+            erc20VotesArbitrator._appealPeriod(),
+            arbitratorParams.appealPeriod,
+            "Appeal period not set correctly"
+        );
+        assertEq(erc20VotesArbitrator._appealCost(), arbitratorParams.appealCost, "Appeal cost not set correctly");
+        assertEq(
+            erc20VotesArbitrator._arbitrationCost(),
+            arbitratorParams.arbitrationCost,
+            "Arbitration cost not set correctly"
+        );
 
         // Check if FlowTCR is properly initialized
-        FlowTCR flowTCR = FlowTCR(deployedTCR);
+        FlowTCR flowTCR = FlowTCR(deployedContracts.tcrAddress);
         assertEq(address(flowTCR.flowContract()), flowContract, "FlowContract not set correctly");
         assertEq(flowTCR.governor(), governor, "Governor not set correctly");
         assertEq(address(flowTCR.tcrFactory()), address(tcrFactory), "TCRFactory not set correctly");
@@ -193,7 +292,5 @@ contract TCRFactoryTest is Test {
             address(erc20Token),
             "Voting token not set correctly in arbitrator"
         );
-
-        // Additional checks can be added here to verify other aspects of the deployment
     }
 }

@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 
 contract RemoveRecipientsTest is ERC721FlowTest {
     function setUp() public override {
@@ -24,9 +24,9 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.removeRecipient(recipientId);
 
         // Verify recipient was removed correctly
-        (address storedRecipient, bool removed, , ) = flow.recipients(recipientId);
-        assertEq(storedRecipient, recipient);
-        assertEq(removed, true);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+        assertEq(storedRecipient.recipient, recipient);
+        assertEq(storedRecipient.removed, true);
         assertEq(flow.recipientExists(recipient), false);
 
         // Verify recipient count remains the same
@@ -46,9 +46,9 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.removeRecipient(bytes32(uint256(1))); // Using ID 1, which is invalid as we only added one recipient (ID 0)
 
         // Verify that the valid recipient (ID 0) still exists and is not removed
-        (address storedRecipient, bool removed, , ) = flow.recipients(recipientId);
-        assertEq(storedRecipient, recipient);
-        assertEq(removed, false);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+        assertEq(storedRecipient.recipient, recipient);
+        assertEq(storedRecipient.removed, false);
     }
 
     function testRemoveRecipientAlreadyRemoved() public {
@@ -83,14 +83,14 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveMultipleRecipients() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Recipient 1",
             "Description 1",
             "ipfs://image1",
             "Tagline 1",
             "https://recipient1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Recipient 2",
             "Description 2",
             "ipfs://image2",
@@ -107,17 +107,17 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.removeRecipient(recipientId1);
 
         // Verify first recipient was removed
-        (address storedRecipient1, bool removed1, , ) = flow.recipients(recipientId1);
-        assertEq(storedRecipient1, recipient1);
-        assertEq(removed1, true);
+        FlowTypes.FlowRecipient memory storedRecipient1 = flow.getRecipientById(recipientId1);
+        assertEq(storedRecipient1.recipient, recipient1);
+        assertEq(storedRecipient1.removed, true);
 
         // Remove second recipient
         flow.removeRecipient(recipientId2);
 
         // Verify second recipient was removed
-        (address storedRecipient2, bool removed2, , ) = flow.recipients(recipientId2);
-        assertEq(storedRecipient2, recipient2);
-        assertEq(removed2, true);
+        FlowTypes.FlowRecipient memory storedRecipient2 = flow.getRecipientById(recipientId2);
+        assertEq(storedRecipient2.recipient, recipient2);
+        assertEq(storedRecipient2.removed, true);
 
         // Verify recipient count remains the same
         assertEq(flow.activeRecipientCount(), 0);
@@ -185,7 +185,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // Verify that no votes were cast
-        FlowStorageV1.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
+        FlowTypes.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
         assertEq(votes.length, 0);
 
         // Verify that member units remain at 0
@@ -219,7 +219,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         // Verify the vote was cast
-        FlowStorageV1.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
+        FlowTypes.VoteAllocation[] memory votes = flow.getVotesForTokenId(tokenId);
         assertEq(votes.length, 1);
         assertEq(votes[0].recipientId, recipientId1);
         assertEq(votes[0].bps, 1e6);
@@ -248,14 +248,14 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveRecipientBaselineMemberUnits() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Recipient 1",
             "Description 1",
             "ipfs://image1",
             "Tagline 1",
             "https://recipient1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Recipient 2",
             "Description 2",
             "ipfs://image2",
@@ -317,7 +317,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a new recipient and verify units are assigned correctly
         address recipient3 = address(0x789);
-        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata3 = FlowTypes.RecipientMetadata(
             "Recipient 3",
             "Description 3",
             "ipfs://image3",
@@ -342,14 +342,14 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveFlowRecipient() public {
         address flowManager1 = address(0x123);
         address flowManager2 = address(0x456);
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Flow Recipient 1",
             "Description 1",
             "ipfs://image1",
             "Tagline 1",
             "https://flowrecipient1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Flow Recipient 2",
             "Description 2",
             "ipfs://image2",
@@ -359,8 +359,16 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add flow recipients
         vm.startPrank(flow.owner());
-        (bytes32 recipientId1, address flowRecipient1) = flow.addFlowRecipient(metadata1, flowManager1);
-        (bytes32 recipientId2, address flowRecipient2) = flow.addFlowRecipient(metadata2, flowManager2);
+        (bytes32 recipientId1, address flowRecipient1) = flow.addFlowRecipient(
+            metadata1,
+            flowManager1,
+            address(dummyRewardPool)
+        );
+        (bytes32 recipientId2, address flowRecipient2) = flow.addFlowRecipient(
+            metadata2,
+            flowManager2,
+            address(dummyRewardPool)
+        );
         vm.stopPrank();
 
         // Check initial state
@@ -411,7 +419,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a new flow recipient and verify units are assigned correctly
         address flowManager3 = address(0x789);
-        FlowStorageV1.RecipientMetadata memory metadata3 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata3 = FlowTypes.RecipientMetadata(
             "Flow Recipient 3",
             "Description 3",
             "ipfs://image3",
@@ -419,7 +427,11 @@ contract RemoveRecipientsTest is ERC721FlowTest {
             "https://flowrecipient3.com"
         );
         vm.prank(flow.owner());
-        (bytes32 recipientId3, address flowRecipient3) = flow.addFlowRecipient(metadata3, flowManager3);
+        (bytes32 recipientId3, address flowRecipient3) = flow.addFlowRecipient(
+            metadata3,
+            flowManager3,
+            address(dummyRewardPool)
+        );
 
         assertEq(
             flow.baselinePool().getTotalUnits(),

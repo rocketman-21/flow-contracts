@@ -5,6 +5,8 @@ import { IArbitrator } from "../interfaces/IArbitrator.sol";
 import { IGeneralizedTCR } from "../interfaces/IGeneralizedTCR.sol";
 import { IArbitrable } from "../interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
+import { ITCRFactory } from "../interfaces/ITCRFactory.sol";
 
 /**
  * @title GeneralizedTCRStorageV1
@@ -47,6 +49,48 @@ contract GeneralizedTCRStorageV1 {
         bool[3] hasPaid; // True if the Party has fully paid its fee in this round.
         uint256 feeRewards; // Sum of reimbursable fees and stake rewards available to the parties that made contributions to the side that ultimately wins a dispute.
         mapping(address => uint256[3]) contributions; // Maps contributors to their contributions for each side in the form contributions[address][party].
+    }
+
+    /**
+     * @notice Struct containing TCR parameters
+     * @param submissionBaseDeposit Base deposit for submitting an item
+     * @param removalBaseDeposit Base deposit for removing an item
+     * @param submissionChallengeBaseDeposit Base deposit for challenging a submission
+     * @param removalChallengeBaseDeposit Base deposit for challenging a removal
+     * @param challengePeriodDuration Duration of the challenge period
+     * @param stakeMultipliers Multipliers for appeals
+     * @param arbitratorExtraData Extra data for the arbitrator
+     * @param registrationMetaEvidence MetaEvidence for registration requests
+     * @param clearingMetaEvidence MetaEvidence for removal requests
+     */
+    struct TCRParams {
+        uint submissionBaseDeposit;
+        uint removalBaseDeposit;
+        uint submissionChallengeBaseDeposit;
+        uint removalChallengeBaseDeposit;
+        uint challengePeriodDuration;
+        uint[3] stakeMultipliers;
+        bytes arbitratorExtraData;
+        string registrationMetaEvidence;
+        string clearingMetaEvidence;
+    }
+
+    /**
+     * @notice Struct containing contract addresses and interfaces
+     * @param initialOwner The address of the initial owner
+     * @param governor The address of the governor
+     * @param flowContract The address of the Flow contract this TCR will manage
+     * @param arbitrator The arbitrator to resolve disputes
+     * @param tcrFactory The address of the TCR factory
+     * @param erc20 The ERC20 token used for deposits and challenges
+     */
+    struct ContractParams {
+        address initialOwner;
+        address governor;
+        IManagedFlow flowContract;
+        IArbitrator arbitrator;
+        ITCRFactory tcrFactory;
+        IERC20 erc20;
     }
 
     /* Storage */

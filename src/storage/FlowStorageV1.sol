@@ -8,62 +8,7 @@ import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/in
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
-/// @notice Flow Storage V1
-/// @author rocketman
-/// @notice The Flow storage contract
-contract FlowStorageV1 {
-    /// @notice constant to scale uints into percentages (1e6 == 100%)
-    uint32 public constant PERCENTAGE_SCALE = 1e6;
-
-    /// The member units to assign to each recipient of the baseline salary pool
-    uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
-
-    /// The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
-    uint32 public baselinePoolFlowRatePercent;
-
-    /// The flow implementation
-    address public flowImpl;
-
-    /// The parent flow contract (optional)
-    address public parent;
-
-    /// The flow manager
-    address public manager;
-
-    /// Counter for active recipients (not removed)
-    uint256 public activeRecipientCount;
-
-    // Public field for the flow contract metadata
-    RecipientMetadata public metadata;
-
-    /// The mapping of recipients
-    mapping(bytes32 => FlowRecipient) public recipients;
-
-    /// The mapping of addresses to whether they are a recipient
-    mapping(address => bool) public recipientExists;
-
-    /// The SuperToken used to pay out the grantees
-    ISuperToken public superToken;
-
-    /// The Superfluid pool used to distribute the bonus salary in the SuperToken
-    ISuperfluidPool public bonusPool;
-
-    // The Superfluid pool used to distribute the baseline salary in the SuperToken
-    ISuperfluidPool public baselinePool;
-
-    /// The mapping of a tokenId to the member units assigned to each recipient they voted for
-    mapping(uint256 => mapping(address => uint256)) public tokenIdToRecipientMemberUnits;
-
-    /// The Superfluid pool configuration
-    PoolConfig public poolConfig =
-        PoolConfig({ transferabilityForUnitsOwner: false, distributionFromAnyAddress: false });
-
-    // The weight of the 721 voting token
-    uint256 public tokenVoteWeight;
-
-    // The mapping of a token to a list of votes allocations (recipient, BPS)
-    mapping(uint256 => VoteAllocation[]) public votes;
-
+interface FlowTypes {
     // Struct to hold the recipientId and their corresponding BPS for a vote
     struct VoteAllocation {
         bytes32 recipientId;
@@ -98,4 +43,56 @@ contract FlowStorageV1 {
         // the metadata of the recipient
         RecipientMetadata metadata;
     }
+
+    struct Storage {
+        /// The proportion of the total flow rate (minus rewards) that is allocated to the baseline salary pool in BPS
+        uint32 baselinePoolFlowRatePercent;
+        /// THe proportion of the total flow rate that is allocated to the rewards pool in BPS
+        uint32 managerRewardPoolFlowRatePercent;
+        /// The flow implementation
+        address flowImpl;
+        /// The parent flow contract (optional)
+        address parent;
+        /// The flow manager
+        address manager;
+        /// The manager reward pool
+        address managerRewardPool;
+        /// Counter for active recipients (not removed)
+        uint256 activeRecipientCount;
+        // Public field for the flow contract metadata
+        RecipientMetadata metadata;
+        /// The mapping of recipients
+        mapping(bytes32 => FlowRecipient) recipients;
+        /// The mapping of addresses to whether they are a recipient
+        mapping(address => bool) recipientExists;
+        /// The SuperToken used to pay out the grantees
+        ISuperToken superToken;
+        /// The Superfluid pool used to distribute the bonus salary in the SuperToken
+        ISuperfluidPool bonusPool;
+        // The Superfluid pool used to distribute the baseline salary in the SuperToken
+        ISuperfluidPool baselinePool;
+        /// The mapping of a tokenId to the member units assigned to each recipient they voted for
+        mapping(uint256 => mapping(address => uint256)) tokenIdToRecipientMemberUnits;
+        // The weight of the 721 voting token
+        uint256 tokenVoteWeight;
+        // The mapping of a token to a list of votes allocations (recipient, BPS)
+        mapping(uint256 => VoteAllocation[]) votes;
+    }
+}
+
+/// @notice Flow Storage V1
+/// @author rocketman
+/// @notice The Flow storage contract
+contract FlowStorageV1 is FlowTypes {
+    /// @dev Warning - don't update the slot / position of these variables in the FlowStorageV1 contract
+    /// without also changing the libraries that access them
+    Storage public fs;
+
+    /// @notice constant to scale uints into percentages (1e6 == 100%)
+    /// @dev Heed warning above
+    uint32 public constant PERCENTAGE_SCALE = 1e6;
+
+    /// The member units to assign to each recipient of the baseline salary pool
+    /// @dev Heed warning above
+    uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
 }

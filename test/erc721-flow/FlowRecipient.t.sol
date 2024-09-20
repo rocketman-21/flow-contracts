@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
 import { ERC721Flow } from "../../src/ERC721Flow.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 
 contract FlowRecipientTest is ERC721FlowTest {
@@ -11,7 +11,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         super.setUp();
     }
     function testAddFlowRecipientParent() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -21,7 +21,7 @@ contract FlowRecipientTest is ERC721FlowTest {
         address flowManager = address(0x123);
 
         vm.prank(manager);
-        (, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager);
+        (, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
 
         ERC721Flow newFlow = ERC721Flow(newFlowAddress);
 
@@ -41,7 +41,7 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipient() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -56,34 +56,33 @@ contract FlowRecipientTest is ERC721FlowTest {
         vm.expectEmit(false, true, false, false);
         emit IFlowEvents.RecipientCreated(
             0,
-            FlowStorageV1.FlowRecipient({
-                recipientType: FlowStorageV1.RecipientType.FlowContract,
+            FlowTypes.FlowRecipient({
+                recipientType: FlowTypes.RecipientType.FlowContract,
                 removed: false,
                 recipient: address(0),
                 metadata: metadata
             }),
             flow.owner()
         );
-        (bytes32 recipientId, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager);
+        (bytes32 recipientId, address newFlowAddress) = flow.addFlowRecipient(
+            metadata,
+            flowManager,
+            address(dummyRewardPool)
+        );
 
         assertNotEq(newFlowAddress, address(0));
 
         // Verify recipient was added correctly
         assertNotEq(newFlowAddress, address(0));
-        (
-            address storedRecipient,
-            bool removed,
-            FlowStorageV1.RecipientType recipientType,
-            FlowStorageV1.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(recipientId);
-        assertEq(storedRecipient, newFlowAddress);
-        assertEq(removed, false);
-        assertEq(uint8(recipientType), uint8(FlowStorageV1.RecipientType.FlowContract));
-        assertEq(storedMetadata.title, metadata.title);
-        assertEq(storedMetadata.description, metadata.description);
-        assertEq(storedMetadata.image, metadata.image);
-        assertEq(storedMetadata.tagline, metadata.tagline);
-        assertEq(storedMetadata.url, metadata.url);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+        assertEq(storedRecipient.recipient, newFlowAddress);
+        assertEq(storedRecipient.removed, false);
+        assertEq(uint8(storedRecipient.recipientType), uint8(FlowTypes.RecipientType.FlowContract));
+        assertEq(storedRecipient.metadata.title, metadata.title);
+        assertEq(storedRecipient.metadata.description, metadata.description);
+        assertEq(storedRecipient.metadata.image, metadata.image);
+        assertEq(storedRecipient.metadata.tagline, metadata.tagline);
+        assertEq(storedRecipient.metadata.url, metadata.url);
 
         // Verify recipient count increased
         assertEq(flow.activeRecipientCount(), 1);
@@ -95,18 +94,12 @@ contract FlowRecipientTest is ERC721FlowTest {
         assertEq(newFlow.flowImpl(), flow.flowImpl());
         assertEq(newFlow.manager(), flowManager); // Check that the manager is set to the new flowManager
         assertEq(newFlow.tokenVoteWeight(), flow.tokenVoteWeight());
-        (
-            string memory title,
-            string memory description,
-            string memory image,
-            string memory tagline,
-            string memory url
-        ) = newFlow.metadata();
-        assertEq(title, metadata.title);
-        assertEq(description, metadata.description);
-        assertEq(image, metadata.image);
-        assertEq(tagline, metadata.tagline);
-        assertEq(url, metadata.url);
+        FlowTypes.RecipientMetadata memory newFlowMetadata = newFlow.flowMetadata();
+        assertEq(newFlowMetadata.title, metadata.title);
+        assertEq(newFlowMetadata.description, metadata.description);
+        assertEq(newFlowMetadata.image, metadata.image);
+        assertEq(newFlowMetadata.tagline, metadata.tagline);
+        assertEq(newFlowMetadata.url, metadata.url);
         vm.stopPrank();
 
         // Verify that ownership has been accepted
@@ -116,7 +109,7 @@ contract FlowRecipientTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipientEmptyManager() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -128,22 +121,37 @@ contract FlowRecipientTest is ERC721FlowTest {
         vm.startPrank(flow.owner());
 
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
-        flow.addFlowRecipient(metadata, emptyManager);
+        flow.addFlowRecipient(metadata, emptyManager, address(dummyRewardPool));
 
         vm.stopPrank();
     }
 
+    function testAddFlowRecipientEmptyRewardPool() public {
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
+            "Flow Recipient",
+            "A new Flow contract",
+            "ipfs://image",
+            "Flow Recipient Tagline",
+            "https://flowrecipient.com"
+        );
+        address flowManager = address(0x123);
+
+        vm.prank(flow.owner());
+        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
+        flow.addFlowRecipient(metadata, flowManager, address(0));
+    }
+
     function testAddFlowRecipientEmptyMetadata() public {
-        FlowStorageV1.RecipientMetadata memory emptyMetadata = FlowStorageV1.RecipientMetadata("", "", "", "", "");
+        FlowTypes.RecipientMetadata memory emptyMetadata = FlowTypes.RecipientMetadata("", "", "", "", "");
         address flowManager = address(0x123);
 
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.INVALID_METADATA.selector);
-        flow.addFlowRecipient(emptyMetadata, flowManager);
+        flow.addFlowRecipient(emptyMetadata, flowManager, address(dummyRewardPool));
     }
 
     function testAddFlowRecipientNonManager() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
             "Flow Recipient",
             "A new Flow contract",
             "ipfs://image",
@@ -154,18 +162,18 @@ contract FlowRecipientTest is ERC721FlowTest {
 
         vm.prank(address(0xABC));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.addFlowRecipient(metadata, flowManager);
+        flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
     }
 
     function testAddMultipleFlowRecipients() public {
-        FlowStorageV1.RecipientMetadata memory metadata1 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Flow Recipient 1",
             "First Flow contract",
             "ipfs://image1",
             "Tagline 1",
             "https://flow1.com"
         );
-        FlowStorageV1.RecipientMetadata memory metadata2 = FlowStorageV1.RecipientMetadata(
+        FlowTypes.RecipientMetadata memory metadata2 = FlowTypes.RecipientMetadata(
             "Flow Recipient 2",
             "Second Flow contract",
             "ipfs://image2",
@@ -177,8 +185,8 @@ contract FlowRecipientTest is ERC721FlowTest {
 
         vm.startPrank(flow.owner());
 
-        (, address newFlowAddress1) = flow.addFlowRecipient(metadata1, flowManager1);
-        (, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2);
+        (, address newFlowAddress1) = flow.addFlowRecipient(metadata1, flowManager1, address(dummyRewardPool));
+        (, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2, address(dummyRewardPool));
 
         assertNotEq(newFlowAddress1, newFlowAddress2);
         assertEq(flow.activeRecipientCount(), 2);

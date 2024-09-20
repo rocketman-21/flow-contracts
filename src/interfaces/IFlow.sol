@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { FlowStorageV1 } from "../storage/FlowStorageV1.sol";
+import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { IManagedFlow } from "./IManagedFlow.sol";
 
 /**
@@ -25,25 +25,42 @@ interface IFlowEvents {
         uint256 totalWeight
     );
 
+    /**
+     * @dev Emitted when the manager reward flow rate percentage is updated
+     * @param oldManagerRewardFlowRatePercent The old manager reward flow rate percentage
+     * @param newManagerRewardFlowRatePercent The new manager reward flow rate percentage
+     */
+    event ManagerRewardFlowRatePercentUpdated(
+        uint32 oldManagerRewardFlowRatePercent,
+        uint32 newManagerRewardFlowRatePercent
+    );
+
     /// @notice Emitted when a new child flow recipient is created
     event FlowRecipientCreated(bytes32 indexed recipientId, address indexed recipient);
 
     /// @notice Emitted when the flow is initialized
-    event FlowInitialized(address indexed owner, address indexed superToken, address indexed flowImpl);
+    event FlowInitialized(
+        address indexed owner,
+        address indexed superToken,
+        address indexed flowImpl,
+        address manager,
+        address managerRewardPool,
+        address parent
+    );
+
+    /// @notice Emitted when the manager reward pool is updated
+    event ManagerRewardPoolUpdated(address indexed oldManagerRewardPool, address indexed newManagerRewardPool);
 
     /// @notice Emitted when a new grants recipient is set
-    event RecipientCreated(
-        bytes32 indexed recipientId,
-        FlowStorageV1.FlowRecipient recipient,
-        address indexed approvedBy
-    );
+    event RecipientCreated(bytes32 indexed recipientId, FlowTypes.FlowRecipient recipient, address indexed approvedBy);
 
     /// @notice Emitted when the flow rate is updated
     event FlowRateUpdated(
         int96 oldTotalFlowRate,
         int96 newTotalFlowRate,
         int96 baselinePoolFlowRate,
-        int96 bonusPoolFlowRate
+        int96 bonusPoolFlowRate,
+        int96 managerRewardFlowRate
     );
 
     /// @notice Emitted when a new flow implementation is set
@@ -73,6 +90,9 @@ interface IFlow is IFlowEvents, IManagedFlow {
 
     /// @dev Reverts if unit updates fail
     error UNITS_UPDATE_FAILED();
+
+    /// @dev Reverts if the recipient is not found
+    error RECIPIENT_NOT_FOUND();
 
     /// @dev Reverts if the recipient already exists
     error RECIPIENT_ALREADY_EXISTS();
@@ -174,10 +194,12 @@ interface IFlow is IFlowEvents, IManagedFlow {
      * @notice Structure to hold the parameters for initializing a Flow contract.
      * @param tokenVoteWeight The voting weight of the individual ERC721 tokens.
      * @param baselinePoolFlowRatePercent The proportion of the total flow rate that is allocated to the baseline salary pool in BPS
+     * @param managerRewardPoolFlowRatePercent The proportion of the total flow rate that is allocated to the rewards pool in BPS
      */
     struct FlowParams {
         uint256 tokenVoteWeight; // scaled by 1e18
         uint32 baselinePoolFlowRatePercent;
+        uint32 managerRewardPoolFlowRatePercent;
     }
 
     /**
@@ -187,6 +209,13 @@ interface IFlow is IFlowEvents, IManagedFlow {
      * @dev Should emit a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) external;
+
+    /**
+     * @notice Sets the manager reward pool for the flow contract
+     * @param _managerRewardPool The address of the manager reward pool
+     * @dev Only callable by the owner
+     */
+    function setManagerRewardPool(address _managerRewardPool) external;
 }
 
 interface IERC721Flow is IFlow {
@@ -197,6 +226,7 @@ interface IERC721Flow is IFlow {
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
      * @param manager The address of the flow manager
+     * @param managerRewardPool The address of the manager reward pool
      * @param parent The address of the parent flow contract (optional)
      * @param flowParams The parameters for the flow contract
      * @param metadata The metadata for the flow contract
@@ -207,9 +237,10 @@ interface IERC721Flow is IFlow {
         address superToken,
         address flowImpl,
         address manager,
+        address managerRewardPool,
         address parent,
         FlowParams memory flowParams,
-        FlowStorageV1.RecipientMetadata memory metadata
+        FlowTypes.RecipientMetadata memory metadata
     ) external;
 }
 
@@ -224,6 +255,7 @@ interface INounsFlow is IFlow {
      * @param superToken The address of the SuperToken to be used for the pool
      * @param flowImpl The address of the flow implementation contract
      * @param manager The address of the flow manager
+     * @param managerRewardPool The address of the manager reward pool
      * @param parent The address of the parent flow contract (optional)
      * @param flowParams The parameters for the flow contract
      * @param metadata The metadata for the flow contract
@@ -234,8 +266,9 @@ interface INounsFlow is IFlow {
         address superToken,
         address flowImpl,
         address manager,
+        address managerRewardPool,
         address parent,
         FlowParams memory flowParams,
-        FlowStorageV1.RecipientMetadata memory metadata
+        FlowTypes.RecipientMetadata memory metadata
     ) external;
 }

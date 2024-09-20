@@ -5,7 +5,7 @@ import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 import { IFlowEvents, IFlow, IERC721Flow } from "../../src/interfaces/IFlow.sol";
 import { ERC721Flow } from "../../src/ERC721Flow.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 
 contract BasicERC721FlowTest is ERC721FlowTest {
@@ -33,6 +33,9 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Check if the flowImpl is set correctly
         assertEq(flow.flowImpl(), address(flowImpl));
 
+        // Check if the reward pool is set correctly
+        assertEq(flow.managerRewardPool(), address(dummyRewardPool));
+
         // Check if the contract is properly initialized as Ownable
         assertEq(flow.owner(), manager);
     }
@@ -40,11 +43,30 @@ contract BasicERC721FlowTest is ERC721FlowTest {
     function testInitializeEventEmission() public {
         // Check for event emission
         vm.expectEmit(true, true, true, true);
-        emit IFlowEvents.FlowInitialized(manager, address(superToken), flowImpl);
+        emit IFlowEvents.FlowInitialized(
+            manager,
+            address(superToken),
+            flowImpl,
+            manager,
+            address(dummyRewardPool),
+            address(0)
+        );
 
         // Re-deploy the contract to emit the event
-        address votingPowerAddress = address(0x1);
-        deployFlow(votingPowerAddress, address(superToken));
+        address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+
+        vm.prank(address(manager));
+        IERC721Flow(flowProxy).initialize({
+            initialOwner: address(manager),
+            nounsToken: address(nounsToken),
+            superToken: address(superToken),
+            flowImpl: flowImpl,
+            manager: manager,
+            managerRewardPool: address(dummyRewardPool),
+            parent: address(0),
+            flowParams: flowParams,
+            metadata: flowMetadata
+        });
     }
 
     function testInitializeFailures() public {
@@ -57,10 +79,11 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             nounsToken: address(0),
             superToken: address(superToken),
             flowImpl: flowImpl,
-            manager: manager, // Add this line
+            manager: manager,
+            managerRewardPool: address(dummyRewardPool),
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata(
+            metadata: FlowTypes.RecipientMetadata(
                 "Test Flow",
                 "ipfs://test",
                 "Test Description",
@@ -79,10 +102,11 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             nounsToken: address(0x1),
             superToken: address(superToken),
             flowImpl: address(0),
-            manager: manager, // Add this line
+            manager: manager,
+            managerRewardPool: address(dummyRewardPool),
             parent: address(0),
             flowParams: flowParams,
-            metadata: FlowStorageV1.RecipientMetadata(
+            metadata: FlowTypes.RecipientMetadata(
                 "Test Flow",
                 "ipfs://test",
                 "Test Description",
@@ -98,10 +122,11 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(0x1),
             address(superToken),
             address(flowImpl),
-            manager, // Add this line
+            manager,
+            address(dummyRewardPool),
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata(
+            FlowTypes.RecipientMetadata(
                 "Test Flow",
                 "ipfs://test",
                 "Test Description",
@@ -117,10 +142,11 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             address(0x1),
             address(superToken),
             address(flowImpl),
-            manager, // Add this line
+            manager,
+            address(dummyRewardPool),
             address(0),
             flowParams,
-            FlowStorageV1.RecipientMetadata(
+            FlowTypes.RecipientMetadata(
                 "Test Flow",
                 "ipfs://test",
                 "Test Description",
@@ -131,7 +157,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
     }
 
     function testAddFlowRecipient() public {
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata({
             title: "Test Flow Recipient",
             description: "A test flow recipient",
             image: "ipfs://testimage",
@@ -141,7 +167,11 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         address flowManager = address(0x123);
 
         vm.prank(manager);
-        (bytes32 recipientId, address newFlowRecipient) = flow.addFlowRecipient(metadata, flowManager);
+        (bytes32 recipientId, address newFlowRecipient) = flow.addFlowRecipient(
+            metadata,
+            flowManager,
+            address(dummyRewardPool)
+        );
 
         assertNotEq(newFlowRecipient, address(0));
 
@@ -157,30 +187,25 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(newFlow.tokenVoteWeight(), flow.tokenVoteWeight());
 
         // Check if the recipient is added to the main flow contract
-        (
-            address recipient,
-            bool removed,
-            FlowStorageV1.RecipientType recipientType,
-            FlowStorageV1.RecipientMetadata memory storedMetadata
-        ) = flow.recipients(recipientId);
-        assertEq(uint(recipientType), uint(FlowStorageV1.RecipientType.FlowContract));
-        assertEq(removed, false);
-        assertEq(recipient, newFlowRecipient);
-        assertEq(storedMetadata.title, metadata.title);
-        assertEq(storedMetadata.description, metadata.description);
-        assertEq(storedMetadata.image, metadata.image);
-        assertEq(storedMetadata.tagline, metadata.tagline);
-        assertEq(storedMetadata.url, metadata.url);
+        FlowTypes.FlowRecipient memory recipient = flow.getRecipientById(recipientId);
+        assertEq(uint(recipient.recipientType), uint(FlowTypes.RecipientType.FlowContract));
+        assertEq(recipient.removed, false);
+        assertEq(recipient.recipient, newFlowRecipient);
+        assertEq(recipient.metadata.title, metadata.title);
+        assertEq(recipient.metadata.description, metadata.description);
+        assertEq(recipient.metadata.image, metadata.image);
+        assertEq(recipient.metadata.tagline, metadata.tagline);
+        assertEq(recipient.metadata.url, metadata.url);
 
         // Test adding with zero address flowManager (should revert)
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
         vm.prank(manager);
-        flow.addFlowRecipient(metadata, address(0));
+        flow.addFlowRecipient(metadata, address(0), address(dummyRewardPool));
 
         // Test adding with non-manager address (should revert)
         vm.prank(address(0xdead));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.addFlowRecipient(metadata, flowManager);
+        flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
     }
 
     function testSetFlowRateAccessControl() public {
@@ -207,7 +232,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         assertEq(flow.activeRecipientCount(), 0, "Initial active recipient count should be 0");
 
         // Add a recipient
-        FlowStorageV1.RecipientMetadata memory metadata = FlowStorageV1.RecipientMetadata({
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata({
             title: "Test Recipient",
             description: "A test recipient",
             image: "ipfs://test",
@@ -246,7 +271,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Add a flow recipient
         address flowManager = address(0x789);
         vm.prank(manager);
-        flow.addFlowRecipient(metadata, flowManager);
+        flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding flow recipient");
 
         // Verify total recipient count
@@ -272,16 +297,25 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
         // Verify flow rates are updated
         int96 totalFlowRate = flow.getTotalFlowRate();
-        int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(address(flow));
-        int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(address(flow));
+        int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(flow.managerRewardPool());
+        int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(flow.managerRewardPool());
+
+        int256 flowScale = int256(uint256(flow.PERCENTAGE_SCALE()));
+
+        int256 initialFlowRateMinusRewardPool = initialFlowRate -
+            (initialFlowRate * int256(uint256(flow.managerRewardPoolFlowRatePercent()))) /
+            flowScale;
+
+        int256 expectedBaselineFlow = (int256(initialFlowRateMinusRewardPool) * int256(uint256(newPercent))) /
+            flowScale;
 
         assertEq(totalFlowRate, initialFlowRate, "Total flow rate should remain unchanged");
+        assertEq(baselineFlowRate, expectedBaselineFlow, "Baseline flow rate should be updated");
         assertEq(
-            baselineFlowRate,
-            int96((int256(initialFlowRate) * int256(uint256(newPercent))) / int256(uint256(flow.PERCENTAGE_SCALE()))),
-            "Baseline flow rate should be updated"
+            bonusFlowRate,
+            initialFlowRateMinusRewardPool - baselineFlowRate,
+            "Bonus flow rate should be the remainder"
         );
-        assertEq(bonusFlowRate, initialFlowRate - baselineFlowRate, "Bonus flow rate should be the remainder");
 
         // Test setting percentage to 100%
         uint32 percent = flow.PERCENTAGE_SCALE();

@@ -231,7 +231,11 @@ contract VotingFlowTest is ERC721FlowTest {
         address recipient1 = address(3);
         vm.startPrank(manager);
         (bytes32 recipientId, ) = flow.addRecipient(recipient1, recipientMetadata);
-        (bytes32 flowRecipientId, address flowRecipient) = flow.addFlowRecipient(recipientMetadata, manager);
+        (bytes32 flowRecipientId, address flowRecipient) = flow.addFlowRecipient(
+            recipientMetadata,
+            manager,
+            address(dummyRewardPool)
+        );
         vm.stopPrank();
 
         bytes32[] memory recipientIds = new bytes32[](1);
@@ -261,22 +265,6 @@ contract VotingFlowTest is ERC721FlowTest {
         // Check that total bonus salary flow rate to the flow recipient is basically 0
         int96 newFlowRecipientTotalFlowRate = flow.bonusPool().getMemberFlowRate(flowRecipient);
         assertLt(newFlowRecipientTotalFlowRate, flow.bonusPool().getMemberFlowRate(recipient1) / 1e6);
-
-        // // Check that the member units on the bonus pool for the flow recipient are 0
-        // uint128 flowRecipientBonusUnits = flow.bonusPool().getUnits(flowRecipient);
-        // assertEq(flowRecipientBonusUnits, 0);
-
-        // // Check that the baseline pool units for the flow recipient are unchanged
-        // uint128 flowRecipientBaselineUnits = flow.baselinePool().getUnits(flowRecipient);
-        // assertEq(flowRecipientBaselineUnits, flow.BASELINE_MEMBER_UNITS());
-
-        // // Check that the baseline pool units for recipient1 are unchanged
-        // uint128 recipient1BaselineUnits = flow.baselinePool().getUnits(recipient1);
-        // assertEq(recipient1BaselineUnits, flow.BASELINE_MEMBER_UNITS());
-
-        // // Check that recipient1 now has units
-        // uint128 recipient1Units = flow.bonusPool().getUnits(recipient1);
-        // assertGt(recipient1Units, 0);
     }
 
     function test__FlowRecipientFlowRateBufferAmount() public {
@@ -289,7 +277,11 @@ contract VotingFlowTest is ERC721FlowTest {
 
         vm.startPrank(manager);
         flow.addRecipient(recipient1, recipientMetadata);
-        (bytes32 recipientId, address flowRecipient) = flow.addFlowRecipient(recipientMetadata, manager);
+        (bytes32 recipientId, address flowRecipient) = flow.addFlowRecipient(
+            recipientMetadata,
+            manager,
+            address(dummyRewardPool)
+        );
         vm.stopPrank();
 
         bytes32[] memory recipientIds = new bytes32[](1);

@@ -12,6 +12,8 @@ import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
+import { IRewardPool } from "../interfaces/IRewardPool.sol";
+import { GeneralizedTCRStorageV1 } from "./storage/GeneralizedTCRStorageV1.sol";
 
 /**
  * @title TCRFactory
@@ -25,6 +27,8 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
     address public arbitratorImplementation;
     /// @notice The address of the ERC20VotesMintable implementation contract
     address public erc20Implementation;
+    /// @notice The address of the RewardPool implementation contract
+    address public rewardPoolImplementation;
 
     /// @dev Initializer function for the contract
     constructor() initializer {}
@@ -36,12 +40,14 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
      * @param flowTCRImplementation_ The address of the FlowTCR implementation contract
      * @param arbitratorImplementation_ The address of the ERC20VotesArbitrator implementation contract
      * @param erc20Implementation_ The address of the ERC20VotesMintable implementation contract
+     * @param rewardPoolImplementation_ The address of the RewardPool implementation contract
      */
     function initialize(
         address initialOwner,
         address flowTCRImplementation_,
         address arbitratorImplementation_,
-        address erc20Implementation_
+        address erc20Implementation_,
+        address rewardPoolImplementation_
     ) public initializer {
         __Ownable2Step_init();
         __UUPSUpgradeable_init();
@@ -50,6 +56,7 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         flowTCRImplementation = flowTCRImplementation_;
         arbitratorImplementation = arbitratorImplementation_;
         erc20Implementation = erc20Implementation_;
+        rewardPoolImplementation = rewardPoolImplementation_;
     }
 
     /**
@@ -58,35 +65,40 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
      * @param params Parameters for initializing the FlowTCR contract
      * @param arbitratorParams Parameters for initializing the ERC20VotesArbitrator contract
      * @param erc20Params Parameters for initializing the ERC20VotesMintable contract
-     * @return The address of the newly deployed FlowTCR proxy contract
+     * @return deployedContracts The deployed contracts
      */
     function deployFlowTCR(
         FlowTCRParams memory params,
         ArbitratorParams memory arbitratorParams,
-        ERC20Params memory erc20Params
-    ) external returns (address) {
+        ERC20Params memory erc20Params,
+        RewardPoolParams memory rewardPoolParams
+    ) external returns (DeployedContracts memory deployedContracts) {
         // Deploy FlowTCR proxy
-        address flowTCRProxy = address(new ERC1967Proxy(flowTCRImplementation, ""));
+        address tcrAddress = address(new ERC1967Proxy(flowTCRImplementation, ""));
 
         // Deploy ERC20VotesArbitrator proxy
-        address arbitratorProxy = address(new ERC1967Proxy(arbitratorImplementation, ""));
+        address arbitratorAddress = address(new ERC1967Proxy(arbitratorImplementation, ""));
 
         // Deploy ERC20VotesMintable proxy
-        address erc20Proxy = address(new ERC1967Proxy(erc20Implementation, ""));
+        address erc20Address = address(new ERC1967Proxy(erc20Implementation, ""));
+
+        // Deploy RewardPool proxy
+        address rewardPoolAddress = address(new ERC1967Proxy(rewardPoolImplementation, ""));
 
         // Initialize the ERC20VotesMintable token
-        IERC20Mintable(erc20Proxy).initialize({
+        IERC20Mintable(erc20Address).initialize({
             initialOwner: erc20Params.initialOwner,
             minter: erc20Params.minter,
             name: erc20Params.name,
-            symbol: erc20Params.symbol
+            symbol: erc20Params.symbol,
+            rewardPool: rewardPoolAddress
         });
 
         // Initialize the arbitrator
-        IERC20VotesArbitrator(arbitratorProxy).initialize({
+        IERC20VotesArbitrator(arbitratorAddress).initialize({
             initialOwner: params.governor,
-            votingToken: address(erc20Proxy),
-            arbitrable: flowTCRProxy,
+            votingToken: address(erc20Address),
+            arbitrable: tcrAddress,
             votingPeriod: arbitratorParams.votingPeriod,
             votingDelay: arbitratorParams.votingDelay,
             revealPeriod: arbitratorParams.revealPeriod,
@@ -96,27 +108,87 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         });
 
         // Initialize the FlowTCR
-        IFlowTCR(flowTCRProxy).initialize({
-            initialOwner: params.governor,
-            flowContract: params.flowContract,
-            arbitrator: IArbitrator(arbitratorProxy),
-            tcrFactory: address(this),
-            arbitratorExtraData: params.arbitratorExtraData,
-            registrationMetaEvidence: params.registrationMetaEvidence,
-            clearingMetaEvidence: params.clearingMetaEvidence,
-            governor: params.governor,
-            erc20: IERC20(address(erc20Proxy)),
-            submissionBaseDeposit: params.submissionBaseDeposit,
-            removalBaseDeposit: params.removalBaseDeposit,
-            submissionChallengeBaseDeposit: params.submissionChallengeBaseDeposit,
-            removalChallengeBaseDeposit: params.removalChallengeBaseDeposit,
-            challengePeriodDuration: params.challengePeriodDuration,
-            stakeMultipliers: params.stakeMultipliers
+        IFlowTCR(tcrAddress).initialize(
+            GeneralizedTCRStorageV1.ContractParams({
+                initialOwner: params.governor,
+                governor: params.governor,
+                flowContract: params.flowContract,
+                arbitrator: IArbitrator(arbitratorAddress),
+                tcrFactory: ITCRFactory(address(this)),
+                erc20: IERC20(address(erc20Address))
+            }),
+            GeneralizedTCRStorageV1.TCRParams({
+                submissionBaseDeposit: params.submissionBaseDeposit,
+                removalBaseDeposit: params.removalBaseDeposit,
+                submissionChallengeBaseDeposit: params.submissionChallengeBaseDeposit,
+                removalChallengeBaseDeposit: params.removalChallengeBaseDeposit,
+                challengePeriodDuration: params.challengePeriodDuration,
+                stakeMultipliers: params.stakeMultipliers,
+                arbitratorExtraData: params.arbitratorExtraData,
+                registrationMetaEvidence: params.registrationMetaEvidence,
+                clearingMetaEvidence: params.clearingMetaEvidence
+            })
+        );
+
+        // Initialize the RewardPool
+        IRewardPool(rewardPoolAddress).initialize({
+            superToken: rewardPoolParams.superToken,
+            manager: erc20Address,
+            funder: address(params.flowContract)
         });
 
-        emit FlowTCRDeployed(msg.sender, flowTCRProxy, arbitratorProxy, erc20Proxy);
+        emit FlowTCRDeployed(msg.sender, tcrAddress, arbitratorAddress, erc20Address);
 
-        return flowTCRProxy;
+        deployedContracts = DeployedContracts({
+            tcrAddress: tcrAddress,
+            arbitratorAddress: arbitratorAddress,
+            erc20Address: erc20Address,
+            rewardPoolAddress: rewardPoolAddress
+        });
+    }
+
+    /**
+     * @notice Updates the RewardPool implementation address
+     * @dev Only callable by the owner
+     * @param newImplementation The new implementation address
+     */
+    function updateRewardPoolImplementation(address newImplementation) external onlyOwner {
+        address oldImplementation = rewardPoolImplementation;
+        rewardPoolImplementation = newImplementation;
+        emit RewardPoolImplementationUpdated(oldImplementation, newImplementation);
+    }
+
+    /**
+     * @notice Updates the FlowTCR implementation address
+     * @dev Only callable by the owner
+     * @param newImplementation The new implementation address
+     */
+    function updateFlowTCRImplementation(address newImplementation) external onlyOwner {
+        address oldImplementation = flowTCRImplementation;
+        flowTCRImplementation = newImplementation;
+        emit FlowTCRImplementationUpdated(oldImplementation, newImplementation);
+    }
+
+    /**
+     * @notice Updates the ERC20VotesArbitrator implementation address
+     * @dev Only callable by the owner
+     * @param newImplementation The new implementation address
+     */
+    function updateArbitratorImplementation(address newImplementation) external onlyOwner {
+        address oldImplementation = arbitratorImplementation;
+        arbitratorImplementation = newImplementation;
+        emit ArbitratorImplementationUpdated(oldImplementation, newImplementation);
+    }
+
+    /**
+     * @notice Updates the ERC20VotesMintable implementation address
+     * @dev Only callable by the owner
+     * @param newImplementation The new implementation address
+     */
+    function updateERC20Implementation(address newImplementation) external onlyOwner {
+        address oldImplementation = erc20Implementation;
+        erc20Implementation = newImplementation;
+        emit ERC20ImplementationUpdated(oldImplementation, newImplementation);
     }
 
     /**

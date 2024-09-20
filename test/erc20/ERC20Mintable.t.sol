@@ -5,24 +5,69 @@ import { Test } from "forge-std/Test.sol";
 import { ERC20VotesMintable } from "../../src/ERC20VotesMintable.sol";
 import { IERC20Mintable } from "../../src/interfaces/IERC20Mintable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
+import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
+
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
+import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
+import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
+import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
 
 contract ERC20MintableTest is Test {
+    SuperfluidFrameworkDeployer.Framework internal sf;
+    SuperfluidFrameworkDeployer internal deployer;
+    SuperToken internal superToken;
+
     ERC20VotesMintable public token;
+    IRewardPool public rewardPool;
+
     address public tokenImpl;
     address public owner = address(0x1);
     address public minter = address(0x2);
     address public user = address(0x3);
+    address public testUSDC;
 
     function setUp() public {
+        // Deploy Superfluid framework
+        vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
+        deployer = new SuperfluidFrameworkDeployer();
+        deployer.deployTestFramework();
+        sf = deployer.getFramework();
+
+        // Deploy wrapper SuperToken
+        (TestToken underlyingToken, SuperToken wrappedToken) = deployer.deployWrapperSuperToken(
+            "Test USD Coin",
+            "tUSDC",
+            18,
+            1e27,
+            owner
+        );
+
+        superToken = wrappedToken;
+        testUSDC = address(underlyingToken);
+
         // Deploy the implementation contract
         tokenImpl = address(new ERC20VotesMintable());
 
-        // Deploy the proxy contract
+        // Deploy and initialize RewardPool
+        address rewardPoolImpl = address(new RewardPool());
+        address rewardPoolProxy = address(new ERC1967Proxy(rewardPoolImpl, ""));
+        rewardPool = IRewardPool(rewardPoolProxy);
+
+        // Deploy the proxy contract for ERC20VotesMintable
         address tokenProxy = address(new ERC1967Proxy(tokenImpl, ""));
+
+        address flow = address(0x1); //todo update if needed
+
+        // Initialize the RewardPool
+        rewardPool.initialize(ISuperToken(address(superToken)), tokenProxy, flow);
 
         // Initialize the token
         vm.prank(owner);
-        IERC20Mintable(tokenProxy).initialize(owner, minter, "Test Token", "TST");
+        IERC20Mintable(tokenProxy).initialize(owner, minter, address(rewardPool), "Test Token", "TST");
 
         // Set the token variable to the proxy address
         token = ERC20VotesMintable(tokenProxy);

@@ -16,12 +16,15 @@ import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/
 import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
 import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
-import { FlowStorageV1 } from "../../src/storage/FlowStorageV1.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
+import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
 
 contract ERC721FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
     SuperfluidFrameworkDeployer internal deployer;
     SuperToken internal superToken;
+    RewardPool internal dummyRewardPool;
 
     ERC721Flow flow;
     address flowImpl;
@@ -32,11 +35,12 @@ contract ERC721FlowTest is Test {
 
     address manager = address(0x1998);
 
-    FlowStorageV1.RecipientMetadata flowMetadata;
-    FlowStorageV1.RecipientMetadata recipientMetadata;
+    FlowTypes.RecipientMetadata flowMetadata;
+    FlowTypes.RecipientMetadata recipientMetadata;
 
     function deployFlow(address erc721, address superTokenAddress) internal returns (ERC721Flow) {
         address flowProxy = address(new ERC1967Proxy(flowImpl, ""));
+        dummyRewardPool = deployRewardPool(superTokenAddress, manager, address(flowProxy));
 
         vm.prank(address(manager));
         IERC721Flow(flowProxy).initialize({
@@ -44,7 +48,8 @@ contract ERC721FlowTest is Test {
             nounsToken: erc721,
             superToken: superTokenAddress,
             flowImpl: flowImpl,
-            manager: manager, // Add this line
+            manager: manager,
+            managerRewardPool: address(dummyRewardPool),
             parent: address(0),
             flowParams: flowParams,
             metadata: flowMetadata
@@ -77,12 +82,29 @@ contract ERC721FlowTest is Test {
         vm.stopPrank();
     }
 
+    function deployRewardPool(
+        address superTokenAddress,
+        address poolManager,
+        address flowAddress
+    ) internal returns (RewardPool) {
+        // Deploy the implementation contract
+        address rewardPoolImpl = address(new RewardPool());
+
+        // Deploy the proxy contract
+        address rewardPoolProxy = address(new ERC1967Proxy(rewardPoolImpl, ""));
+
+        // Initialize the proxy
+        IRewardPool(rewardPoolProxy).initialize(ISuperToken(superTokenAddress), poolManager, flowAddress);
+
+        return RewardPool(rewardPoolProxy);
+    }
+
     function deployMock721(string memory name, string memory symbol) public virtual returns (MockERC721) {
         return new MockERC721(name, symbol);
     }
 
     function setUp() public virtual {
-        flowMetadata = FlowStorageV1.RecipientMetadata({
+        flowMetadata = FlowTypes.RecipientMetadata({
             title: "Test Flow",
             description: "A test flow",
             image: "ipfs://image",
@@ -90,7 +112,7 @@ contract ERC721FlowTest is Test {
             url: "https://testflow.com"
         });
 
-        recipientMetadata = FlowStorageV1.RecipientMetadata({
+        recipientMetadata = FlowTypes.RecipientMetadata({
             title: "Test Recipient",
             description: "A test recipient",
             image: "ipfs://image",
@@ -103,7 +125,8 @@ contract ERC721FlowTest is Test {
 
         flowParams = IFlow.FlowParams({
             tokenVoteWeight: 1e18 * 1000, // Example token vote weight
-            baselinePoolFlowRatePercent: 1000 // 1000 BPS
+            baselinePoolFlowRatePercent: 5000, // 1000 BPS
+            managerRewardPoolFlowRatePercent: 1e6 / 10 // 10%
         });
 
         vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
