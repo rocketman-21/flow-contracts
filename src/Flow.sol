@@ -473,7 +473,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     function _setFlowToManagerRewardPool(int96 _newManagerRewardFlowRate) internal {
-        int96 rewardPoolFlowRate = fs.superToken.getFlowRate(address(this), fs.managerRewardPool);
+        int96 rewardPoolFlowRate = getManagerRewardPoolFlowRate();
 
         if (_newManagerRewardFlowRate > 0) {
             // if flow to reward pool is 0, create a flow, otherwise update the flow
@@ -746,6 +746,23 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function managerRewardPool() external view returns (address) {
         return fs.managerRewardPool;
+    }
+
+    /**
+     * @notice Retrieves the current flow rate to the manager reward pool
+     * @return flowRate The current flow rate to the manager reward pool
+     */
+    function getManagerRewardPoolFlowRate() public view returns (int96 flowRate) {
+        flowRate = fs.superToken.getFlowRate(address(this), fs.managerRewardPool);
+    }
+
+    /**
+     * @notice Retrieves the buffer amount required for the manager reward pool
+     * @return bufferAmount The buffer amount required for the manager reward pool
+     */
+    function getManagerRewardPoolBufferAmount() public view returns (uint256 bufferAmount) {
+        int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate();
+        bufferAmount = fs.superToken.getBufferAmountByFlowRate(managerRewardPoolFlowRate);
     }
 
     /**

@@ -60,8 +60,10 @@ contract ERC20MintableTest is Test {
         // Deploy the proxy contract for ERC20VotesMintable
         address tokenProxy = address(new ERC1967Proxy(tokenImpl, ""));
 
+        address flow = address(0x1); //todo update if needed
+
         // Initialize the RewardPool
-        rewardPool.initialize(ISuperToken(address(superToken)), tokenProxy);
+        rewardPool.initialize(ISuperToken(address(superToken)), tokenProxy, flow);
 
         // Initialize the token
         vm.prank(owner);

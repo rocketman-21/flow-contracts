@@ -84,7 +84,7 @@ contract FlowTCRTest is ERC721FlowTest {
         address tcrFactoryImpl = address(new TCRFactory());
         address tcrFactoryProxy = address(new ERC1967Proxy(tcrFactoryImpl, ""));
 
-        rewardPool = deployRewardPool(address(superToken), erc20TokenProxy);
+        rewardPool = deployRewardPool(address(superToken), erc20TokenProxy, flowTCRProxy);
 
         ITCRFactory(tcrFactoryProxy).initialize({
             initialOwner: owner,

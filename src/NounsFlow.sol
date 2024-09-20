@@ -5,8 +5,8 @@ import { Flow } from "./Flow.sol";
 import { INounsFlow } from "./interfaces/IFlow.sol";
 import { ITokenVerifier } from "./interfaces/ITokenVerifier.sol";
 import { IStateProof } from "./interfaces/IStateProof.sol";
+import { IRewardPool } from "./interfaces/IRewardPool.sol";
 
-import { IOwnable2Step } from "./interfaces/IOwnable2Step.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract NounsFlow is INounsFlow, Flow {
@@ -173,5 +173,23 @@ contract NounsFlow is INounsFlow, Flow {
         });
 
         return recipient;
+    }
+
+    /**
+     * @notice Function to be called after updating the reward pool flow rate in Flow.sol
+     * @dev This is used to update the rewards for ERC20 curators automatically when the flow rate changes
+     * @param newFlowRate The new flow rate to the reward pool
+     */
+    function _afterRewardPoolFlowUpdate(int96 newFlowRate) internal virtual override {
+        address rewardPool = fs.managerRewardPool;
+        if (rewardPool == address(0)) revert ADDRESS_ZERO();
+
+        int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate();
+
+        // Call setFlowRate on the child contract
+        // only set if buffer required is less than balance of contract
+        if (getManagerRewardPoolBufferAmount() < fs.superToken.balanceOf(rewardPool)) {
+            IRewardPool(rewardPool).setFlowRate(managerRewardPoolFlowRate);
+        }
     }
 }

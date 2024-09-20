@@ -28,6 +28,9 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     /// @notice The manager of the pool
     address public manager;
 
+    /// @notice The funder of the pool
+    address public funder;
+
     /// The Superfluid pool configuration
     PoolConfig public poolConfig =
         PoolConfig({ transferabilityForUnitsOwner: false, distributionFromAnyAddress: false });
@@ -36,20 +39,25 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     error FLOW_RATE_NEGATIVE();
     error UNITS_UPDATE_FAILED();
     error NOT_MANAGER_OR_OWNER();
+    error NOT_OWNER_OR_FUNDER();
+
     /**
      * @notice Initializes the contract and creates a Superfluid pool
      * @dev On initialization, the contract creates a Superfluid pool with the specified SuperToken
      * @param _superToken The address of the SuperToken to be used
      * @param _manager The address of the manager of the pool
+     * @param _funder The address of the funder of the pool (usually the Flow contract)
      */
-    function initialize(ISuperToken _superToken, address _manager) public initializer {
+    function initialize(ISuperToken _superToken, address _manager, address _funder) public initializer {
         if (address(_superToken) == address(0)) revert ADDRESS_ZERO();
         if (_manager == address(0)) revert ADDRESS_ZERO();
+        if (_funder == address(0)) revert ADDRESS_ZERO();
 
         __Ownable2Step_init();
         __ReentrancyGuard_init();
         superToken = _superToken;
         manager = _manager;
+        funder = _funder;
         rewardPool = superToken.createPool(address(this), poolConfig);
     }
 
@@ -58,7 +66,7 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      * @dev The flow rate controls the distribution rate of tokens in the pool
      * @param _flowRate The new flow rate to be set
      */
-    function setFlowRate(int96 _flowRate) public onlyOwner nonReentrant {
+    function setFlowRate(int96 _flowRate) public onlyOwnerOrFunder nonReentrant {
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
         superToken.distributeFlow(address(this), rewardPool, _flowRate);
@@ -81,7 +89,7 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      * @dev This function can only be called by the owner or manager
      */
     function resetFlowRate() external onlyManagerOrOwner nonReentrant {
-        setFlowRate(getTotalFlowRate());
+        superToken.distributeFlow(address(this), rewardPool, getTotalFlowRate());
     }
 
     /**
@@ -124,6 +132,14 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      */
     modifier onlyManagerOrOwner() {
         if (msg.sender != owner() && msg.sender != manager) revert NOT_MANAGER_OR_OWNER();
+        _;
+    }
+
+    /**
+     * @notice Modifier to restrict access to only the owner or funder
+     */
+    modifier onlyOwnerOrFunder() {
+        if (msg.sender != owner() && msg.sender != funder) revert NOT_OWNER_OR_FUNDER();
         _;
     }
 

@@ -132,7 +132,11 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         });
 
         // Initialize the RewardPool
-        IRewardPool(rewardPoolAddress).initialize({ superToken: rewardPoolParams.superToken, manager: erc20Address });
+        IRewardPool(rewardPoolAddress).initialize({
+            superToken: rewardPoolParams.superToken,
+            manager: erc20Address,
+            funder: address(params.flowContract)
+        });
 
         emit FlowTCRDeployed(msg.sender, tcrAddress, arbitratorAddress, erc20Address);
 
