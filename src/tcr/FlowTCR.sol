@@ -7,6 +7,7 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
+import { FlowRecipients } from "../library/FlowRecipients.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 /**
@@ -58,6 +59,34 @@ contract FlowTCR is GeneralizedTCR {
      */
     function _onItemRemoved(bytes32 _itemID) internal override {
         flowContract.removeRecipient(_itemID);
+    }
+
+    /**
+     * @dev Verifies the data of an item before it's added to the registry.
+     * @param _item The data describing the item to be added.
+     * @return valid True if the item data is valid, false otherwise.
+     */
+    function _verifyItemData(bytes calldata _item) internal pure override returns (bool valid) {
+        (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType) = abi
+            .decode(_item, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
+
+        // Check if recipient is a valid address
+        if (recipient == address(0)) {
+            return false;
+        }
+
+        // Check if metadata is valid
+        FlowRecipients.validateMetadata(metadata);
+
+        // Check if recipientType is valid
+        if (
+            recipientType != FlowTypes.RecipientType.ExternalAccount &&
+            recipientType != FlowTypes.RecipientType.FlowContract
+        ) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

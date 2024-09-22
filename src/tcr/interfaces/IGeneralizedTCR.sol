@@ -13,6 +13,10 @@ interface IGeneralizedTCR {
     /// @dev This error is used to ensure that only items not currently in the registry can be added.
     error MUST_BE_ABSENT_TO_BE_ADDED();
 
+    /// @notice Thrown when the item data is invalid.
+    /// @dev This error is used to ensure that only valid item data can be added to the registry.
+    error INVALID_ITEM_DATA();
+
     /// @notice Thrown when attempting to remove an item that is not in the 'Registered' state.
     /// @dev This error is used to ensure that only items currently in the registry can be removed.
     error MUST_BE_REGISTERED_TO_BE_REMOVED();
@@ -168,11 +172,11 @@ interface IGeneralizedTCR {
 interface IFlowTCR is IGeneralizedTCR {
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
-     * @param _contractParams Struct containing address parameters and interfaces
-     * @param _tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
+     * @param contractParams Struct containing address parameters and interfaces
+     * @param tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
      */
     function initialize(
-        GeneralizedTCRStorageV1.ContractParams memory _contractParams,
-        GeneralizedTCRStorageV1.TCRParams memory _tcrParams
+        GeneralizedTCRStorageV1.ContractParams memory contractParams,
+        GeneralizedTCRStorageV1.TCRParams memory tcrParams
     ) external;
 }

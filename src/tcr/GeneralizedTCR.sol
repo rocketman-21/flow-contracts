@@ -107,9 +107,19 @@ abstract contract GeneralizedTCR is
      *  @param _item The data describing the item.
      */
     function addItem(bytes calldata _item) external nonReentrant {
+        if (!_verifyItemData(_item)) revert INVALID_ITEM_DATA();
+
         bytes32 itemID = keccak256(_item);
         if (items[itemID].status != Status.Absent) revert MUST_BE_ABSENT_TO_BE_ADDED();
         _requestStatusChange(_item, submissionBaseDeposit);
+    }
+
+    /** @dev Verifies the data of an item before it's added to the registry.
+     *  @param _item The data describing the item to be added.
+     *  @return valid True if the item data is valid, false otherwise.
+     */
+    function _verifyItemData(bytes calldata _item) internal virtual returns (bool valid) {
+        return true;
     }
 
     /** @dev Submit a request to remove an item from the list. Must have approved this contract to transfer at least `removalBaseDeposit` + `arbitrationCost` ERC20 tokens.

@@ -89,10 +89,10 @@ contract FlowTCRTest is ERC721FlowTest {
 
         ITCRFactory(tcrFactoryProxy).initialize({
             initialOwner: owner,
-            flowTCRImplementation_: flowTCRImpl,
-            arbitratorImplementation_: arbitratorImpl,
-            erc20Implementation_: erc20TokenImpl,
-            rewardPoolImplementation_: rewardPoolImpl
+            flowTCRImplementation: flowTCRImpl,
+            arbitratorImplementation: arbitratorImpl,
+            erc20Implementation: erc20TokenImpl,
+            rewardPoolImplementation: rewardPoolImpl
         });
 
         ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowTypes.RecipientType.ExternalAccount);

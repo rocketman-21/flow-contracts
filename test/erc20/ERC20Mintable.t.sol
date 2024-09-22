@@ -3,7 +3,7 @@ pragma solidity ^0.8.27;
 
 import { Test } from "forge-std/Test.sol";
 import { ERC20VotesMintable } from "../../src/ERC20VotesMintable.sol";
-import { IERC20Mintable } from "../../src/interfaces/IERC20Mintable.sol";
+import { IERC20VotesMintable } from "../../src/interfaces/IERC20VotesMintable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
 import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
@@ -67,7 +67,7 @@ contract ERC20MintableTest is Test {
 
         // Initialize the token
         vm.prank(owner);
-        IERC20Mintable(tokenProxy).initialize(owner, minter, address(rewardPool), "Test Token", "TST");
+        IERC20VotesMintable(tokenProxy).initialize(owner, minter, address(rewardPool), "Test Token", "TST");
 
         // Set the token variable to the proxy address
         token = ERC20VotesMintable(tokenProxy);
@@ -104,7 +104,7 @@ contract ERC20MintableTest is Test {
 
         // Cannot set minter after locking
         vm.prank(owner);
-        vm.expectRevert(IERC20Mintable.MINTER_LOCKED.selector);
+        vm.expectRevert(IERC20VotesMintable.MINTER_LOCKED.selector);
         token.setMinter(address(0x5));
     }
 
@@ -113,7 +113,7 @@ contract ERC20MintableTest is Test {
 
         // Non-minter cannot mint
         vm.prank(user);
-        vm.expectRevert(IERC20Mintable.NOT_MINTER.selector);
+        vm.expectRevert(IERC20VotesMintable.NOT_MINTER.selector);
         token.mint(user, mintAmount);
 
         // Minter can mint

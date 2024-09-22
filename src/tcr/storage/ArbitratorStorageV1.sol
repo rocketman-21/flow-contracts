@@ -11,7 +11,8 @@ import { ERC20VotesMintable } from "../../ERC20VotesMintable.sol";
  */
 contract ArbitratorStorageV1 {
     /** @notice The minimum setable voting period */
-    uint256 public constant MIN_VOTING_PERIOD = 86_400; // 24 hours
+    // TODO update after testing
+    uint256 public constant MIN_VOTING_PERIOD = 1; // 24 hours
 
     /** @notice The max setable voting period */
     uint256 public constant MAX_VOTING_PERIOD = 1_209_600; // 2 weeks
@@ -26,18 +27,21 @@ contract ArbitratorStorageV1 {
     uint256 public constant MAX_VOTING_DELAY = 604_800; // 1 week
 
     /** @notice The minimum setable reveal period */
-    uint256 public constant MIN_REVEAL_PERIOD = 86_400; // 24 hours
+    // TODO update after testing
+    uint256 public constant MIN_REVEAL_PERIOD = 1; // 24 hours
 
     /** @notice The maximum setable reveal period */
     uint256 public constant MAX_REVEAL_PERIOD = 604_800; // 7 days
 
     /** @notice The minimum setable appeal period */
-    uint256 public constant MIN_APPEAL_PERIOD = 21_600; // 6 hours
+    // TODO update after testing
+    uint256 public constant MIN_APPEAL_PERIOD = 1; // 6 hours
 
     /** @notice The maximum setable appeal period */
     uint256 public constant MAX_APPEAL_PERIOD = 604_800; // 7 days
 
     /** @notice The minimum setable appeal cost */
+    // TODO update after testing
     uint256 public constant MIN_APPEAL_COST = 1e18 / 10_000; // 1 ten-thousandth of a token
 
     /** @notice The maximum setable appeal cost */
