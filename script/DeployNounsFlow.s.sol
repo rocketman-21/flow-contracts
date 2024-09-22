@@ -139,7 +139,13 @@ contract DeployNounsFlow is DeployScript {
                 submissionChallengeBaseDeposit: submissionChallengeBaseDeposit,
                 removalChallengeBaseDeposit: removalChallengeBaseDeposit,
                 challengePeriodDuration: challengePeriodDuration,
-                stakeMultipliers: [uint256(10000), uint256(10000), uint256(10000)],
+                // shared stake - applied when there is no winner or loser. Set to 0 to make it easy to appeal a no ruling.
+                // MULTIPLIER_DIVISOR = 10000
+                // winner stake - applied when the winner of the dispute is the requester
+                // set to 5000 to make it less expensive for a winner to support an appeal against their win
+                // loser stake - applied when the winner of the dispute is the challenger
+                // set to 15000 to make it more expensive for a loser to support an appeal against their loss
+                stakeMultipliers: [uint256(0), uint256(5000), uint256(15000)],
                 arbitratorExtraData: "",
                 registrationMetaEvidence: "",
                 clearingMetaEvidence: ""
