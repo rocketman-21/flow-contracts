@@ -13,6 +13,10 @@ interface IGeneralizedTCR {
     /// @dev This error is used to ensure that only items not currently in the registry can be added.
     error MUST_BE_ABSENT_TO_BE_ADDED();
 
+    /// @notice Thrown when the item data is invalid.
+    /// @dev This error is used to ensure that only valid item data can be added to the registry.
+    error INVALID_ITEM_DATA();
+
     /// @notice Thrown when attempting to remove an item that is not in the 'Registered' state.
     /// @dev This error is used to ensure that only items currently in the registry can be removed.
     error MUST_BE_REGISTERED_TO_BE_REMOVED();

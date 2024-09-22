@@ -65,44 +65,36 @@ contract DeployNounsFlow is DeployScript {
         uint256 appealPeriod = vm.envUint("APPEAL_PERIOD");
         uint256 appealCost = vm.envUint("APPEAL_COST");
         uint256 arbitrationCost = vm.envUint("ARBITRATION_COST");
-        string memory tokenName = vm.envString("TOKEN_NAME");
-        string memory tokenSymbol = vm.envString("TOKEN_SYMBOL");
 
         // Deploy NounsFlow implementation
         NounsFlow nounsFlowImpl = new NounsFlow();
         nounsFlowImplementation = address(nounsFlowImpl);
-        ERC1967Proxy nounsFlowProxy = new ERC1967Proxy(address(nounsFlowImpl), "");
-        nounsFlow = address(nounsFlowProxy);
+        nounsFlow = address(new ERC1967Proxy(address(nounsFlowImpl), ""));
 
         // Deploy TCRFactory implementation
         TCRFactory tcrFactoryImpl = new TCRFactory();
         tcrFactoryImplementation = address(tcrFactoryImpl);
-        ERC1967Proxy tcrFactoryProxy = new ERC1967Proxy(address(tcrFactoryImpl), "");
-        tcrFactory = address(tcrFactoryProxy);
+        tcrFactory = address(new ERC1967Proxy(address(tcrFactoryImpl), ""));
 
         // Deploy ERC20VotesMintable implementation
         ERC20VotesMintable erc20MintableImpl = new ERC20VotesMintable();
         erc20MintableImplementation = address(erc20MintableImpl);
-        ERC1967Proxy erc20MintableProxy = new ERC1967Proxy(address(erc20MintableImpl), "");
-        erc20Mintable = address(erc20MintableProxy);
+        erc20Mintable = address(new ERC1967Proxy(address(erc20MintableImpl), ""));
 
         // Deploy ERC20Arbitrator implementation
         ERC20VotesArbitrator erc20ArbitratorImpl = new ERC20VotesArbitrator();
         erc20ArbitratorImplementation = address(erc20ArbitratorImpl);
-        ERC1967Proxy erc20ArbitratorProxy = new ERC1967Proxy(address(erc20ArbitratorImpl), "");
-        erc20Arbitrator = address(erc20ArbitratorProxy);
+        erc20Arbitrator = address(new ERC1967Proxy(address(erc20ArbitratorImpl), ""));
 
         // Deploy RewardPool implementation
         RewardPool rewardPoolImpl = new RewardPool();
         rewardPoolImplementation = address(rewardPoolImpl);
-        ERC1967Proxy rewardPoolProxy = new ERC1967Proxy(address(rewardPoolImpl), "");
-        rewardPool = address(rewardPoolProxy);
+        rewardPool = address(new ERC1967Proxy(address(rewardPoolImpl), ""));
 
         // Deploy FlowTCR implementation
         FlowTCR flowTCRImpl = new FlowTCR();
         flowTCRImplementation = address(flowTCRImpl);
-        ERC1967Proxy flowTCRProxy = new ERC1967Proxy(address(flowTCRImpl), "");
-        flowTCR = address(flowTCRProxy);
+        flowTCR = address(new ERC1967Proxy(address(flowTCRImpl), ""));
 
         // Deploy TokenVerifier
         TokenVerifier verifier = new TokenVerifier(tokenAddress);
@@ -125,9 +117,9 @@ contract DeployNounsFlow is DeployScript {
             metadata: FlowTypes.RecipientMetadata({
                 title: "Nouns Flow",
                 description: "An MVP of the Nouns Flow. Built by rocketman21.eth and wojci.eth",
-                image: "",
-                tagline: "An MVP of the Nouns Flow",
-                url: ""
+                image: "ipfs://QmfZMtW2vDcdfH3TZdNAbMNm4Z1y16QHjuFwf8ff2NANAt",
+                tagline: "Be nounish. Get rewarded.",
+                url: "https://flows.wtf"
             })
         });
 
@@ -166,8 +158,8 @@ contract DeployNounsFlow is DeployScript {
             initialOwner: initialOwner,
             minter: initialOwner,
             rewardPool: rewardPool,
-            name: tokenName,
-            symbol: tokenSymbol
+            name: "Nouns Flow",
+            symbol: "FLOWS"
         });
 
         // Initialize ERC20VotesArbitrator
@@ -182,10 +174,27 @@ contract DeployNounsFlow is DeployScript {
             appealCost: appealCost,
             arbitrationCost: arbitrationCost
         });
+
+        // Initialize TCRFactory
+        ITCRFactory(tcrFactory).initialize({
+            initialOwner: initialOwner,
+            flowTCRImplementation: flowTCRImplementation,
+            arbitratorImplementation: erc20ArbitratorImplementation,
+            erc20Implementation: erc20MintableImplementation,
+            rewardPoolImplementation: rewardPoolImplementation
+        });
     }
 
     function writeAdditionalDeploymentDetails(string memory filePath) internal override {
-        vm.writeLine(filePath, string(abi.encodePacked("ERC20VotesMintable: ", addressToString(erc20Arbitrator))));
+        vm.writeLine(
+            filePath,
+            string(abi.encodePacked("ERC20VotesArbitratorImpl: ", addressToString(erc20ArbitratorImplementation)))
+        );
+        vm.writeLine(filePath, string(abi.encodePacked("TCRFactoryImpl: ", addressToString(tcrFactoryImplementation))));
+        vm.writeLine(
+            filePath,
+            string(abi.encodePacked("ERC20VotesMintableImpl: ", addressToString(erc20MintableImplementation)))
+        );
         vm.writeLine(filePath, string(abi.encodePacked("NounsFlowImpl: ", addressToString(nounsFlowImplementation))));
         vm.writeLine(filePath, string(abi.encodePacked("RewardPoolImpl: ", addressToString(rewardPoolImplementation))));
         vm.writeLine(filePath, string(abi.encodePacked("FlowTCRImpl: ", addressToString(flowTCRImplementation))));
@@ -194,10 +203,8 @@ contract DeployNounsFlow is DeployScript {
         vm.writeLine(filePath, string(abi.encodePacked("RewardPool: ", addressToString(rewardPool))));
         vm.writeLine(filePath, string(abi.encodePacked("FlowTCR: ", addressToString(flowTCR))));
         vm.writeLine(filePath, string(abi.encodePacked("ERC20VotesArbitrator: ", addressToString(erc20Arbitrator))));
-        vm.writeLine(
-            filePath,
-            string(abi.encodePacked("ERC20VotesMintableImpl: ", addressToString(erc20ArbitratorImplementation)))
-        );
+        vm.writeLine(filePath, string(abi.encodePacked("ERC20VotesMintable: ", addressToString(erc20Mintable))));
+        vm.writeLine(filePath, string(abi.encodePacked("TCRFactory: ", addressToString(tcrFactory))));
     }
 
     function getContractName() internal pure override returns (string memory) {

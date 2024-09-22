@@ -145,16 +145,16 @@ interface ITCRFactory {
     /**
      * @dev Initializes the TCRFactory contract
      * @param initialOwner The address that will be set as the initial owner of the contract
-     * @param flowTCRImplementation_ The address of the FlowTCR implementation contract
-     * @param arbitratorImplementation_ The address of the Arbitrator implementation contract
-     * @param erc20Implementation_ The address of the ERC20 implementation contract
-     * @param rewardPoolImplementation_ The address of the RewardPool implementation contract
+     * @param flowTCRImplementation The address of the FlowTCR implementation contract
+     * @param arbitratorImplementation The address of the Arbitrator implementation contract
+     * @param erc20Implementation The address of the ERC20 implementation contract
+     * @param rewardPoolImplementation The address of the RewardPool implementation contract
      */
     function initialize(
         address initialOwner,
-        address flowTCRImplementation_,
-        address arbitratorImplementation_,
-        address erc20Implementation_,
-        address rewardPoolImplementation_
+        address flowTCRImplementation,
+        address arbitratorImplementation,
+        address erc20Implementation,
+        address rewardPoolImplementation
     ) external;
 }
