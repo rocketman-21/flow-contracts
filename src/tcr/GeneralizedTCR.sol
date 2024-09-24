@@ -615,6 +615,46 @@ abstract contract GeneralizedTCR is
     // *       Getters        * //
     // ************************ //
 
+    /** @dev Returns the total cost to add an item to the registry.
+     *  @return totalCost The total cost in ERC20 tokens to add an item.
+     */
+    function getAddItemTotalCost() external view returns (uint256 totalCost) {
+        // The total cost is the sum of:
+        // 1. The submission base deposit
+        // 2. The arbitration cost for the first round
+        totalCost = submissionBaseDeposit + arbitrator.arbitrationCost(arbitratorExtraData);
+    }
+
+    /** @dev Returns the total cost to remove an item from the registry.
+     *  @return totalCost The total cost in ERC20 tokens to remove an item.
+     */
+    function getRemoveItemTotalCost() external view returns (uint256 totalCost) {
+        // The total cost is the sum of:
+        // 1. The removal base deposit
+        // 2. The arbitration cost for the first round
+        totalCost = removalBaseDeposit + arbitrator.arbitrationCost(arbitratorExtraData);
+    }
+
+    /** @dev Returns the total cost to challenge a submission.
+     *  @return totalCost The total cost in ERC20 tokens to challenge a submission.
+     */
+    function getChallengeSubmissionTotalCost() external view returns (uint256 totalCost) {
+        // The total cost is the sum of:
+        // 1. The submission challenge base deposit
+        // 2. The arbitration cost for the first round
+        totalCost = submissionChallengeBaseDeposit + arbitrator.arbitrationCost(arbitratorExtraData);
+    }
+
+    /** @dev Returns the total cost to challenge a removal request.
+     *  @return totalCost The total cost in ERC20 tokens to challenge a removal request.
+     */
+    function getChallengeRemovalTotalCost() external view returns (uint256 totalCost) {
+        // The total cost is the sum of:
+        // 1. The removal challenge base deposit
+        // 2. The arbitration cost for the first round
+        totalCost = removalChallengeBaseDeposit + arbitrator.arbitrationCost(arbitratorExtraData);
+    }
+
     /** @dev Returns the number of items that were submitted. Includes items that never made it to the list or were later removed.
      *  @return count The number of items on the list.
      */
