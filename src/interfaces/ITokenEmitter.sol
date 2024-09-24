@@ -19,6 +19,11 @@ interface ITokenEmitter {
     error INSUFFICIENT_FUNDS();
 
     /**
+     * @dev Error thrown when the user does not have enough balance to sell tokens
+     */
+    error INSUFFICIENT_TOKEN_BALANCE();
+
+    /**
      * @dev Error thrown when the contract does not have enough funds to buy back tokens
      */
     error INSUFFICIENT_CONTRACT_BALANCE();

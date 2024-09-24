@@ -113,8 +113,8 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
         uint256 payment = uint256(paymentInt);
 
         if (payment < minPayment) revert SLIPPAGE_EXCEEDED();
-        // Check contract balance
         if (payment > address(this).balance) revert INSUFFICIENT_CONTRACT_BALANCE();
+        if (erc20.balanceOf(_msgSender()) < amount) revert INSUFFICIENT_TOKEN_BALANCE();
 
         erc20.burn(_msgSender(), amount);
 
