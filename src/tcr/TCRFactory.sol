@@ -137,7 +137,14 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             funder: address(params.flowContract)
         });
 
-        emit FlowTCRDeployed(msg.sender, tcrAddress, arbitratorAddress, erc20Address);
+        emit FlowTCRDeployed(
+            msg.sender,
+            tcrAddress,
+            arbitratorAddress,
+            erc20Address,
+            rewardPoolAddress,
+            address(params.flowContract)
+        );
 
         deployedContracts = DeployedContracts({
             tcrAddress: tcrAddress,

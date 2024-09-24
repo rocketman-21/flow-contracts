@@ -94,7 +94,9 @@ interface ITCRFactory {
         address indexed sender,
         address indexed flowTCRProxy,
         address indexed arbitratorProxy,
-        address erc20Proxy
+        address erc20Proxy,
+        address rewardPoolProxy,
+        address flowProxy
     );
 
     /// @notice Emitted when the RewardPool implementation address is updated
