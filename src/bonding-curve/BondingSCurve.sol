@@ -8,7 +8,7 @@ import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/O
 /// @title Bonding S-Curve
 /// @author rocketman
 /// @author Math help from o1
-contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
+abstract contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     /*//////////////////////////////////////////////////////////////
                             CURVE PARAMETERS
     //////////////////////////////////////////////////////////////*/
@@ -37,12 +37,6 @@ contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     int256 public supplyOffset;
 
     ///                                                          ///
-    ///                         CONSTRUCTOR                      ///
-    ///                                                          ///
-
-    constructor() payable initializer {}
-
-    ///                                                          ///
     ///                           ERRORS                         ///
     ///                                                          ///
 
@@ -55,6 +49,9 @@ contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     /// @notice Reverts for invalid amount of tokens sold
     error INVALID_SOLD_AMOUNT();
 
+    /// @notice Reverts for invalid curve steepness
+    error INVALID_CURVE_STEEPNESS();
+
     ///                                                          ///
     ///                         INITIALIZER                      ///
     ///                                                          ///
@@ -65,14 +62,15 @@ contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     /// @param _basePrice The base price for a token if sold on pace, scaled by 1e18.
     /// @param _maxPriceIncrease The maximum price increase for a token if sold on pace, scaled by 1e18.
     /// @param _supplyOffset The supply offset for a token if sold on pace, scaled by 1e18.
-    function initialize(
+    function __BondingSCurve_init(
         address _initialOwner,
         int256 _curveSteepness,
         int256 _basePrice,
         int256 _maxPriceIncrease,
         int256 _supplyOffset
-    ) public initializer {
+    ) public {
         if (_initialOwner == address(0)) revert INVALID_ADDRESS_ZERO();
+        if (_curveSteepness <= 0) revert INVALID_CURVE_STEEPNESS();
 
         __Ownable_init();
 
@@ -90,7 +88,7 @@ contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
 
     // y to pay
     // given # of tokens sold and # to buy, returns amount to pay
-    function costToBuy(int256 sold, int256 amount) public view virtual returns (int256) {
+    function costForToken(int256 sold, int256 amount) internal view virtual returns (int256) {
         if (sold < 0) revert INVALID_SOLD_AMOUNT();
         if (amount < 0) revert INVALID_AMOUNT();
 
@@ -98,7 +96,7 @@ contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     }
 
     // given # of tokens sold and # to sell, returns the payment for selling
-    function paymentToSell(int256 sold, int256 amount) public view virtual returns (int256) {
+    function paymentToSell(int256 sold, int256 amount) internal view virtual returns (int256) {
         if (amount < 0) revert INVALID_AMOUNT();
         int256 newSold = sold - amount;
         if (newSold < 0) revert INVALID_SOLD_AMOUNT();

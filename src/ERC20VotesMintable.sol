@@ -156,6 +156,10 @@ contract ERC20VotesMintable is
         emit MinterLocked();
     }
 
+    function burn(address account, uint256 amount) external onlyMinter {
+        _burn(account, amount);
+    }
+
     /**
      * @dev Move voting power when tokens are transferred.
      *
@@ -193,6 +197,7 @@ contract ERC20VotesMintable is
 
         // if transferring to 0 address, don't add member units to 0x0
         if (to != address(0)) {
+            if (toUnits + transferredUnits > type(uint128).max) revert POOL_UNITS_OVERFLOW();
             IRewardPool(rewardPool).updateMemberUnits(to, toUnits + transferredUnits);
         } else {
             // burning tokens here since to is the 0 address
