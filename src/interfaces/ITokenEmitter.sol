@@ -41,10 +41,11 @@ interface ITokenEmitter {
     /**
      * @dev Event emitted when tokens are bought
      * @param buyer The address of the token buyer
+     * @param user The address of the user who received the tokens
      * @param amount The amount of tokens bought
      * @param cost The cost paid for the tokens
      */
-    event TokensBought(address indexed buyer, uint256 amount, uint256 cost);
+    event TokensBought(address indexed buyer, address indexed user, uint256 amount, uint256 cost);
 
     /**
      * @dev Event emitted when tokens are sold

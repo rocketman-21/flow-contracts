@@ -80,10 +80,13 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
     /**
      * @notice Allows users to buy tokens by sending ETH with slippage protection
      * @dev Uses nonReentrant modifier to prevent reentrancy attacks
+     * @param user The address of the user who received the tokens
      * @param amount The number of tokens to buy
      * @param maxCost The maximum acceptable cost in wei
      */
-    function buyToken(uint256 amount, uint256 maxCost) public payable nonReentrant {
+    function buyToken(address user, uint256 amount, uint256 maxCost) public payable nonReentrant {
+        if (user == address(0)) revert INVALID_ADDRESS_ZERO();
+
         int256 costInt = buyTokenQuote(amount);
         if (costInt < 0) revert INVALID_COST();
         uint256 cost = uint256(costInt);
@@ -96,9 +99,9 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
             _safeTransferETHWithFallback(_msgSender(), msg.value - cost);
         }
 
-        erc20.mint(_msgSender(), amount);
+        erc20.mint(user, amount);
 
-        emit TokensBought(_msgSender(), amount, cost);
+        emit TokensBought(_msgSender(), user, amount, cost);
     }
 
     /**
