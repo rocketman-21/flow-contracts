@@ -5,7 +5,7 @@ import { BondingSCurve } from "./bonding-curve/BondingSCurve.sol";
 import { ERC20VotesMintable } from "./ERC20VotesMintable.sol";
 import { ITokenEmitter } from "./interfaces/ITokenEmitter.sol";
 import { IWETH } from "./interfaces/IWETH.sol";
-
+import { ProtocolRewards } from "./protocol-rewards/ProtocolRewards.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
@@ -13,7 +13,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
  * @title TokenEmitter
  * @dev Contract for emitting tokens using a bonding curve mechanism
  */
-contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeable {
+contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeable, ProtocolRewards {
     /// @notice The ERC20 token being emitted
     ERC20VotesMintable public erc20;
 
@@ -21,10 +21,16 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
     IWETH public WETH;
 
     /**
-     * @dev Constructor function
-     * @notice Initializes the contract
+     * @param _protocolRewards The protocol rewards contract address
+     * @param _protocolFeeRecipient The protocol fee recipient address
      */
-    constructor() payable initializer {}
+    constructor(
+        address _protocolRewards,
+        address _protocolFeeRecipient
+    ) payable ProtocolRewards(_protocolRewards, _protocolFeeRecipient) initializer {
+        if (_protocolRewards == address(0)) revert ADDRESS_ZERO();
+        if (_protocolFeeRecipient == address(0)) revert ADDRESS_ZERO();
+    }
 
     /**
      * @dev Initializes the TokenEmitter contract
@@ -68,6 +74,19 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
     }
 
     /**
+     * @notice Calculates the cost to buy a certain amount of tokens including protocol rewards
+     * @dev Uses the bonding curve to determine the cost
+     * @param amount The number of tokens to buy
+     * @return cost The cost to buy the specified amount of tokens including protocol rewards
+     */
+    function buyTokenQuoteWithRewards(uint256 amount) public view returns (int256 cost) {
+        int256 costBeforeRewards = buyTokenQuote(amount);
+        if (costBeforeRewards < 0) return costBeforeRewards;
+
+        return costBeforeRewards + int256(computeTotalReward(uint256(costBeforeRewards)));
+    }
+
+    /**
      * @notice Calculates the payment received when selling a certain amount of tokens
      * @dev Uses the bonding curve to determine the payment
      * @param amount The number of tokens to sell
@@ -84,24 +103,41 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
      * @param amount The number of tokens to buy
      * @param maxCost The maximum acceptable cost in wei
      */
-    function buyToken(address user, uint256 amount, uint256 maxCost) public payable nonReentrant {
+    function buyToken(
+        address user,
+        uint256 amount,
+        uint256 maxCost,
+        ProtocolRewardAddresses calldata protocolRewardsRecipients
+    ) public payable nonReentrant {
         if (user == address(0)) revert INVALID_ADDRESS_ZERO();
 
         int256 costInt = buyTokenQuote(amount);
         if (costInt < 0) revert INVALID_COST();
-        uint256 cost = uint256(costInt);
+        uint256 costForTokens = uint256(costInt);
 
-        if (cost > maxCost) revert SLIPPAGE_EXCEEDED();
+        if (costForTokens > maxCost) revert SLIPPAGE_EXCEEDED();
+
+        uint256 protocolRewardsFee = computeTotalReward(costForTokens);
+        uint256 totalPayment = costForTokens + protocolRewardsFee;
+
+        // Check for underpayment
+        if (msg.value < totalPayment) revert INSUFFICIENT_FUNDS();
 
         // Handle overpayment
-        if (msg.value < cost) revert INSUFFICIENT_FUNDS();
-        if (msg.value > cost) {
-            _safeTransferETHWithFallback(_msgSender(), msg.value - cost);
+        if (msg.value > totalPayment) {
+            _safeTransferETHWithFallback(_msgSender(), msg.value - totalPayment);
         }
+
+        // Share protocol rewards
+        _handleRewardsAndGetValueToSend(
+            totalPayment,
+            protocolRewardsRecipients.builder,
+            protocolRewardsRecipients.purchaseReferral
+        );
 
         erc20.mint(user, amount);
 
-        emit TokensBought(_msgSender(), user, amount, cost);
+        emit TokensBought(_msgSender(), user, amount, costForTokens, protocolRewardsFee);
     }
 
     /**
