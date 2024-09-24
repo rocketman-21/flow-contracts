@@ -24,14 +24,25 @@ contract FlowTCR is GeneralizedTCR {
     // The address of the TCR factory
     ITCRFactory public tcrFactory;
 
+    // The required FlowRecipient type for the TCR (optional)
+    FlowTypes.RecipientType public requiredRecipientType;
+
+    // Emitted when the required recipient type is set
+    event RequiredRecipientTypeSet(FlowTypes.RecipientType _requiredRecipientType);
+
     constructor() payable initializer {}
 
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
      * @param _contractParams Struct containing address parameters and interfaces
      * @param _tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
+     * @param _requiredRecipientType The required recipient type for the TCR
      */
-    function initialize(ContractParams memory _contractParams, TCRParams memory _tcrParams) public initializer {
+    function initialize(
+        ContractParams memory _contractParams,
+        TCRParams memory _tcrParams,
+        FlowTypes.RecipientType _requiredRecipientType
+    ) public initializer {
         flowContract = _contractParams.flowContract;
         tcrFactory = _contractParams.tcrFactory;
         __GeneralizedTCR_init(
@@ -66,7 +77,7 @@ contract FlowTCR is GeneralizedTCR {
      * @param _item The data describing the item to be added.
      * @return valid True if the item data is valid, false otherwise.
      */
-    function _verifyItemData(bytes calldata _item) internal pure override returns (bool valid) {
+    function _verifyItemData(bytes calldata _item) internal view override returns (bool valid) {
         (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType) = abi
             .decode(_item, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
 
@@ -79,6 +90,10 @@ contract FlowTCR is GeneralizedTCR {
         FlowRecipients.validateMetadata(metadata);
 
         // Check if recipientType is valid
+        if (requiredRecipientType != FlowTypes.RecipientType.None && recipientType != requiredRecipientType) {
+            return false;
+        }
+
         if (
             recipientType != FlowTypes.RecipientType.ExternalAccount &&
             recipientType != FlowTypes.RecipientType.FlowContract
@@ -119,7 +134,8 @@ contract FlowTCR is GeneralizedTCR {
                     submissionChallengeBaseDeposit: submissionChallengeBaseDeposit,
                     removalChallengeBaseDeposit: removalChallengeBaseDeposit,
                     challengePeriodDuration: challengePeriodDuration,
-                    stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier]
+                    stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier],
+                    requiredRecipientType: FlowTypes.RecipientType.None
                 }),
                 arbitrator.getArbitratorParamsForFactory(),
                 ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }), // TODO update all
@@ -130,5 +146,14 @@ contract FlowTCR is GeneralizedTCR {
             flowContract.setManager(deployedContracts.tcrAddress);
             flowContract.setManagerRewardPool(deployedContracts.rewardPoolAddress);
         }
+    }
+
+    /**
+     * @notice Sets the required recipient type for the TCR
+     * @param _requiredRecipientType The required recipient type
+     */
+    function setRequiredRecipientType(FlowTypes.RecipientType _requiredRecipientType) external onlyOwner {
+        requiredRecipientType = _requiredRecipientType;
+        emit RequiredRecipientTypeSet(_requiredRecipientType);
     }
 }

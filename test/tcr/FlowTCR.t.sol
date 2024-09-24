@@ -117,7 +117,8 @@ contract FlowTCRTest is ERC721FlowTest {
                 arbitratorExtraData: ARBITRATOR_EXTRA_DATA,
                 registrationMetaEvidence: REGISTRATION_META_EVIDENCE,
                 clearingMetaEvidence: CLEARING_META_EVIDENCE
-            })
+            }),
+            FlowTypes.RecipientType.None
         );
 
         erc20Token = ERC20VotesMintable(erc20TokenProxy);

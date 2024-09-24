@@ -19,6 +19,7 @@ interface FlowTypes {
     // Enum to handle type of grant recipient, either address or flow contract
     // Helpful to set a flow rate if recipient is flow contract
     enum RecipientType {
+        None,
         ExternalAccount,
         FlowContract
     }

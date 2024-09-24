@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
+import { FlowTypes } from "../../storage/FlowStorageV1.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
@@ -23,6 +24,7 @@ interface ITCRFactory {
      * @param removalChallengeBaseDeposit Base deposit for challenging a removal
      * @param challengePeriodDuration Duration of the challenge period
      * @param stakeMultipliers Multipliers for appeals
+     * @param requiredRecipientType The required recipient type for the TCR
      */
     struct FlowTCRParams {
         IManagedFlow flowContract;
@@ -36,6 +38,7 @@ interface ITCRFactory {
         uint removalChallengeBaseDeposit;
         uint challengePeriodDuration;
         uint[3] stakeMultipliers;
+        FlowTypes.RecipientType requiredRecipientType;
     }
 
     /**

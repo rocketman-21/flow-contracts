@@ -12,6 +12,7 @@ import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
@@ -113,7 +114,8 @@ contract TCRFactoryTest is Test {
             submissionChallengeBaseDeposit: SUBMISSION_CHALLENGE_BASE_DEPOSIT,
             removalChallengeBaseDeposit: REMOVAL_CHALLENGE_BASE_DEPOSIT,
             challengePeriodDuration: CHALLENGE_PERIOD,
-            stakeMultipliers: [STAKE_MULTIPLIER, STAKE_MULTIPLIER, STAKE_MULTIPLIER]
+            stakeMultipliers: [STAKE_MULTIPLIER, STAKE_MULTIPLIER, STAKE_MULTIPLIER],
+            requiredRecipientType: FlowTypes.RecipientType.None
         });
 
         ITCRFactory.ArbitratorParams memory arbitratorParams = ITCRFactory.ArbitratorParams({
