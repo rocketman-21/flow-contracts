@@ -149,7 +149,8 @@ contract DeployNounsFlow is DeployScript {
                 arbitratorExtraData: "",
                 registrationMetaEvidence: "",
                 clearingMetaEvidence: ""
-            })
+            }),
+            requiredRecipientType: FlowTypes.RecipientType.FlowContract
         });
 
         // Initialize RewardPool

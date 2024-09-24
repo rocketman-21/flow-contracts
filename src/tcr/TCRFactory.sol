@@ -127,7 +127,8 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
                 arbitratorExtraData: params.arbitratorExtraData,
                 registrationMetaEvidence: params.registrationMetaEvidence,
                 clearingMetaEvidence: params.clearingMetaEvidence
-            })
+            }),
+            params.requiredRecipientType
         );
 
         // Initialize the RewardPool
