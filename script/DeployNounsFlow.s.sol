@@ -148,9 +148,9 @@ contract DeployNounsFlow is DeployScript {
                 stakeMultipliers: [uint256(0), uint256(5000), uint256(15000)],
                 arbitratorExtraData: "",
                 registrationMetaEvidence: "",
-                clearingMetaEvidence: ""
-            }),
-            requiredRecipientType: FlowTypes.RecipientType.FlowContract
+                clearingMetaEvidence: "",
+                requiredRecipientType: FlowTypes.RecipientType.FlowContract // For the first top level pool, we require a FlowContract recipient
+            })
         });
 
         // Initialize RewardPool

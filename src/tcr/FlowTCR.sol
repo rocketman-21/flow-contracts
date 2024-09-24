@@ -27,24 +27,17 @@ contract FlowTCR is GeneralizedTCR {
     // The required FlowRecipient type for the TCR (optional)
     FlowTypes.RecipientType public requiredRecipientType;
 
-    // Emitted when the required recipient type is set
-    event RequiredRecipientTypeSet(FlowTypes.RecipientType _requiredRecipientType);
-
     constructor() payable initializer {}
 
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
      * @param _contractParams Struct containing address parameters and interfaces
      * @param _tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
-     * @param _requiredRecipientType The required recipient type for the TCR
      */
-    function initialize(
-        ContractParams memory _contractParams,
-        TCRParams memory _tcrParams,
-        FlowTypes.RecipientType _requiredRecipientType
-    ) public initializer {
+    function initialize(ContractParams memory _contractParams, TCRParams memory _tcrParams) public initializer {
         flowContract = _contractParams.flowContract;
         tcrFactory = _contractParams.tcrFactory;
+        requiredRecipientType = _tcrParams.requiredRecipientType;
         __GeneralizedTCR_init(
             _contractParams.initialOwner,
             _contractParams.arbitrator,
@@ -154,6 +147,5 @@ contract FlowTCR is GeneralizedTCR {
      */
     function setRequiredRecipientType(FlowTypes.RecipientType _requiredRecipientType) external onlyOwner {
         requiredRecipientType = _requiredRecipientType;
-        emit RequiredRecipientTypeSet(_requiredRecipientType);
     }
 }

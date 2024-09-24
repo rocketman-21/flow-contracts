@@ -2,7 +2,6 @@
 pragma solidity ^0.8.27;
 import { IArbitrable } from "./IArbitrable.sol";
 import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
-import { FlowTypes } from "../../storage/FlowStorageV1.sol";
 import { IArbitrator } from "./IArbitrator.sol";
 import { GeneralizedTCRStorageV1 } from "../storage/GeneralizedTCRStorageV1.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -178,7 +177,6 @@ interface IFlowTCR is IGeneralizedTCR {
      */
     function initialize(
         GeneralizedTCRStorageV1.ContractParams memory contractParams,
-        GeneralizedTCRStorageV1.TCRParams memory tcrParams,
-        FlowTypes.RecipientType requiredRecipientType
+        GeneralizedTCRStorageV1.TCRParams memory tcrParams
     ) external;
 }
