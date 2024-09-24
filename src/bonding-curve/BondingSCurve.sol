@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import { wadLn } from "../libs/SignedWadMath.sol";
+import { wadLn, wadExp, wadMul, wadDiv } from "../libs/SignedWadMath.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-/// @title Continuous Variable Rate Gradual Dutch Auction
-/// @author transmissions11 <t11s@paradigm.xyz>
-/// @author FrankieIsLost <frankie@paradigm.xyz>
-/// @author Dan Robinson <dan@paradigm.xyz>
-/// @notice Sell tokens roughly according to an issuance schedule.
+/// @title Bonding S-Curve
+/// @author rocketman
+/// @author Math help from o1
 contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     /*//////////////////////////////////////////////////////////////
                             CURVE PARAMETERS
     //////////////////////////////////////////////////////////////*/
 
     // Curve equation:
-    // f(x) = c / (1 + e^(-m(x + b))) + d
+    // https://www.desmos.com/calculator/zhnlvsr28w
+    // p(x) = c / (1 + e^(-m(x + b))) + d
     // Where:
-    // f(x) is the price
+    // p(x) is the price of the next token
     // x is the number of tokens sold
     // c is the curve's maximum value
     // m is the curve's steepness
@@ -49,6 +48,12 @@ contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
 
     /// @notice Reverts for address zero
     error INVALID_ADDRESS_ZERO();
+
+    /// @notice Reverts for negative amount
+    error INVALID_AMOUNT();
+
+    /// @notice Reverts for invalid amount of tokens sold
+    error INVALID_SOLD_AMOUNT();
 
     ///                                                          ///
     ///                         INITIALIZER                      ///
@@ -85,18 +90,48 @@ contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
 
     // y to pay
     // given # of tokens sold and # to buy, returns amount to pay
-    function xToY(int256 sold, int256 amount) public view virtual returns (int256) {
+    function costToBuy(int256 sold, int256 amount) public view virtual returns (int256) {
+        if (sold < 0) revert INVALID_SOLD_AMOUNT();
+        if (amount < 0) revert INVALID_AMOUNT();
+
         return pIntegral(sold + amount) - pIntegral(sold);
     }
 
-    // given amount to pay for tokens, returns # of tokens to sell - raw form
-    function yToX(int256 sold, int256 amount) public view virtual returns (int256) {}
+    // given # of tokens sold and # to sell, returns the payment for selling
+    function paymentToSell(int256 sold, int256 amount) public view virtual returns (int256) {
+        if (amount < 0) revert INVALID_AMOUNT();
+        int256 newSold = sold - amount;
+        if (newSold < 0) revert INVALID_SOLD_AMOUNT();
+
+        // Calculate the payment by finding the difference in the integral of the price function
+        // given the current total sold amount and the new total sold amount
+        return pIntegral(sold) - pIntegral(newSold);
+    }
 
     // given # of tokens sold, returns the integral of price p(x), or the total amount paid for the tokens sold
-    function pIntegral(int256 sold) internal view returns (int256) {}
+    function pIntegral(int256 sold) internal view returns (int256) {
+        // y(x) = (c * (ln(e^(mx + bm) + 1))) / m + d * x
 
-    // given total tokens sold, returns the price of the next token to be sold
-    function p(int256 sold) internal view returns (int256) {}
+        // Calculate m * (sold + b)
+        int256 m_times_x_plus_b = wadMul(curveSteepness, sold + supplyOffset);
+
+        // Calculate e ^ (m * (sold + b))
+        int256 exp_term = wadExp(m_times_x_plus_b);
+
+        // Calculate ln(exp(m * (sold + b)) + 1)
+        int256 ln_term = wadLn(exp_term + 1e18);
+
+        // Compute c * ln(...) / m
+        // Multiply before dividing to maintain precision
+        int256 numerator = wadMul(maxPriceIncrease, ln_term);
+        int256 term1 = wadDiv(numerator, curveSteepness);
+
+        // Compute d * x
+        int256 term2 = wadMul(basePrice, sold);
+
+        // Add the two terms together
+        return term1 + term2;
+    }
 
     ///                                                          ///
     ///                        VRGDA UPGRADE                     ///
