@@ -61,8 +61,6 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
         tcrFactory = _contractParams.tcrFactory;
         requiredRecipientType = _tcrParams.requiredRecipientType;
 
-        if (_tokenEmitterParams.curveSteepness <= 0) revert INVALID_CURVE_STEEPNESS();
-
         _setTokenEmitterParams(
             _tokenEmitterParams.curveSteepness,
             _tokenEmitterParams.basePrice,
