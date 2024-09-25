@@ -7,7 +7,7 @@ import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
 import { FlowRecipients } from "../library/FlowRecipients.sol";
-import { FlowTCRItem } from "./library/FlowTCRItem.sol";
+import { FlowTCRItems } from "./library/FlowTCRItems.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 /**
@@ -18,7 +18,7 @@ import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/in
  * decentralized voting and challenge process.
  */
 contract FlowTCR is GeneralizedTCR {
-    using FlowTCRItem for bytes;
+    using FlowTCRItems for bytes;
 
     // The Flow contract this TCR is managing
     IManagedFlow public flowContract;
