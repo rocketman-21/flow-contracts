@@ -140,7 +140,6 @@ contract TCRFactoryTest is Test {
 
         ITCRFactory.ERC20Params memory erc20Params = ITCRFactory.ERC20Params({
             initialOwner: governor,
-            minter: governor,
             name: "Test Token",
             symbol: "TST"
         });
@@ -186,7 +185,7 @@ contract TCRFactoryTest is Test {
         assertEq(erc20.symbol(), "TST", "ERC20 symbol not set correctly");
         assertEq(erc20.decimals(), 18, "ERC20 decimals not set correctly");
         assertEq(erc20.owner(), governor, "ERC20 owner not set correctly");
-        assertEq(erc20.minter(), governor, "ERC20 minter not set correctly");
+        assertEq(erc20.minter(), deployedContracts.tokenEmitterAddress, "ERC20 minter not set correctly");
         assertFalse(erc20.isMinterLocked(), "ERC20 minter should not be locked initially");
 
         // Check if ERC20VotesArbitrator is properly initialized
@@ -290,7 +289,6 @@ contract TCRFactoryTest is Test {
         assertEq(erc20Token.symbol(), erc20Params.symbol, "Token symbol not set correctly");
         // Assuming ERC20VotesMintable exposes minter and owner
         ERC20VotesMintable mintableToken = ERC20VotesMintable(address(erc20Token));
-        assertEq(mintableToken.minter(), erc20Params.minter, "Token minter not set correctly");
         assertEq(mintableToken.owner(), erc20Params.initialOwner, "Token initial owner not set correctly");
 
         // Check Arbitrator

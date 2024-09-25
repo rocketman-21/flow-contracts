@@ -112,7 +112,7 @@ contract FlowTCR is GeneralizedTCR {
                     requiredRecipientType: FlowTypes.RecipientType.None
                 }),
                 arbitrator.getArbitratorParamsForFactory(),
-                ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }), // TODO update all
+                ITCRFactory.ERC20Params({ initialOwner: owner(), name: metadata.title, symbol: "TCRT" }), // TODO update all
                 ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) }),
                 ITCRFactory.TokenEmitterParams({
                     initialOwner: owner(),

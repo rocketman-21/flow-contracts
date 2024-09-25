@@ -90,13 +90,11 @@ interface ITCRFactory {
     /**
      * @dev Parameters for initializing an ERC20 token
      * @param initialOwner The initial owner of the token
-     * @param minter The address with minting rights
      * @param name The name of the token
      * @param symbol The symbol of the token
      */
     struct ERC20Params {
         address initialOwner;
-        address minter;
         string name;
         string symbol;
     }
