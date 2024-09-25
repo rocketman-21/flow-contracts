@@ -3,11 +3,11 @@ pragma solidity ^0.8.27;
 
 import { GeneralizedTCR } from "./GeneralizedTCR.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
 import { FlowRecipients } from "../library/FlowRecipients.sol";
+import { FlowTCRItem } from "./library/FlowTCRItem.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 /**
@@ -18,11 +18,19 @@ import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/in
  * decentralized voting and challenge process.
  */
 contract FlowTCR is GeneralizedTCR {
+    using FlowTCRItem for bytes;
+
     // The Flow contract this TCR is managing
     IManagedFlow public flowContract;
 
     // The address of the TCR factory
     ITCRFactory public tcrFactory;
+
+    // The required FlowRecipient type for the TCR (optional)
+    FlowTypes.RecipientType public requiredRecipientType;
+
+    // Event emitted when the required recipient type is set
+    event RequiredRecipientTypeSet(FlowTypes.RecipientType requiredRecipientType);
 
     constructor() payable initializer {}
 
@@ -34,6 +42,7 @@ contract FlowTCR is GeneralizedTCR {
     function initialize(ContractParams memory _contractParams, TCRParams memory _tcrParams) public initializer {
         flowContract = _contractParams.flowContract;
         tcrFactory = _contractParams.tcrFactory;
+        requiredRecipientType = _tcrParams.requiredRecipientType;
         __GeneralizedTCR_init(
             _contractParams.initialOwner,
             _contractParams.arbitrator,
@@ -66,27 +75,8 @@ contract FlowTCR is GeneralizedTCR {
      * @param _item The data describing the item to be added.
      * @return valid True if the item data is valid, false otherwise.
      */
-    function _verifyItemData(bytes calldata _item) internal pure override returns (bool valid) {
-        (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType) = abi
-            .decode(_item, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
-
-        // Check if recipient is a valid address
-        if (recipient == address(0)) {
-            return false;
-        }
-
-        // Check if metadata is valid
-        FlowRecipients.validateMetadata(metadata);
-
-        // Check if recipientType is valid
-        if (
-            recipientType != FlowTypes.RecipientType.ExternalAccount &&
-            recipientType != FlowTypes.RecipientType.FlowContract
-        ) {
-            return false;
-        }
-
-        return true;
+    function _verifyItemData(bytes calldata _item) internal override returns (bool valid) {
+        return _item.verifyItemData(requiredRecipientType);
     }
 
     /**
@@ -95,10 +85,9 @@ contract FlowTCR is GeneralizedTCR {
      * @dev This function is called internally when an item is registered in the TCR
      */
     function _onItemRegistered(bytes32, bytes memory _item) internal override {
-        // Note: The unused variable has been removed
         // Decode the item data
-        (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType) = abi
-            .decode(_item, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
+        (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType) = _item
+            .decodeItemData();
 
         // Add the recipient to the Flow contract
         if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
@@ -119,16 +108,34 @@ contract FlowTCR is GeneralizedTCR {
                     submissionChallengeBaseDeposit: submissionChallengeBaseDeposit,
                     removalChallengeBaseDeposit: removalChallengeBaseDeposit,
                     challengePeriodDuration: challengePeriodDuration,
-                    stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier]
+                    stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier],
+                    requiredRecipientType: FlowTypes.RecipientType.None
                 }),
                 arbitrator.getArbitratorParamsForFactory(),
-                ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }), // TODO update all
-                ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) })
+                ITCRFactory.ERC20Params({ initialOwner: owner(), name: metadata.title, symbol: "TCRT" }), // TODO update all
+                ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) }),
+                ITCRFactory.TokenEmitterParams({
+                    initialOwner: owner(),
+                    curveSteepness: 1 * 10 ** 16,
+                    basePrice: 3 * 10 ** 15,
+                    maxPriceIncrease: 3 * 10 ** 16,
+                    supplyOffset: -1000
+                })
             );
 
             // set manager to new TCR and manager reward pool
             flowContract.setManager(deployedContracts.tcrAddress);
             flowContract.setManagerRewardPool(deployedContracts.rewardPoolAddress);
         }
+    }
+
+    /**
+     * @notice Sets the required recipient type for the TCR
+     * @param _requiredRecipientType The required recipient type
+     * @dev This function is called internally when the required recipient type is set
+     */
+    function setRequiredRecipientType(FlowTypes.RecipientType _requiredRecipientType) external onlyOwner {
+        requiredRecipientType = _requiredRecipientType;
+        emit RequiredRecipientTypeSet(_requiredRecipientType);
     }
 }

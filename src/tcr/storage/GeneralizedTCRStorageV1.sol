@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import { IArbitrator } from "../interfaces/IArbitrator.sol";
 import { IGeneralizedTCR } from "../interfaces/IGeneralizedTCR.sol";
 import { IArbitrable } from "../interfaces/IArbitrable.sol";
+import { FlowTypes } from "../../storage/FlowStorageV1.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
 import { ITCRFactory } from "../interfaces/ITCRFactory.sol";
@@ -62,6 +63,7 @@ contract GeneralizedTCRStorageV1 {
      * @param arbitratorExtraData Extra data for the arbitrator
      * @param registrationMetaEvidence MetaEvidence for registration requests
      * @param clearingMetaEvidence MetaEvidence for removal requests
+     * @param requiredRecipientType The required recipient type for the TCR
      */
     struct TCRParams {
         uint submissionBaseDeposit;
@@ -73,6 +75,7 @@ contract GeneralizedTCRStorageV1 {
         bytes arbitratorExtraData;
         string registrationMetaEvidence;
         string clearingMetaEvidence;
+        FlowTypes.RecipientType requiredRecipientType;
     }
 
     /**

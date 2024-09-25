@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 import { IArbitrable } from "./IArbitrable.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
 import { IArbitrator } from "./IArbitrator.sol";
 import { GeneralizedTCRStorageV1 } from "../storage/GeneralizedTCRStorageV1.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IGeneralizedTCR {
     /* Errors */
@@ -97,13 +97,15 @@ interface IGeneralizedTCR {
      * @param _roundIndex The index of the round
      * @param _disputed Whether the request is disputed
      * @param _resolved Whether the request is executed
+     * @param _itemStatus The new status of the item
      */
     event ItemStatusChange(
         bytes32 indexed _itemID,
         uint indexed _requestIndex,
         uint indexed _roundIndex,
         bool _disputed,
-        bool _resolved
+        bool _resolved,
+        Status _itemStatus
     );
 
     /**

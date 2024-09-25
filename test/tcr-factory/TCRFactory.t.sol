@@ -12,6 +12,9 @@ import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
+import { TokenEmitter } from "../../src/TokenEmitter.sol";
+import { ProtocolRewards } from "../../src/protocol-rewards/ProtocolRewards.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
@@ -29,12 +32,15 @@ contract TCRFactoryTest is Test {
     ERC20VotesMintable public erc20Impl;
     ERC20VotesArbitrator public arbitratorImpl;
     RewardPool public rewardPoolImpl;
+    TokenEmitter public tokenEmitterImpl;
+    ProtocolRewards public protocolRewardsImpl;
 
     // Addresses
     address public owner;
     address public governor;
     address public flowContract;
-
+    address public protocolFeeRecipient;
+    address public WETH;
     // Test Parameters
     uint256 public constant SUBMISSION_BASE_DEPOSIT = 100 ether;
     uint256 public constant REMOVAL_BASE_DEPOSIT = 100 ether;
@@ -61,12 +67,16 @@ contract TCRFactoryTest is Test {
         owner = address(this);
         governor = makeAddr("governor");
         flowContract = makeAddr("flowContract");
+        protocolFeeRecipient = makeAddr("protocolFeeRecipient");
+        WETH = makeAddr("WETH");
 
         // Deploy implementation contracts
+        protocolRewardsImpl = new ProtocolRewards();
         flowTCRImpl = new FlowTCR();
         erc20Impl = new ERC20VotesMintable();
         arbitratorImpl = new ERC20VotesArbitrator();
         rewardPoolImpl = new RewardPool();
+        tokenEmitterImpl = new TokenEmitter(address(protocolRewardsImpl), protocolFeeRecipient);
 
         // Deploy TCRFactory
         TCRFactory tcrFactoryImpl = new TCRFactory();
@@ -74,13 +84,15 @@ contract TCRFactoryTest is Test {
         tcrFactory = TCRFactory(address(proxy));
 
         // Initialize TCRFactory
-        tcrFactory.initialize(
-            owner,
-            address(flowTCRImpl),
-            address(arbitratorImpl),
-            address(erc20Impl),
-            address(rewardPoolImpl)
-        );
+        ITCRFactory(address(tcrFactory)).initialize({
+            initialOwner: owner,
+            flowTCRImplementation: address(flowTCRImpl),
+            arbitratorImplementation: address(arbitratorImpl),
+            erc20Implementation: address(erc20Impl),
+            rewardPoolImplementation: address(rewardPoolImpl),
+            tokenEmitterImplementation: address(tokenEmitterImpl),
+            weth: WETH
+        });
 
         // Setup Superfluid
         vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
@@ -113,7 +125,8 @@ contract TCRFactoryTest is Test {
             submissionChallengeBaseDeposit: SUBMISSION_CHALLENGE_BASE_DEPOSIT,
             removalChallengeBaseDeposit: REMOVAL_CHALLENGE_BASE_DEPOSIT,
             challengePeriodDuration: CHALLENGE_PERIOD,
-            stakeMultipliers: [STAKE_MULTIPLIER, STAKE_MULTIPLIER, STAKE_MULTIPLIER]
+            stakeMultipliers: [STAKE_MULTIPLIER, STAKE_MULTIPLIER, STAKE_MULTIPLIER],
+            requiredRecipientType: FlowTypes.RecipientType.None
         });
 
         ITCRFactory.ArbitratorParams memory arbitratorParams = ITCRFactory.ArbitratorParams({
@@ -127,7 +140,6 @@ contract TCRFactoryTest is Test {
 
         ITCRFactory.ERC20Params memory erc20Params = ITCRFactory.ERC20Params({
             initialOwner: governor,
-            minter: governor,
             name: "Test Token",
             symbol: "TST"
         });
@@ -136,12 +148,21 @@ contract TCRFactoryTest is Test {
             superToken: ISuperToken(address(superToken))
         });
 
+        ITCRFactory.TokenEmitterParams memory tokenEmitterParams = ITCRFactory.TokenEmitterParams({
+            initialOwner: governor,
+            curveSteepness: int256(1e18) / 100,
+            basePrice: int256(1e18) / 3000,
+            maxPriceIncrease: int256(1e18) / 300,
+            supplyOffset: int256(1e18) * 1000
+        });
+
         // Deploy FlowTCR ecosystem
         ITCRFactory.DeployedContracts memory deployedContracts = tcrFactory.deployFlowTCR(
             flowParams,
             arbitratorParams,
             erc20Params,
-            rewardPoolParams
+            rewardPoolParams,
+            tokenEmitterParams
         );
 
         // Verify deployment
@@ -164,7 +185,7 @@ contract TCRFactoryTest is Test {
         assertEq(erc20.symbol(), "TST", "ERC20 symbol not set correctly");
         assertEq(erc20.decimals(), 18, "ERC20 decimals not set correctly");
         assertEq(erc20.owner(), governor, "ERC20 owner not set correctly");
-        assertEq(erc20.minter(), governor, "ERC20 minter not set correctly");
+        assertEq(erc20.minter(), deployedContracts.tokenEmitterAddress, "ERC20 minter not set correctly");
         assertFalse(erc20.isMinterLocked(), "ERC20 minter should not be locked initially");
 
         // Check if ERC20VotesArbitrator is properly initialized
@@ -268,7 +289,6 @@ contract TCRFactoryTest is Test {
         assertEq(erc20Token.symbol(), erc20Params.symbol, "Token symbol not set correctly");
         // Assuming ERC20VotesMintable exposes minter and owner
         ERC20VotesMintable mintableToken = ERC20VotesMintable(address(erc20Token));
-        assertEq(mintableToken.minter(), erc20Params.minter, "Token minter not set correctly");
         assertEq(mintableToken.owner(), erc20Params.initialOwner, "Token initial owner not set correctly");
 
         // Check Arbitrator

@@ -9,14 +9,34 @@ import { IERC20VotesMintable } from "./IERC20VotesMintable.sol";
  */
 interface ITokenEmitter {
     /**
+     * @dev Struct for the protocol reward addresses
+     * @param builder The address of the builder
+     * @param purchaseReferral The address of the purchase referral
+     */
+    struct ProtocolRewardAddresses {
+        address builder;
+        address purchaseReferral;
+    }
+
+    /**
      * @dev Error thrown when the slippage exceeds user's specified limits
      */
     error SLIPPAGE_EXCEEDED();
 
     /**
+     * @dev Error thrown when the address is zero
+     */
+    error ADDRESS_ZERO();
+
+    /**
      * @dev Error thrown when the user does not have enough funds to buy tokens
      */
     error INSUFFICIENT_FUNDS();
+
+    /**
+     * @dev Error thrown when the user does not have enough balance to sell tokens
+     */
+    error INSUFFICIENT_TOKEN_BALANCE();
 
     /**
      * @dev Error thrown when the contract does not have enough funds to buy back tokens
@@ -36,10 +56,18 @@ interface ITokenEmitter {
     /**
      * @dev Event emitted when tokens are bought
      * @param buyer The address of the token buyer
+     * @param user The address of the user who received the tokens
      * @param amount The amount of tokens bought
      * @param cost The cost paid for the tokens
+     * @param protocolRewards The amount of protocol rewards paid
      */
-    event TokensBought(address indexed buyer, uint256 amount, uint256 cost);
+    event TokensBought(
+        address indexed buyer,
+        address indexed user,
+        uint256 amount,
+        uint256 cost,
+        uint256 protocolRewards
+    );
 
     /**
      * @dev Event emitted when tokens are sold
