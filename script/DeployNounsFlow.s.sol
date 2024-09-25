@@ -177,6 +177,12 @@ contract DeployNounsFlow is DeployScript {
                 registrationMetaEvidence: "",
                 clearingMetaEvidence: "",
                 requiredRecipientType: FlowTypes.RecipientType.FlowContract // For the first top level pool, we require a FlowContract recipient
+            }),
+            tokenEmitterParams: IFlowTCR.TokenEmitterParams({
+                curveSteepness: curveSteepness,
+                basePrice: basePrice,
+                maxPriceIncrease: maxPriceIncrease,
+                supplyOffset: supplyOffset
             })
         });
 

@@ -154,6 +154,12 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
                 registrationMetaEvidence: params.registrationMetaEvidence,
                 clearingMetaEvidence: params.clearingMetaEvidence,
                 requiredRecipientType: params.requiredRecipientType
+            }),
+            IFlowTCR.TokenEmitterParams({
+                curveSteepness: tokenEmitterParams.curveSteepness,
+                basePrice: tokenEmitterParams.basePrice,
+                maxPriceIncrease: tokenEmitterParams.maxPriceIncrease,
+                supplyOffset: tokenEmitterParams.supplyOffset
             })
         );
 

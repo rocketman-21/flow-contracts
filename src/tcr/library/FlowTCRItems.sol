@@ -5,7 +5,7 @@ import { FlowTypes } from "../../storage/FlowStorageV1.sol";
 import { IFlow } from "../../interfaces/IFlow.sol";
 import { FlowRecipients } from "../../library/FlowRecipients.sol";
 
-library FlowTCRItem {
+library FlowTCRItems {
     /**
      * @dev Verifies the data of an item before it's added to the registry.
      * @param _item The data describing the item to be added.

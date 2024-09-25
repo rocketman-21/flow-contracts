@@ -4,10 +4,11 @@ pragma solidity ^0.8.27;
 import { GeneralizedTCR } from "./GeneralizedTCR.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
 import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
+import { IFlowTCR } from "./interfaces/IGeneralizedTCR.sol";
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
 import { FlowRecipients } from "../library/FlowRecipients.sol";
-import { FlowTCRItem } from "./library/FlowTCRItem.sol";
+import { FlowTCRItems } from "./library/FlowTCRItems.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 /**
@@ -17,8 +18,8 @@ import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/in
  * It allows for the curation of recipients in the Flow ecosystem through a
  * decentralized voting and challenge process.
  */
-contract FlowTCR is GeneralizedTCR {
-    using FlowTCRItem for bytes;
+contract FlowTCR is GeneralizedTCR, IFlowTCR {
+    using FlowTCRItems for bytes;
 
     // The Flow contract this TCR is managing
     IManagedFlow public flowContract;
@@ -28,6 +29,18 @@ contract FlowTCR is GeneralizedTCR {
 
     // The required FlowRecipient type for the TCR (optional)
     FlowTypes.RecipientType public requiredRecipientType;
+
+    // TokenEmitter parameters
+    int256 public curveSteepness;
+    int256 public basePrice;
+    int256 public maxPriceIncrease;
+    int256 public supplyOffset;
+
+    // Error emitted when the curve steepness is invalid
+    error INVALID_CURVE_STEEPNESS();
+
+    // Event emitted when TokenEmitter parameters are set
+    event TokenEmitterParamsSet(int256 curveSteepness, int256 basePrice, int256 maxPriceIncrease, int256 supplyOffset);
 
     // Event emitted when the required recipient type is set
     event RequiredRecipientTypeSet(FlowTypes.RecipientType requiredRecipientType);
@@ -39,10 +52,24 @@ contract FlowTCR is GeneralizedTCR {
      * @param _contractParams Struct containing address parameters and interfaces
      * @param _tcrParams Struct containing TCR parameters, including deposits, durations, and evidence
      */
-    function initialize(ContractParams memory _contractParams, TCRParams memory _tcrParams) public initializer {
+    function initialize(
+        ContractParams memory _contractParams,
+        TCRParams memory _tcrParams,
+        TokenEmitterParams memory _tokenEmitterParams
+    ) public initializer {
         flowContract = _contractParams.flowContract;
         tcrFactory = _contractParams.tcrFactory;
         requiredRecipientType = _tcrParams.requiredRecipientType;
+
+        if (_tokenEmitterParams.curveSteepness <= 0) revert INVALID_CURVE_STEEPNESS();
+
+        _setTokenEmitterParams(
+            _tokenEmitterParams.curveSteepness,
+            _tokenEmitterParams.basePrice,
+            _tokenEmitterParams.maxPriceIncrease,
+            _tokenEmitterParams.supplyOffset
+        );
+
         __GeneralizedTCR_init(
             _contractParams.initialOwner,
             _contractParams.arbitrator,
@@ -116,10 +143,10 @@ contract FlowTCR is GeneralizedTCR {
                 ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) }),
                 ITCRFactory.TokenEmitterParams({
                     initialOwner: owner(),
-                    curveSteepness: 1 * 10 ** 16,
-                    basePrice: 3 * 10 ** 15,
-                    maxPriceIncrease: 3 * 10 ** 16,
-                    supplyOffset: -1000
+                    curveSteepness: curveSteepness,
+                    basePrice: basePrice,
+                    maxPriceIncrease: maxPriceIncrease,
+                    supplyOffset: supplyOffset
                 })
             );
 
@@ -137,5 +164,44 @@ contract FlowTCR is GeneralizedTCR {
     function setRequiredRecipientType(FlowTypes.RecipientType _requiredRecipientType) external onlyOwner {
         requiredRecipientType = _requiredRecipientType;
         emit RequiredRecipientTypeSet(_requiredRecipientType);
+    }
+
+    /**
+     * @notice Sets the TokenEmitter parameters
+     * @param _curveSteepness The steepness of the curve
+     * @param _basePrice The base price for a token if sold on pace
+     * @param _maxPriceIncrease The maximum price increase for a token if sold on pace
+     * @param _supplyOffset The supply offset for a token if sold on pace
+     */
+    function setTokenEmitterParams(
+        int256 _curveSteepness,
+        int256 _basePrice,
+        int256 _maxPriceIncrease,
+        int256 _supplyOffset
+    ) external onlyOwner {
+        _setTokenEmitterParams(_curveSteepness, _basePrice, _maxPriceIncrease, _supplyOffset);
+    }
+
+    /**
+     * @notice Internal function to set the TokenEmitter parameters
+     * @param _curveSteepness The steepness of the curve
+     * @param _basePrice The base price for a token if sold on pace
+     * @param _maxPriceIncrease The maximum price increase for a token if sold on pace
+     * @param _supplyOffset The supply offset for a token if sold on pace
+     */
+    function _setTokenEmitterParams(
+        int256 _curveSteepness,
+        int256 _basePrice,
+        int256 _maxPriceIncrease,
+        int256 _supplyOffset
+    ) internal {
+        if (_curveSteepness <= 0) revert INVALID_CURVE_STEEPNESS();
+
+        curveSteepness = _curveSteepness;
+        basePrice = _basePrice;
+        maxPriceIncrease = _maxPriceIncrease;
+        supplyOffset = _supplyOffset;
+
+        emit TokenEmitterParamsSet(_curveSteepness, _basePrice, _maxPriceIncrease, _supplyOffset);
     }
 }

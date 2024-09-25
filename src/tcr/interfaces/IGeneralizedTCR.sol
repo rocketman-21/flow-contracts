@@ -172,6 +172,14 @@ interface IGeneralizedTCR {
 }
 
 interface IFlowTCR is IGeneralizedTCR {
+    // Struct for TokenEmitter parameters
+    struct TokenEmitterParams {
+        int256 curveSteepness;
+        int256 basePrice;
+        int256 maxPriceIncrease;
+        int256 supplyOffset;
+    }
+
     /**
      * @dev Initializes the FlowTCR contract with necessary parameters and links it to a Flow contract.
      * @param contractParams Struct containing address parameters and interfaces
@@ -179,6 +187,7 @@ interface IFlowTCR is IGeneralizedTCR {
      */
     function initialize(
         GeneralizedTCRStorageV1.ContractParams memory contractParams,
-        GeneralizedTCRStorageV1.TCRParams memory tcrParams
+        GeneralizedTCRStorageV1.TCRParams memory tcrParams,
+        TokenEmitterParams memory tokenEmitterParams
     ) external;
 }

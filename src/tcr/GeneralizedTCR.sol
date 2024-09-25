@@ -13,6 +13,7 @@ import { IEvidence } from "./interfaces/IEvidence.sol";
 import { IGeneralizedTCR } from "./interfaces/IGeneralizedTCR.sol";
 import { CappedMath } from "./utils/CappedMath.sol";
 import { GeneralizedTCRStorageV1 } from "./storage/GeneralizedTCRStorageV1.sol";
+import { TCRRounds } from "./library/TCRRounds.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -35,6 +36,7 @@ abstract contract GeneralizedTCR is
 {
     using CappedMath for uint256;
     using SafeERC20 for IERC20;
+    using TCRRounds for GeneralizedTCRStorageV1.Round;
 
     /**
      *  @dev Initialize the arbitrable curated registry.
@@ -280,33 +282,7 @@ abstract contract GeneralizedTCR is
         Round storage round = request.rounds[_round];
         if (!request.resolved) revert REQUEST_MUST_BE_RESOLVED();
 
-        uint reward;
-        if (!round.hasPaid[uint(Party.Requester)] || !round.hasPaid[uint(Party.Challenger)]) {
-            // Reimburse if not enough fees were raised to appeal the ruling.
-            reward =
-                round.contributions[_beneficiary][uint(Party.Requester)] +
-                round.contributions[_beneficiary][uint(Party.Challenger)];
-        } else if (request.ruling == Party.None) {
-            // Reimburse unspent fees proportionally if there is no winner or loser.
-            uint rewardRequester = round.amountPaid[uint(Party.Requester)] > 0
-                ? (round.contributions[_beneficiary][uint(Party.Requester)] * round.feeRewards) /
-                    (round.amountPaid[uint(Party.Challenger)] + round.amountPaid[uint(Party.Requester)])
-                : 0;
-            uint rewardChallenger = round.amountPaid[uint(Party.Challenger)] > 0
-                ? (round.contributions[_beneficiary][uint(Party.Challenger)] * round.feeRewards) /
-                    (round.amountPaid[uint(Party.Challenger)] + round.amountPaid[uint(Party.Requester)])
-                : 0;
-
-            reward = rewardRequester + rewardChallenger;
-        } else {
-            // Reward the winner.
-            reward = round.amountPaid[uint(request.ruling)] > 0
-                ? (round.contributions[_beneficiary][uint(request.ruling)] * round.feeRewards) /
-                    round.amountPaid[uint(request.ruling)]
-                : 0;
-        }
-        round.contributions[_beneficiary][uint(Party.Requester)] = 0;
-        round.contributions[_beneficiary][uint(Party.Challenger)] = 0;
+        uint reward = round.calculateAndWithdrawRewards(request.ruling, _beneficiary);
 
         // send ERC20 tokens to beneficiary
         erc20.safeTransfer(_beneficiary, reward);
@@ -523,22 +499,6 @@ abstract contract GeneralizedTCR is
         emit RequestEvidenceGroupID(itemID, item.requests.length - 1, evidenceGroupID);
     }
 
-    /** @dev Returns the contribution value and remainder from available ERC20 tokens and required amount.
-     *  @param _available The amount of ERC20 tokens available for the contribution.
-     *  @param _requiredAmount The amount of ERC20 tokens required for the contribution.
-     *  @return taken The amount of ERC20 tokens taken.
-     *  @return remainder The amount of ERC20 tokens left from the contribution.
-     */
-    function _calculateContribution(
-        uint _available,
-        uint _requiredAmount
-    ) internal pure returns (uint taken, uint remainder) {
-        // Take whatever is available, return 0 as leftover ERC20 tokens.
-        if (_requiredAmount > _available) return (_available, 0);
-        // Take the required amount, return the remaining ERC20 tokens.
-        else return (_requiredAmount, _available - _requiredAmount);
-    }
-
     /** @dev Make a fee contribution.
      *  @param _round The round to contribute.
      *  @param _side The side for which to contribute.
@@ -555,15 +515,7 @@ abstract contract GeneralizedTCR is
         uint _totalRequired
     ) internal returns (uint) {
         // Take up to the amount necessary to fund the current round at the current costs.
-        uint contribution; // Amount contributed.
-        uint remainingERC20; // Remaining ERC20 tokens to send back.
-        (contribution, remainingERC20) = _calculateContribution(
-            _amount,
-            _totalRequired.subCap(_round.amountPaid[uint(_side)])
-        );
-        _round.contributions[_contributor][uint(_side)] += contribution;
-        _round.amountPaid[uint(_side)] += contribution;
-        _round.feeRewards += contribution;
+        uint contribution = _round.contribute(_side, _contributor, _amount, _totalRequired);
 
         // deposit ERC20 tokens to contract
         // Sender must approve this contract to transfer ERC20 tokens on their behalf.
