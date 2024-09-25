@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import { GeneralizedTCR } from "./GeneralizedTCR.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
@@ -114,7 +113,14 @@ contract FlowTCR is GeneralizedTCR {
                 }),
                 arbitrator.getArbitratorParamsForFactory(),
                 ITCRFactory.ERC20Params({ initialOwner: owner(), minter: owner(), name: "TCR Test", symbol: "TCRT" }), // TODO update all
-                ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) })
+                ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) }),
+                ITCRFactory.TokenEmitterParams({
+                    initialOwner: owner(),
+                    curveSteepness: 1 * 10 ** 16,
+                    basePrice: 3 * 10 ** 15,
+                    maxPriceIncrease: 3 * 10 ** 16,
+                    supplyOffset: -1000
+                })
             );
 
             // set manager to new TCR and manager reward pool

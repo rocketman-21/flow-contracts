@@ -13,6 +13,7 @@ import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/acc
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
 import { IRewardPool } from "../interfaces/IRewardPool.sol";
+import { ITokenEmitter } from "../interfaces/ITokenEmitter.sol";
 import { GeneralizedTCRStorageV1 } from "./storage/GeneralizedTCRStorageV1.sol";
 
 /**
@@ -29,6 +30,10 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
     address public erc20Implementation;
     /// @notice The address of the RewardPool implementation contract
     address public rewardPoolImplementation;
+    /// @notice The address of the TokenEmitter implementation contract
+    address public tokenEmitterImplementation;
+    /// @notice The address of the WETH token
+    address public WETH;
 
     /// @dev Initializer function for the contract
     constructor() initializer {}
@@ -41,13 +46,17 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
      * @param arbitratorImplementation_ The address of the ERC20VotesArbitrator implementation contract
      * @param erc20Implementation_ The address of the ERC20VotesMintable implementation contract
      * @param rewardPoolImplementation_ The address of the RewardPool implementation contract
+     * @param tokenEmitterImplementation_ The address of the TokenEmitter implementation contract
+     * @param weth_ The address of the WETH token
      */
     function initialize(
         address initialOwner,
         address flowTCRImplementation_,
         address arbitratorImplementation_,
         address erc20Implementation_,
-        address rewardPoolImplementation_
+        address rewardPoolImplementation_,
+        address tokenEmitterImplementation_,
+        address weth_
     ) public initializer {
         __Ownable2Step_init();
         __UUPSUpgradeable_init();
@@ -57,6 +66,8 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         arbitratorImplementation = arbitratorImplementation_;
         erc20Implementation = erc20Implementation_;
         rewardPoolImplementation = rewardPoolImplementation_;
+        tokenEmitterImplementation = tokenEmitterImplementation_;
+        WETH = weth_;
     }
 
     /**
@@ -71,7 +82,8 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         FlowTCRParams memory params,
         ArbitratorParams memory arbitratorParams,
         ERC20Params memory erc20Params,
-        RewardPoolParams memory rewardPoolParams
+        RewardPoolParams memory rewardPoolParams,
+        TokenEmitterParams memory tokenEmitterParams
     ) external returns (DeployedContracts memory deployedContracts) {
         // Deploy FlowTCR proxy
         address tcrAddress = address(new ERC1967Proxy(flowTCRImplementation, ""));
@@ -85,13 +97,27 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         // Deploy RewardPool proxy
         address rewardPoolAddress = address(new ERC1967Proxy(rewardPoolImplementation, ""));
 
+        // Deploy TokenEmitter proxy
+        address tokenEmitterAddress = address(new ERC1967Proxy(tokenEmitterImplementation, ""));
+
         // Initialize the ERC20VotesMintable token
         IERC20VotesMintable(erc20Address).initialize({
             initialOwner: erc20Params.initialOwner,
-            minter: erc20Params.minter,
+            minter: tokenEmitterAddress,
             name: erc20Params.name,
             symbol: erc20Params.symbol,
             rewardPool: rewardPoolAddress
+        });
+
+        // Initialize the TokenEmitter
+        ITokenEmitter(tokenEmitterAddress).initialize({
+            weth: WETH,
+            erc20: erc20Address,
+            basePrice: tokenEmitterParams.basePrice,
+            supplyOffset: tokenEmitterParams.supplyOffset,
+            initialOwner: tokenEmitterParams.initialOwner,
+            curveSteepness: tokenEmitterParams.curveSteepness,
+            maxPriceIncrease: tokenEmitterParams.maxPriceIncrease
         });
 
         // Initialize the arbitrator
@@ -144,6 +170,7 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             arbitratorAddress,
             erc20Address,
             rewardPoolAddress,
+            tokenEmitterAddress,
             address(params.flowContract)
         );
 
@@ -151,7 +178,8 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             tcrAddress: tcrAddress,
             arbitratorAddress: arbitratorAddress,
             erc20Address: erc20Address,
-            rewardPoolAddress: rewardPoolAddress
+            rewardPoolAddress: rewardPoolAddress,
+            tokenEmitterAddress: tokenEmitterAddress
         });
     }
 
@@ -164,6 +192,17 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         address oldImplementation = rewardPoolImplementation;
         rewardPoolImplementation = newImplementation;
         emit RewardPoolImplementationUpdated(oldImplementation, newImplementation);
+    }
+
+    /**
+     * @notice Updates the TokenEmitter implementation address
+     * @dev Only callable by the owner
+     * @param newImplementation The new implementation address
+     */
+    function updateTokenEmitterImplementation(address newImplementation) external onlyOwner {
+        address oldImplementation = tokenEmitterImplementation;
+        tokenEmitterImplementation = newImplementation;
+        emit TokenEmitterImplementationUpdated(oldImplementation, newImplementation);
     }
 
     /**

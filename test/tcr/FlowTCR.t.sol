@@ -16,8 +16,10 @@ import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { ERC721FlowTest } from "../erc721-flow/ERC721Flow.t.sol";
 import { TCRFactory } from "../../src/tcr/TCRFactory.sol";
+import { TokenEmitter } from "../../src/TokenEmitter.sol";
 import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
+import { ProtocolRewards } from "../../src/protocol-rewards/ProtocolRewards.sol";
 import { GeneralizedTCRStorageV1 } from "../../src/tcr/storage/GeneralizedTCRStorageV1.sol";
 
 contract FlowTCRTest is ERC721FlowTest {
@@ -26,6 +28,8 @@ contract FlowTCRTest is ERC721FlowTest {
     ERC20VotesMintable public erc20Token;
     ERC20VotesArbitrator public arbitrator;
     RewardPool public rewardPool;
+    TokenEmitter public tokenEmitter;
+    ProtocolRewards public protocolRewards;
 
     // Addresses
     address public owner;
@@ -34,6 +38,8 @@ contract FlowTCRTest is ERC721FlowTest {
     address public challenger;
     address public swingVoter;
     address public recipient;
+    address public WETH;
+    address public protocolFeeRecipient;
 
     // Test Parameters
     uint256 public constant SUBMISSION_BASE_DEPOSIT = 100 ether;
@@ -73,14 +79,20 @@ contract FlowTCRTest is ERC721FlowTest {
         owner = makeAddr("owner");
         swingVoter = makeAddr("swingVoter");
         recipient = makeAddr("recipient");
+        WETH = makeAddr("weth");
+        protocolFeeRecipient = makeAddr("protocolFeeRecipient");
+
+        protocolRewards = new ProtocolRewards();
 
         address rewardPoolImpl = address(new RewardPool());
+        address tokenEmitterImpl = address(new TokenEmitter(address(protocolRewards), protocolFeeRecipient));
         address flowTCRImpl = address(new FlowTCR());
         address flowTCRProxy = address(new ERC1967Proxy(flowTCRImpl, ""));
         address arbitratorImpl = address(new ERC20VotesArbitrator());
         address arbitratorProxy = address(new ERC1967Proxy(arbitratorImpl, ""));
         address erc20TokenImpl = address(new ERC20VotesMintable());
         address erc20TokenProxy = address(new ERC1967Proxy(erc20TokenImpl, ""));
+        address tokenEmitterProxy = address(new ERC1967Proxy(tokenEmitterImpl, ""));
 
         address tcrFactoryImpl = address(new TCRFactory());
         address tcrFactoryProxy = address(new ERC1967Proxy(tcrFactoryImpl, ""));
@@ -92,7 +104,9 @@ contract FlowTCRTest is ERC721FlowTest {
             flowTCRImplementation: flowTCRImpl,
             arbitratorImplementation: arbitratorImpl,
             erc20Implementation: erc20TokenImpl,
-            rewardPoolImplementation: rewardPoolImpl
+            rewardPoolImplementation: rewardPoolImpl,
+            tokenEmitterImplementation: tokenEmitterImpl,
+            weth: WETH
         });
 
         ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowTypes.RecipientType.ExternalAccount);

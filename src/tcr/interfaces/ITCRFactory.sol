@@ -12,6 +12,22 @@ import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/in
  */
 interface ITCRFactory {
     /**
+     * @dev Parameters for initializing a TokenEmitter
+     * @param initialOwner The address of the initial owner of the contract
+     * @param curveSteepness The steepness of the bonding curve
+     * @param basePrice The base price for token emission
+     * @param maxPriceIncrease The maximum price increase for token emission
+     * @param supplyOffset The supply offset for the bonding curve
+     */
+    struct TokenEmitterParams {
+        address initialOwner;
+        int256 curveSteepness;
+        int256 basePrice;
+        int256 maxPriceIncrease;
+        int256 supplyOffset;
+    }
+
+    /**
      * @dev Parameters for initializing a FlowTCR
      * @param flowContract The address of the Flow contract this TCR will manage
      * @param arbitratorExtraData Extra data for the arbitrator
@@ -68,6 +84,7 @@ interface ITCRFactory {
         address arbitratorAddress;
         address erc20Address;
         address rewardPoolAddress;
+        address tokenEmitterAddress;
     }
 
     /**
@@ -99,6 +116,7 @@ interface ITCRFactory {
         address indexed arbitratorProxy,
         address erc20Proxy,
         address rewardPoolProxy,
+        address tokenEmitterProxy,
         address flowProxy
     );
 
@@ -113,6 +131,9 @@ interface ITCRFactory {
 
     /// @notice Emitted when the ERC20VotesMintable implementation address is updated
     event ERC20ImplementationUpdated(address oldImplementation, address newImplementation);
+
+    /// @notice Emitted when the TokenEmitter implementation address is updated
+    event TokenEmitterImplementationUpdated(address oldImplementation, address newImplementation);
 
     /**
      * @dev Returns the address of the FlowTCR implementation
@@ -133,18 +154,26 @@ interface ITCRFactory {
     function erc20Implementation() external view returns (address);
 
     /**
+     * @dev Returns the address of the TokenEmitter implementation
+     * @return The address of the TokenEmitter implementation
+     */
+    function tokenEmitterImplementation() external view returns (address);
+
+    /**
      * @dev Deploys a new FlowTCR ecosystem with associated contracts
      * @param params Parameters for initializing the FlowTCR contract
      * @param arbitratorParams Parameters for initializing the Arbitrator contract
      * @param erc20Params Parameters for initializing the ERC20 contract
      * @param rewardPoolParams Parameters for initializing the RewardPool contract
+     * @param tokenEmitterParams Parameters for initializing the TokenEmitter contract
      * @return deployedContracts The addresses of the deployed contracts
      */
     function deployFlowTCR(
         FlowTCRParams memory params,
         ArbitratorParams memory arbitratorParams,
         ERC20Params memory erc20Params,
-        RewardPoolParams memory rewardPoolParams
+        RewardPoolParams memory rewardPoolParams,
+        TokenEmitterParams memory tokenEmitterParams
     ) external returns (DeployedContracts memory deployedContracts);
 
     /**
@@ -154,12 +183,16 @@ interface ITCRFactory {
      * @param arbitratorImplementation The address of the Arbitrator implementation contract
      * @param erc20Implementation The address of the ERC20 implementation contract
      * @param rewardPoolImplementation The address of the RewardPool implementation contract
+     * @param tokenEmitterImplementation The address of the TokenEmitter implementation contract
+     * @param weth The address of the WETH token
      */
     function initialize(
         address initialOwner,
         address flowTCRImplementation,
         address arbitratorImplementation,
         address erc20Implementation,
-        address rewardPoolImplementation
+        address rewardPoolImplementation,
+        address tokenEmitterImplementation,
+        address weth
     ) external;
 }

@@ -215,7 +215,9 @@ contract DeployNounsFlow is DeployScript {
             flowTCRImplementation: flowTCRImplementation,
             arbitratorImplementation: erc20ArbitratorImplementation,
             erc20Implementation: erc20MintableImplementation,
-            rewardPoolImplementation: rewardPoolImplementation
+            rewardPoolImplementation: rewardPoolImplementation,
+            tokenEmitterImplementation: tokenEmitterImplementation,
+            weth: WETH
         });
     }
 
