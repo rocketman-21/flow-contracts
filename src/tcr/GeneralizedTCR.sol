@@ -330,7 +330,7 @@ abstract contract GeneralizedTCR is
         } else revert MUST_BE_A_REQUEST();
 
         request.resolved = true;
-        emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1, false, true);
+        emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1, false, true, item.status);
 
         _withdrawFeesAndRewards(request.parties[uint(Party.Requester)], _itemID, item.requests.length - 1, 0); // Automatically withdraw for the requester.
     }
@@ -518,7 +518,7 @@ abstract contract GeneralizedTCR is
         if (round.amountPaid[uint(Party.Requester)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Requester)] = true;
 
-        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, false, false);
+        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, false, false, item.status);
         emit RequestSubmitted(itemID, item.requests.length - 1, item.status);
         emit RequestEvidenceGroupID(itemID, item.requests.length - 1, evidenceGroupID);
     }
@@ -600,7 +600,7 @@ abstract contract GeneralizedTCR is
         request.resolved = true;
         request.ruling = Party(_ruling);
 
-        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, true, true);
+        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, true, true, item.status);
 
         // Automatically withdraw first deposits and reimbursements (first round only).
         if (winner == Party.None) {

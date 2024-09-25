@@ -110,6 +110,7 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
         ProtocolRewardAddresses calldata protocolRewardsRecipients
     ) public payable nonReentrant {
         if (user == address(0)) revert INVALID_ADDRESS_ZERO();
+        if (amount == 0) revert INVALID_AMOUNT();
 
         int256 costInt = buyTokenQuote(amount);
         if (costInt < 0) revert INVALID_COST();
@@ -130,7 +131,7 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
 
         // Share protocol rewards
         _handleRewardsAndGetValueToSend(
-            totalPayment,
+            costForTokens, // pass in cost before rewards
             protocolRewardsRecipients.builder,
             protocolRewardsRecipients.purchaseReferral
         );
@@ -149,6 +150,7 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
     function sellToken(uint256 amount, uint256 minPayment) public nonReentrant {
         int256 paymentInt = sellTokenQuote(amount);
         if (paymentInt < 0) revert INVALID_PAYMENT();
+        if (amount == 0) revert INVALID_AMOUNT();
         uint256 payment = uint256(paymentInt);
 
         if (payment < minPayment) revert SLIPPAGE_EXCEEDED();
