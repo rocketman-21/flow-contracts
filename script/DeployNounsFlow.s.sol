@@ -118,7 +118,7 @@ contract DeployNounsFlow is DeployScript {
                 title: "Nouns Flow",
                 description: "An MVP of the Nouns Flow. Built by rocketman21.eth and wojci.eth",
                 image: "ipfs://QmfZMtW2vDcdfH3TZdNAbMNm4Z1y16QHjuFwf8ff2NANAt",
-                tagline: "Be nounish. Get rewarded.",
+                tagline: "Earn a salary with Nouns.",
                 url: "https://flows.wtf"
             })
         });
