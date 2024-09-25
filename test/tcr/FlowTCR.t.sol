@@ -14,6 +14,7 @@ import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy
 import { ArbitratorStorageV1 } from "../../src/tcr/storage/ArbitratorStorageV1.sol";
 import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
+import { IFlowTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
 import { ERC721FlowTest } from "../erc721-flow/ERC721Flow.t.sol";
 import { TCRFactory } from "../../src/tcr/TCRFactory.sol";
 import { TokenEmitter } from "../../src/TokenEmitter.sol";
@@ -132,6 +133,12 @@ contract FlowTCRTest is ERC721FlowTest {
                 registrationMetaEvidence: REGISTRATION_META_EVIDENCE,
                 clearingMetaEvidence: CLEARING_META_EVIDENCE,
                 requiredRecipientType: FlowTypes.RecipientType.None
+            }),
+            IFlowTCR.TokenEmitterParams({
+                curveSteepness: int256(1e18) / 100,
+                basePrice: int256(1e18) / 3000,
+                maxPriceIncrease: int256(1e18) / 300,
+                supplyOffset: int256(1e18) * 1000
             })
         );
 
