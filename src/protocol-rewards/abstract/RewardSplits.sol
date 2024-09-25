@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import { IProtocolRewards } from "./interfaces/IProtocolRewards.sol";
-import { IRewardSplits } from "./interfaces/IRewardSplits.sol";
+import { IProtocolRewards } from "../interfaces/IProtocolRewards.sol";
+import { IRewardSplits } from "../interfaces/IRewardSplits.sol";
 
 /**
  * @title RewardSplits

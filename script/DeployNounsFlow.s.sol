@@ -22,6 +22,8 @@ import { IRewardPool } from "../src/interfaces/IRewardPool.sol";
 import { IERC20VotesMintable } from "../src/interfaces/IERC20VotesMintable.sol";
 import { ERC20VotesArbitrator } from "../src/tcr/ERC20VotesArbitrator.sol";
 import { IERC20VotesArbitrator } from "../src/tcr/interfaces/IERC20VotesArbitrator.sol";
+import { TokenEmitter } from "../src/TokenEmitter.sol";
+import { ITokenEmitter } from "../src/interfaces/ITokenEmitter.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
 contract DeployNounsFlow is DeployScript {
@@ -44,6 +46,9 @@ contract DeployNounsFlow is DeployScript {
     address public tcrFactory;
     address public tcrFactoryImplementation;
 
+    address public tokenEmitter;
+    address public tokenEmitterImplementation;
+
     function deploy() internal override {
         address initialOwner = vm.envAddress("INITIAL_OWNER");
         address tokenAddress = vm.envAddress("TOKEN_ADDRESS");
@@ -65,6 +70,13 @@ contract DeployNounsFlow is DeployScript {
         uint256 appealPeriod = vm.envUint("APPEAL_PERIOD");
         uint256 appealCost = vm.envUint("APPEAL_COST");
         uint256 arbitrationCost = vm.envUint("ARBITRATION_COST");
+        address WETH = vm.envAddress("WETH");
+        int256 curveSteepness = int256(vm.envUint("CURVE_STEEPNESS"));
+        int256 basePrice = int256(vm.envUint("BASE_PRICE"));
+        int256 maxPriceIncrease = int256(vm.envUint("MAX_PRICE_INCREASE"));
+        int256 supplyOffset = -1 * int256(vm.envUint("SUPPLY_OFFSET")); // note - multiply by -1 here since we want to move the graph right
+        address protocolRewards = vm.envAddress("PROTOCOL_REWARDS");
+        address protocolFeeRecipient = vm.envAddress("PROTOCOL_FEE_RECIPIENT");
 
         // Deploy NounsFlow implementation
         NounsFlow nounsFlowImpl = new NounsFlow();
@@ -96,9 +108,24 @@ contract DeployNounsFlow is DeployScript {
         flowTCRImplementation = address(flowTCRImpl);
         flowTCR = address(new ERC1967Proxy(address(flowTCRImpl), ""));
 
+        // Deploy TokenEmitter
+        TokenEmitter tokenEmitterImpl = new TokenEmitter(protocolRewards, protocolFeeRecipient);
+        tokenEmitterImplementation = address(tokenEmitterImpl);
+        tokenEmitter = address(new ERC1967Proxy(address(tokenEmitterImpl), ""));
+
         // Deploy TokenVerifier
         TokenVerifier verifier = new TokenVerifier(tokenAddress);
         tokenVerifier = address(verifier);
+
+        ITokenEmitter(tokenEmitter).initialize({
+            initialOwner: initialOwner,
+            erc20: erc20Mintable,
+            weth: address(WETH),
+            curveSteepness: curveSteepness,
+            basePrice: basePrice,
+            maxPriceIncrease: maxPriceIncrease,
+            supplyOffset: supplyOffset
+        });
 
         // Prepare initialization data
         INounsFlow(nounsFlow).initialize({
@@ -163,7 +190,7 @@ contract DeployNounsFlow is DeployScript {
         // Initialize ERC20VotesMintable
         IERC20VotesMintable(erc20Mintable).initialize({
             initialOwner: initialOwner,
-            minter: initialOwner,
+            minter: tokenEmitter,
             rewardPool: rewardPool,
             name: "Nouns Flow",
             symbol: "FLOWS"
@@ -202,6 +229,10 @@ contract DeployNounsFlow is DeployScript {
             filePath,
             string(abi.encodePacked("ERC20VotesMintableImpl: ", addressToString(erc20MintableImplementation)))
         );
+        vm.writeLine(
+            filePath,
+            string(abi.encodePacked("TokenEmitterImpl: ", addressToString(tokenEmitterImplementation)))
+        );
         vm.writeLine(filePath, string(abi.encodePacked("NounsFlowImpl: ", addressToString(nounsFlowImplementation))));
         vm.writeLine(filePath, string(abi.encodePacked("RewardPoolImpl: ", addressToString(rewardPoolImplementation))));
         vm.writeLine(filePath, string(abi.encodePacked("FlowTCRImpl: ", addressToString(flowTCRImplementation))));
@@ -212,6 +243,7 @@ contract DeployNounsFlow is DeployScript {
         vm.writeLine(filePath, string(abi.encodePacked("ERC20VotesArbitrator: ", addressToString(erc20Arbitrator))));
         vm.writeLine(filePath, string(abi.encodePacked("ERC20VotesMintable: ", addressToString(erc20Mintable))));
         vm.writeLine(filePath, string(abi.encodePacked("TCRFactory: ", addressToString(tcrFactory))));
+        vm.writeLine(filePath, string(abi.encodePacked("TokenEmitter: ", addressToString(tokenEmitter))));
     }
 
     function getContractName() internal pure override returns (string memory) {

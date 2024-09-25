@@ -5,7 +5,7 @@ import { BondingSCurve } from "./bonding-curve/BondingSCurve.sol";
 import { ERC20VotesMintable } from "./ERC20VotesMintable.sol";
 import { ITokenEmitter } from "./interfaces/ITokenEmitter.sol";
 import { IWETH } from "./interfaces/IWETH.sol";
-import { ProtocolRewards } from "./protocol-rewards/ProtocolRewards.sol";
+import { FlowProtocolRewards } from "./protocol-rewards/abstract/FlowProtocolRewards.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
@@ -13,7 +13,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
  * @title TokenEmitter
  * @dev Contract for emitting tokens using a bonding curve mechanism
  */
-contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeable, ProtocolRewards {
+contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeable, FlowProtocolRewards {
     /// @notice The ERC20 token being emitted
     ERC20VotesMintable public erc20;
 
@@ -27,7 +27,7 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
     constructor(
         address _protocolRewards,
         address _protocolFeeRecipient
-    ) payable ProtocolRewards(_protocolRewards, _protocolFeeRecipient) initializer {
+    ) payable FlowProtocolRewards(_protocolRewards, _protocolFeeRecipient) initializer {
         if (_protocolRewards == address(0)) revert ADDRESS_ZERO();
         if (_protocolFeeRecipient == address(0)) revert ADDRESS_ZERO();
     }
