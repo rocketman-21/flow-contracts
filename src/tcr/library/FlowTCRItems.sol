@@ -65,6 +65,7 @@ library FlowTCRItems {
         bytes memory _item
     )
         public
+        pure
         returns (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType)
     {
         return abi.decode(_item, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
