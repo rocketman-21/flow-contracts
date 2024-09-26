@@ -14,7 +14,7 @@ abstract contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     //////////////////////////////////////////////////////////////*/
 
     // Curve equation:
-    // https://www.desmos.com/calculator/zhnlvsr28w
+    // https://www.desmos.com/calculator/omh7atnrlv
     // p(x) = c / (1 + e^(-m(x + b))) + d
     // Where:
     // p(x) is the price of the next token

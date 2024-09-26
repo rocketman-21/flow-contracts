@@ -15,17 +15,12 @@ library FlowTCRItems {
     function verifyItemData(
         bytes calldata _item,
         FlowTypes.RecipientType _requiredRecipientType
-    ) public returns (bool valid) {
+    ) public pure returns (bool valid) {
         (
             address recipient,
             FlowTypes.RecipientMetadata memory metadata,
             FlowTypes.RecipientType recipientType
         ) = decodeItemData(_item);
-
-        // Check if recipient is a valid address
-        if (recipient == address(0)) {
-            return false;
-        }
 
         // Check if metadata is valid
         try FlowRecipients.validateMetadata(metadata) {
@@ -46,6 +41,16 @@ library FlowTCRItems {
             return false;
         }
 
+        // Check if recipient is a valid address if passing external account
+        if (recipientType == FlowTypes.RecipientType.ExternalAccount && recipient == address(0)) {
+            return false;
+        }
+        // Check if recipient is the 0 address if passing flow contract - since flow contract is created when adding a flow recipient
+        // it should be the 0 address
+        if (recipientType == FlowTypes.RecipientType.FlowContract && recipient != address(0)) {
+            return false;
+        }
+
         return true;
     }
 
@@ -60,6 +65,7 @@ library FlowTCRItems {
         bytes memory _item
     )
         public
+        pure
         returns (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType)
     {
         return abi.decode(_item, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));

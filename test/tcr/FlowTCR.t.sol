@@ -51,13 +51,15 @@ contract FlowTCRTest is ERC721FlowTest {
     uint256 public constant STAKE_MULTIPLIER_SHARED = 10000; // 100%
     uint256 public constant STAKE_MULTIPLIER_WINNER = 10000; // 100%
     uint256 public constant STAKE_MULTIPLIER_LOSER = 10000; // 100%
-    bytes public ITEM_DATA = "0x1234";
 
     // FlowTCR Parameters
     bytes public constant ARBITRATOR_EXTRA_DATA = "";
     string public constant REGISTRATION_META_EVIDENCE = "meta_evidence/registration";
     string public constant CLEARING_META_EVIDENCE = "meta_evidence/clearing";
     string public constant BASIC_EVIDENCE = "basic_evidence";
+    bytes public EXTERNAL_ACCOUNT_ITEM_DATA;
+    bytes public FLOW_RECIPIENT_ITEM_DATA;
+
     uint256[3] public STAKE_MULTIPLIERS = [
         uint256(STAKE_MULTIPLIER_SHARED),
         uint256(STAKE_MULTIPLIER_WINNER),
@@ -110,7 +112,8 @@ contract FlowTCRTest is ERC721FlowTest {
             weth: WETH
         });
 
-        ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowTypes.RecipientType.ExternalAccount);
+        EXTERNAL_ACCOUNT_ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowTypes.RecipientType.ExternalAccount);
+        FLOW_RECIPIENT_ITEM_DATA = abi.encode(address(0), recipientMetadata, FlowTypes.RecipientType.FlowContract);
 
         flowTCR = FlowTCR(flowTCRProxy);
         flowTCR.initialize(
