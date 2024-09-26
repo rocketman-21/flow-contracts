@@ -105,7 +105,7 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
      * @param _item The data describing the item to be added.
      * @return valid True if the item data is valid, false otherwise.
      */
-    function _verifyItemData(bytes calldata _item) internal override returns (bool valid) {
+    function _verifyItemData(bytes calldata _item) internal view override returns (bool valid) {
         return _item.verifyItemData(requiredRecipientType);
     }
 
