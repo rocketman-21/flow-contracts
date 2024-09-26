@@ -15,7 +15,7 @@ library FlowTCRItems {
     function verifyItemData(
         bytes calldata _item,
         FlowTypes.RecipientType _requiredRecipientType
-    ) public returns (bool valid) {
+    ) public pure returns (bool valid) {
         (
             address recipient,
             FlowTypes.RecipientMetadata memory metadata,

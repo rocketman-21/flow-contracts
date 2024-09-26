@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { FlowTCRTest } from "./FlowTCR.t.sol";
+import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { IArbitrator } from "../../src/tcr/interfaces/IArbitrator.sol";
 import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -70,13 +71,22 @@ contract TCRFundFlowTest is FlowTCRTest {
      * 4. Verify final balances
      */
     function testERC20TransfersDuringItemRequesterWinsLifecycle() public {
+        _testERC20TransfersDuringItemRequesterWinsLifecycle(EXTERNAL_ACCOUNT_ITEM_DATA);
+        _testERC20TransfersDuringItemRequesterWinsLifecycle(FLOW_RECIPIENT_ITEM_DATA);
+    }
+
+    /**
+     * @notice Helper function to test ERC20 transfer flow during item lifecycle where requester wins
+     * @param itemData The data of the item to be submitted (can be external account or flow contract)
+     */
+    function _testERC20TransfersDuringItemRequesterWinsLifecycle(bytes memory itemData) internal {
         uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
 
         // Record initial balances
         uint256[4] memory initialBalances = getRelevantBalances();
 
         // Submit an item
-        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
+        bytes32 itemID = submitItem(itemData, requester);
 
         // Verify balances after submission
         assertBalanceChange(requester, initialBalances[0], -int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost));
@@ -110,6 +120,31 @@ contract TCRFundFlowTest is FlowTCRTest {
         );
         assertBalanceChange(address(flowTCR), initialBalances[2], 0);
         assertBalanceChange(address(arbitrator), initialBalances[3], int256(arbitratorCost));
+
+        // Verify item registration
+        (bytes memory data, IGeneralizedTCR.Status status, ) = flowTCR.getItemInfo(itemID);
+        assertEq(data, itemData, "Item data should match");
+        assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered), "Item should be registered");
+
+        // Verify Flow recipient creation
+        (address recipientAddress, , FlowTypes.RecipientType recipientType) = abi.decode(
+            itemData,
+            (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType)
+        );
+        bytes32 recipientId = flowTCR.itemIDToFlowRecipientID(itemID);
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
+
+        if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
+            assertEq(storedRecipient.recipient, recipientAddress, "Flow recipient address should match");
+            assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
+        } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
+            assertTrue(
+                storedRecipient.recipientType == FlowTypes.RecipientType.FlowContract,
+                "Recipient type should be FlowContract"
+            );
+            assertNotEq(storedRecipient.recipient, address(0), "Flow contract address should not be zero");
+        }
+        assertTrue(flow.recipientExists(storedRecipient.recipient), "Flow recipient should exist");
     }
 
     /**
@@ -138,7 +173,7 @@ contract TCRFundFlowTest is FlowTCRTest {
         );
     }
 
-    function testSuccessfulItemAdditionWithoutChallenge() public {
+    function testSuccessfulItemAdditionWithoutChallenge(bytes memory itemData) internal {
         // 1. Setup initial balances
         uint256[4] memory initialBalances = getRelevantBalances();
         uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
@@ -148,7 +183,7 @@ contract TCRFundFlowTest is FlowTCRTest {
         erc20Token.approve(address(flowTCR), SUBMISSION_BASE_DEPOSIT + arbitratorCost);
 
         // 4. Call addItem function
-        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
+        bytes32 itemID = submitItem(itemData, requester);
 
         // 5. Verify GeneralizedTCR balance increase
         assertEq(
@@ -205,17 +240,20 @@ contract TCRFundFlowTest is FlowTCRTest {
         );
     }
 
-    function testDisputeTieRefund() public {
-        uint256[] memory initialBalances = new uint256[](4);
-        initialBalances[0] = erc20Token.balanceOf(requester);
-        initialBalances[1] = erc20Token.balanceOf(challenger);
-        initialBalances[2] = erc20Token.balanceOf(address(flowTCR));
-        initialBalances[3] = erc20Token.balanceOf(address(arbitrator));
+    function testSuccessfulExternalAccountItemAdditionWithoutChallenge() public {
+        testSuccessfulItemAdditionWithoutChallenge(EXTERNAL_ACCOUNT_ITEM_DATA);
+    }
+
+    function testSuccessfulFlowContractItemAdditionWithoutChallenge() public {
+        testSuccessfulItemAdditionWithoutChallenge(FLOW_RECIPIENT_ITEM_DATA);
+    }
+
+    function testDisputeTieRefund(bytes memory itemData) internal {
+        uint256[4] memory initialBalances = getRelevantBalances();
+        uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
 
         // Initial setup
-        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
-
-        uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
+        bytes32 itemID = submitItem(itemData, requester);
 
         // Challenge the item
         challengeItem(itemID, challenger);
@@ -252,32 +290,24 @@ contract TCRFundFlowTest is FlowTCRTest {
         arbitrator.executeRuling(disputeID);
 
         // Check if both parties got their deposits back
-        assertEq(
-            erc20Token.balanceOf(requester),
-            initialBalances[0] - arbitratorCost / 2,
-            "Requester should get their deposit back minus half of the arbitration cost"
-        );
-        assertEq(
-            erc20Token.balanceOf(challenger),
-            initialBalances[1] - arbitratorCost / 2,
-            "Challenger should get their deposit back minus half of the arbitration cost"
-        );
+        assertBalanceChange(requester, initialBalances[0], -int256(arbitratorCost / 2));
+        assertBalanceChange(challenger, initialBalances[1], -int256(arbitratorCost / 2));
 
-        assertEq(
-            erc20Token.balanceOf(address(flowTCR)),
-            initialBalances[2],
-            "GeneralizedTCR balance should remain unchanged"
-        );
+        assertBalanceChange(address(flowTCR), initialBalances[2], 0);
 
         // Verify arbitrator received payment
-        assertEq(
-            erc20Token.balanceOf(address(arbitrator)),
-            initialBalances[3] + arbitratorCost,
-            "Arbitrator should receive payment"
-        );
+        assertBalanceChange(address(arbitrator), initialBalances[3], int256(arbitratorCost));
 
         // Verify the item status
         (, IGeneralizedTCR.Status status, ) = flowTCR.getItemInfo(itemID);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Absent), "Item should remain absent after a tie");
+    }
+
+    function testDisputeTieRefundExternalAccount() public {
+        testDisputeTieRefund(EXTERNAL_ACCOUNT_ITEM_DATA);
+    }
+
+    function testDisputeTieRefundFlowContract() public {
+        testDisputeTieRefund(FLOW_RECIPIENT_ITEM_DATA);
     }
 }
