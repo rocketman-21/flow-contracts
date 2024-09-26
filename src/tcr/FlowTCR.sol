@@ -30,6 +30,10 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
     // The required FlowRecipient type for the TCR (optional)
     FlowTypes.RecipientType public requiredRecipientType;
 
+    // Mapping of TCR itemIDs to Flow recipientIDs
+    // Assumes itemID to be unique to the flow recipient ID
+    mapping(bytes32 => bytes32) public itemIDToFlowRecipientID;
+
     // TokenEmitter parameters
     int256 public curveSteepness;
     int256 public basePrice;
@@ -92,7 +96,8 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
      * @dev IMPORTANT: Assumes that the itemID is consistent with the recipientId in the Flow contract
      */
     function _onItemRemoved(bytes32 _itemID) internal override {
-        flowContract.removeRecipient(_itemID);
+        bytes32 flowRecipientID = itemIDToFlowRecipientID[_itemID];
+        flowContract.removeRecipient(flowRecipientID);
     }
 
     /**
@@ -106,20 +111,28 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
 
     /**
      * @notice Handles the registration of an item in the TCR
+     * @param _itemID The ID of the item being registered
      * @param _item The data describing the item
      * @dev This function is called internally when an item is registered in the TCR
      */
-    function _onItemRegistered(bytes32, bytes memory _item) internal override {
+    function _onItemRegistered(bytes32 _itemID, bytes memory _item) internal override {
         // Decode the item data
         (address recipient, FlowTypes.RecipientMetadata memory metadata, FlowTypes.RecipientType recipientType) = _item
             .decodeItemData();
 
         // Add the recipient to the Flow contract
         if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
-            flowContract.addRecipient(recipient, metadata);
+            (bytes32 recipientID, ) = flowContract.addRecipient(recipient, metadata);
+            itemIDToFlowRecipientID[_itemID] = recipientID;
         } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
-            // temporarily set manager to owner
-            (, address flowRecipient) = flowContract.addFlowRecipient(metadata, owner(), owner());
+            // temporarily set manager to this contract so we can set the reward pool and actual TCR manager after they're deployed
+            // make sure address(this) is updated!
+            (bytes32 flowRecipientID, address flowRecipient) = flowContract.addFlowRecipient(
+                metadata,
+                address(this),
+                address(this)
+            );
+            itemIDToFlowRecipientID[_itemID] = flowRecipientID;
 
             ITCRFactory.DeployedContracts memory deployedContracts = tcrFactory.deployFlowTCR(
                 ITCRFactory.FlowTCRParams({
@@ -150,8 +163,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
 
             // set manager to new TCR and manager reward pool
             // can only be done by the manager
-            flowContract.setManager(deployedContracts.tcrAddress);
             flowContract.setManagerRewardPool(deployedContracts.rewardPoolAddress);
+            // now that the reward pool is set, we can set the actual manager
+            flowContract.setManager(deployedContracts.tcrAddress);
         }
     }
 

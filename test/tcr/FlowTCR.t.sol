@@ -113,6 +113,7 @@ contract FlowTCRTest is ERC721FlowTest {
         });
 
         EXTERNAL_ACCOUNT_ITEM_DATA = abi.encode(recipient, recipientMetadata, FlowTypes.RecipientType.ExternalAccount);
+        FLOW_RECIPIENT_ITEM_DATA = abi.encode(address(0), recipientMetadata, FlowTypes.RecipientType.FlowContract);
 
         flowTCR = FlowTCR(flowTCRProxy);
         flowTCR.initialize(

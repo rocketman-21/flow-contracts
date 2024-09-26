@@ -21,12 +21,17 @@ contract BasicTCRTest is FlowTCRTest {
      */
     function testItemSubmission() public {
         bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
+        bytes32 itemID2 = submitItem(FLOW_RECIPIENT_ITEM_DATA, requester);
 
         (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
+        (bytes memory data2, IGeneralizedTCR.Status status2, uint256 numberOfRequests2) = flowTCR.getItemInfo(itemID2);
 
         assertEq(data, EXTERNAL_ACCOUNT_ITEM_DATA);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.RegistrationRequested));
         assertEq(numberOfRequests, 1);
+        assertEq(data2, FLOW_RECIPIENT_ITEM_DATA);
+        assertEq(uint256(status2), uint256(IGeneralizedTCR.Status.RegistrationRequested));
+        assertEq(numberOfRequests2, 1);
     }
 
     /**
@@ -85,19 +90,11 @@ contract BasicTCRTest is FlowTCRTest {
     }
 
     /**
-     * @dev Tests the registration of an item after the challenge period has passed and verifies flow recipient creation
-     * @notice This test performs the following steps:
-     * 1. Submits an item to the TCR
-     * 2. Advances time beyond the challenge period
-     * 3. Executes the request to finalize the registration
-     * 4. Retrieves the item information
-     * 5. Verifies that the item data matches the submitted data
-     * 6. Checks that the item status is now set to Registered
-     * 7. Ensures that the number of requests for the item is still 1
-     * 8. Verifies that a flow recipient was created for the item
+     * @dev Helper function to test item registration after challenge period
+     * @param itemData The data of the item to be registered
      */
-    function testItemRegistrationAfterChallengePeriod() public {
-        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
+    function _testItemRegistrationAfterChallengePeriod(bytes memory itemData) internal {
+        bytes32 itemID = submitItem(itemData, requester);
 
         advanceTime(CHALLENGE_PERIOD + 1);
 
@@ -105,28 +102,57 @@ contract BasicTCRTest is FlowTCRTest {
 
         (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
 
-        assertEq(data, EXTERNAL_ACCOUNT_ITEM_DATA);
+        assertEq(data, itemData);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered));
         assertEq(numberOfRequests, 1);
 
-        // Decode the ITEM_DATA to get the recipient address
-        (address recipientAddress, , ) = abi.decode(
-            EXTERNAL_ACCOUNT_ITEM_DATA,
-            (address, string, FlowTypes.RecipientType)
-        );
+        (
+            address recipientAddress,
+            FlowTypes.RecipientMetadata memory metadata,
+            FlowTypes.RecipientType recipientType
+        ) = abi.decode(itemData, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
 
-        // Check if a flow recipient was created for the item
-        assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
+        if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
+            assertTrue(
+                flow.recipientExists(recipientAddress),
+                "Flow recipient should be created for the registered item"
+            );
 
-        // Optionally, you can also check the recipient's details in the flow contract
-        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(EXTERNAL_ACCOUNT_ITEM_DATA));
-        assertEq(
-            storedRecipient.recipient,
-            recipientAddress,
-            "Flow recipient address should match the one in ITEM_DATA"
-        );
-        // check member units > 0 and flow rate > 0
-        assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
+            FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(itemData));
+            assertEq(
+                storedRecipient.recipient,
+                recipientAddress,
+                "Flow recipient address should match the one in itemData"
+            );
+            assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
+        } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
+            // get flowRecipientId from itemID
+            bytes32 flowRecipientId = flowTCR.itemIDToFlowRecipientID(itemID);
+            FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(flowRecipientId);
+            assertTrue(
+                storedRecipient.recipientType == FlowTypes.RecipientType.FlowContract,
+                "Recipient type should be FlowContract"
+            );
+            assertNotEq(storedRecipient.recipient, address(0), "Flow contract address should not be zero");
+            assertTrue(
+                flow.recipientExists(storedRecipient.recipient),
+                "Flow recipient should be created for the registered item"
+            );
+        }
+    }
+
+    /**
+     * @dev Tests the registration of an external account item after the challenge period has passed
+     */
+    function testExternalAccountItemRegistrationAfterChallengePeriod() public {
+        _testItemRegistrationAfterChallengePeriod(EXTERNAL_ACCOUNT_ITEM_DATA);
+    }
+
+    /**
+     * @dev Tests the registration of a flow contract item after the challenge period has passed
+     */
+    function testFlowContractItemRegistrationAfterChallengePeriod() public {
+        _testItemRegistrationAfterChallengePeriod(FLOW_RECIPIENT_ITEM_DATA);
     }
 
     /**

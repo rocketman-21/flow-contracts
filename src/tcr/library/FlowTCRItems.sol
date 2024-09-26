@@ -22,11 +22,6 @@ library FlowTCRItems {
             FlowTypes.RecipientType recipientType
         ) = decodeItemData(_item);
 
-        // Check if recipient is a valid address
-        if (recipient == address(0)) {
-            return false;
-        }
-
         // Check if metadata is valid
         try FlowRecipients.validateMetadata(metadata) {
             // Metadata is valid
@@ -43,6 +38,16 @@ library FlowTCRItems {
             recipientType != FlowTypes.RecipientType.ExternalAccount &&
             recipientType != FlowTypes.RecipientType.FlowContract
         ) {
+            return false;
+        }
+
+        // Check if recipient is a valid address if passing external account
+        if (recipientType == FlowTypes.RecipientType.ExternalAccount && recipient == address(0)) {
+            return false;
+        }
+        // Check if recipient is the 0 address if passing flow contract - since flow contract is created when adding a flow recipient
+        // it should be the 0 address
+        if (recipientType == FlowTypes.RecipientType.FlowContract && recipient != address(0)) {
             return false;
         }
 
