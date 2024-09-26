@@ -52,7 +52,7 @@ contract ERC20ArbitratorDisputeTest is ERC20VotesArbitratorTest {
 
     function setupAndExecuteRulingForDispute() public {
         // Create a new dispute
-        (, uint256 disputeID) = submitItemAndChallenge(ITEM_DATA, requester, challenger);
+        (, uint256 disputeID) = submitItemAndChallenge(EXTERNAL_ACCOUNT_ITEM_DATA, requester, challenger);
 
         // Commit votes
         bytes32 salt1 = keccak256("salt1");

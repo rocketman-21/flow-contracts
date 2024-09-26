@@ -29,7 +29,7 @@ contract TCRFundFlowTest is FlowTCRTest {
         uint256[4] memory initialBalances = getRelevantBalances();
 
         // Submit an item
-        bytes32 itemID = submitItem(ITEM_DATA, requester);
+        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
 
         // Verify balances after submission
         assertBalanceChange(requester, initialBalances[0], -int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost));
@@ -76,7 +76,7 @@ contract TCRFundFlowTest is FlowTCRTest {
         uint256[4] memory initialBalances = getRelevantBalances();
 
         // Submit an item
-        bytes32 itemID = submitItem(ITEM_DATA, requester);
+        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
 
         // Verify balances after submission
         assertBalanceChange(requester, initialBalances[0], -int256(SUBMISSION_BASE_DEPOSIT + arbitratorCost));
@@ -148,7 +148,7 @@ contract TCRFundFlowTest is FlowTCRTest {
         erc20Token.approve(address(flowTCR), SUBMISSION_BASE_DEPOSIT + arbitratorCost);
 
         // 4. Call addItem function
-        bytes32 itemID = submitItem(ITEM_DATA, requester);
+        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
 
         // 5. Verify GeneralizedTCR balance increase
         assertEq(
@@ -213,7 +213,7 @@ contract TCRFundFlowTest is FlowTCRTest {
         initialBalances[3] = erc20Token.balanceOf(address(arbitrator));
 
         // Initial setup
-        bytes32 itemID = submitItem(ITEM_DATA, requester);
+        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
 
         uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
 

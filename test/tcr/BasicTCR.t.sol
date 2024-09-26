@@ -20,11 +20,11 @@ contract BasicTCRTest is FlowTCRTest {
      * 5. Ensures that the number of requests for the item is 1
      */
     function testItemSubmission() public {
-        bytes32 itemID = submitItem(ITEM_DATA, requester);
+        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
 
         (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
 
-        assertEq(data, ITEM_DATA);
+        assertEq(data, EXTERNAL_ACCOUNT_ITEM_DATA);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.RegistrationRequested));
         assertEq(numberOfRequests, 1);
     }
@@ -48,7 +48,7 @@ contract BasicTCRTest is FlowTCRTest {
      * 7. Ensures that the number of requests for the item is still 1
      */
     function testItemChallenge() public {
-        bytes32 itemID = submitItem(ITEM_DATA, requester);
+        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
         challengeItem(itemID, challenger);
 
         (
@@ -75,7 +75,7 @@ contract BasicTCRTest is FlowTCRTest {
 
         (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
 
-        assertEq(data, ITEM_DATA, "Item data should match");
+        assertEq(data, EXTERNAL_ACCOUNT_ITEM_DATA, "Item data should match");
         assertEq(
             uint256(status),
             uint256(IGeneralizedTCR.Status.RegistrationRequested),
@@ -97,7 +97,7 @@ contract BasicTCRTest is FlowTCRTest {
      * 8. Verifies that a flow recipient was created for the item
      */
     function testItemRegistrationAfterChallengePeriod() public {
-        bytes32 itemID = submitItem(ITEM_DATA, requester);
+        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
 
         advanceTime(CHALLENGE_PERIOD + 1);
 
@@ -105,18 +105,21 @@ contract BasicTCRTest is FlowTCRTest {
 
         (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
 
-        assertEq(data, ITEM_DATA);
+        assertEq(data, EXTERNAL_ACCOUNT_ITEM_DATA);
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered));
         assertEq(numberOfRequests, 1);
 
         // Decode the ITEM_DATA to get the recipient address
-        (address recipientAddress, , ) = abi.decode(ITEM_DATA, (address, string, FlowTypes.RecipientType));
+        (address recipientAddress, , ) = abi.decode(
+            EXTERNAL_ACCOUNT_ITEM_DATA,
+            (address, string, FlowTypes.RecipientType)
+        );
 
         // Check if a flow recipient was created for the item
         assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
 
         // Optionally, you can also check the recipient's details in the flow contract
-        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(ITEM_DATA));
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(EXTERNAL_ACCOUNT_ITEM_DATA));
         assertEq(
             storedRecipient.recipient,
             recipientAddress,
@@ -139,11 +142,11 @@ contract BasicTCRTest is FlowTCRTest {
      */
     function testBasicFlow() public {
         // Submit an item
-        bytes32 itemID = submitItem(ITEM_DATA, requester);
+        bytes32 itemID = submitItem(EXTERNAL_ACCOUNT_ITEM_DATA, requester);
 
         // Check initial state
         (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
-        assertEq(data, ITEM_DATA, "Item data should match");
+        assertEq(data, EXTERNAL_ACCOUNT_ITEM_DATA, "Item data should match");
         assertEq(
             uint256(status),
             uint256(IGeneralizedTCR.Status.RegistrationRequested),
@@ -188,22 +191,25 @@ contract BasicTCRTest is FlowTCRTest {
 
         // Check final state
         (data, status, numberOfRequests) = flowTCR.getItemInfo(itemID);
-        assertEq(data, ITEM_DATA, "Item data should still match");
+        assertEq(data, EXTERNAL_ACCOUNT_ITEM_DATA, "Item data should still match");
         assertEq(numberOfRequests, 1, "Number of requests should still be 1");
         assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered), "Status should be Registered");
 
         // Decode the ITEM_DATA to get the recipient address
-        (address recipientAddress, , ) = abi.decode(ITEM_DATA, (address, string, FlowTypes.RecipientType));
+        (address recipientAddress, , ) = abi.decode(
+            EXTERNAL_ACCOUNT_ITEM_DATA,
+            (address, string, FlowTypes.RecipientType)
+        );
 
         // Check if a flow recipient was created for the item
         assertTrue(flow.recipientExists(recipientAddress), "Flow recipient should be created for the registered item");
 
         // Optionally, you can also check the recipient's details in the flow contract
-        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(ITEM_DATA));
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(keccak256(EXTERNAL_ACCOUNT_ITEM_DATA));
         assertEq(
             storedRecipient.recipient,
             recipientAddress,
-            "Flow recipient address should match the one in ITEM_DATA"
+            "Flow recipient address should match the one in EXTERNAL_ACCOUNT_ITEM_DATA"
         );
         // check member units > 0 and flow rate > 0
         assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
