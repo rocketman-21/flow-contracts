@@ -78,6 +78,8 @@ library FlowRecipients {
         // functionality equivalent to addItem _itemID in GeneralizedTCR.sol (keccak256(bytes calldata _item))
         bytes32 recipientId = keccak256(abi.encode(recipient, metadata, FlowTypes.RecipientType.FlowContract));
 
+        if (fs.recipients[recipientId].recipient != address(0)) revert IFlow.RECIPIENT_ALREADY_EXISTS();
+
         fs.recipients[recipientId] = FlowTypes.FlowRecipient({
             recipientType: FlowTypes.RecipientType.FlowContract,
             removed: false,
