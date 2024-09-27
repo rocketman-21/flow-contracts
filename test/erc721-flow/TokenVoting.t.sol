@@ -24,8 +24,9 @@ contract TokenVotingFlowTest is ERC721FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -61,8 +62,9 @@ contract TokenVotingFlowTest is ERC721FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -100,8 +102,9 @@ contract TokenVotingFlowTest is ERC721FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -131,8 +134,9 @@ contract TokenVotingFlowTest is ERC721FlowTest {
         nounsToken.mint(voter2, 1);
 
         address recipient = address(3);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);

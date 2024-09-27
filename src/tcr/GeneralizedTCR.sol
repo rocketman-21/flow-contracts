@@ -108,19 +108,26 @@ abstract contract GeneralizedTCR is
     /** @dev Submit a request to register an item. Must have approved this contract to transfer at least `submissionBaseDeposit` + `arbitrationCost` ERC20 tokens.
      *  @param _item The data describing the item.
      */
-    function addItem(bytes calldata _item) external nonReentrant {
+    function addItem(bytes calldata _item) external nonReentrant returns (bytes32 itemID) {
         if (!_verifyItemData(_item)) revert INVALID_ITEM_DATA();
 
-        bytes32 itemID = keccak256(_item);
+        itemID = _constructNewItemID(_item);
         if (items[itemID].status != Status.Absent) revert MUST_BE_ABSENT_TO_BE_ADDED();
-        _requestStatusChange(_item, submissionBaseDeposit);
+        _requestStatusChange(_item, itemID, submissionBaseDeposit);
+    }
+
+    /** @dev Construct the itemID from the item data.
+     *  @param _item The data describing the item.
+     *  @return itemID The ID of the item.
+     */
+    function _constructNewItemID(bytes calldata _item) internal virtual returns (bytes32 itemID) {
+        itemID = keccak256(_item);
     }
 
     /** @dev Verifies the data of an item before it's added to the registry.
-     *  @param _item The data describing the item to be added.
      *  @return valid True if the item data is valid, false otherwise.
      */
-    function _verifyItemData(bytes calldata _item) internal virtual returns (bool valid) {
+    function _verifyItemData(bytes calldata) internal virtual returns (bool valid) {
         return true;
     }
 
@@ -141,7 +148,7 @@ abstract contract GeneralizedTCR is
             emit Evidence(arbitrator, evidenceGroupID, msg.sender, _evidence);
         }
 
-        _requestStatusChange(item.data, removalBaseDeposit);
+        _requestStatusChange(item.data, _itemID, removalBaseDeposit);
     }
 
     /** @dev Challenges the request of the item. Must have approved this contract to transfer at least `challengeBaseDeposit` + `arbitrationCost` ERC20 tokens.
@@ -456,20 +463,20 @@ abstract contract GeneralizedTCR is
 
     /** @dev Submit a request to change item's status. Accepts enough ERC20 tokens to cover the deposit.
      *  @param _item The data describing the item.
+     *  @param _itemID The ID of the item.
      *  @param _baseDeposit The base deposit for the request.
      */
-    function _requestStatusChange(bytes memory _item, uint _baseDeposit) internal {
-        bytes32 itemID = keccak256(_item);
-        Item storage item = items[itemID];
+    function _requestStatusChange(bytes memory _item, bytes32 _itemID, uint _baseDeposit) internal {
+        Item storage item = items[_itemID];
 
         // Using `length` instead of `length - 1` as index because a new request will be added.
-        uint evidenceGroupID = uint(keccak256(abi.encodePacked(itemID, item.requests.length)));
+        uint evidenceGroupID = uint(keccak256(abi.encodePacked(_itemID, item.requests.length)));
         if (item.requests.length == 0) {
             item.data = _item;
-            itemList.push(itemID);
-            itemIDtoIndex[itemID] = itemList.length - 1;
+            itemList.push(_itemID);
+            itemIDtoIndex[_itemID] = itemList.length - 1;
 
-            emit ItemSubmitted(itemID, msg.sender, evidenceGroupID, item.data);
+            emit ItemSubmitted(_itemID, msg.sender, evidenceGroupID, item.data);
         }
 
         Request storage request = item.requests.push();
@@ -494,9 +501,9 @@ abstract contract GeneralizedTCR is
         if (round.amountPaid[uint(Party.Requester)] < totalCost) revert MUST_FULLY_FUND_YOUR_SIDE();
         round.hasPaid[uint(Party.Requester)] = true;
 
-        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, false, false, item.status);
-        emit RequestSubmitted(itemID, item.requests.length - 1, item.status);
-        emit RequestEvidenceGroupID(itemID, item.requests.length - 1, evidenceGroupID);
+        emit ItemStatusChange(_itemID, item.requests.length - 1, request.rounds.length - 1, false, false, item.status);
+        emit RequestSubmitted(_itemID, item.requests.length - 1, item.status);
+        emit RequestEvidenceGroupID(_itemID, item.requests.length - 1, evidenceGroupID);
     }
 
     /** @dev Make a fee contribution.

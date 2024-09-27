@@ -113,7 +113,7 @@ contract BasicTCRTest is FlowTCRTest {
         ) = abi.decode(itemData, (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType));
 
         if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
-            bytes32 recipientId = flowTCR.itemIDToFlowRecipientID(itemID);
+            bytes32 recipientId = itemID;
             assertTrue(
                 flow.recipientExists(recipientAddress),
                 "Flow recipient should be created for the registered item"
@@ -127,7 +127,7 @@ contract BasicTCRTest is FlowTCRTest {
             assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
         } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
             // get flowRecipientId from itemID
-            bytes32 flowRecipientId = flowTCR.itemIDToFlowRecipientID(itemID);
+            bytes32 flowRecipientId = itemID;
             FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(flowRecipientId);
             assertTrue(
                 storedRecipient.recipientType == FlowTypes.RecipientType.FlowContract,
@@ -228,7 +228,7 @@ contract BasicTCRTest is FlowTCRTest {
         );
 
         if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
-            bytes32 recipientId = flowTCR.itemIDToFlowRecipientID(itemID);
+            bytes32 recipientId = itemID;
 
             assertTrue(
                 flow.recipientExists(recipientAddress),
@@ -242,7 +242,7 @@ contract BasicTCRTest is FlowTCRTest {
             );
             assertGt(flow.getMemberTotalFlowRate(recipientAddress), 0, "Member units should be greater than 0");
         } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
-            bytes32 flowRecipientId = flowTCR.itemIDToFlowRecipientID(itemID);
+            bytes32 flowRecipientId = itemID;
             FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(flowRecipientId);
             assertTrue(
                 storedRecipient.recipientType == FlowTypes.RecipientType.FlowContract,

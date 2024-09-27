@@ -29,6 +29,7 @@ library FlowRecipients {
     /**
      * @notice Adds an address to the list of approved recipients
      * @param fs The storage of the Flow contract
+     * @param recipientId The ID of the recipient to be approved
      * @param recipient The address to be added as an approved recipient
      * @param metadata The metadata of the recipient
      * @return bytes32 The recipientId of the newly created recipient
@@ -36,6 +37,7 @@ library FlowRecipients {
      */
     function addRecipient(
         FlowTypes.Storage storage fs,
+        bytes32 recipientId,
         address recipient,
         FlowTypes.RecipientMetadata memory metadata
     ) external returns (bytes32, address) {
@@ -43,8 +45,6 @@ library FlowRecipients {
 
         if (recipient == address(0)) revert IFlow.ADDRESS_ZERO();
         if (fs.recipientExists[recipient]) revert IFlow.RECIPIENT_ALREADY_EXISTS();
-
-        bytes32 recipientId = keccak256(abi.encode(recipient, metadata, FlowTypes.RecipientType.ExternalAccount));
         if (fs.recipients[recipientId].recipient != address(0)) revert IFlow.RECIPIENT_ALREADY_EXISTS();
 
         fs.recipientExists[recipient] = true;
@@ -64,20 +64,18 @@ library FlowRecipients {
     /**
      * @notice Adds an Flow address to the list of approved recipients
      * @param fs The storage of the Flow contract
+     * @param recipientId The ID of the recipient to be approved
      * @param recipient The address to be added as an approved recipient
      * @param metadata The metadata of the recipient
      * @return bytes32 The recipientId of the newly created recipient
      */
     function addFlowRecipient(
         FlowTypes.Storage storage fs,
+        bytes32 recipientId,
         address recipient,
         FlowTypes.RecipientMetadata memory metadata
     ) external returns (bytes32) {
         if (fs.recipientExists[recipient]) revert IFlow.RECIPIENT_ALREADY_EXISTS();
-
-        // functionality equivalent to addItem _itemID in GeneralizedTCR.sol (keccak256(bytes calldata _item))
-        bytes32 recipientId = keccak256(abi.encode(recipient, metadata, FlowTypes.RecipientType.FlowContract));
-
         if (fs.recipients[recipientId].recipient != address(0)) revert IFlow.RECIPIENT_ALREADY_EXISTS();
 
         fs.recipients[recipientId] = FlowTypes.FlowRecipient({

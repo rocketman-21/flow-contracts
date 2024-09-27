@@ -12,10 +12,11 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipient() public {
         address recipient = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
 
         // Add a recipient first
         vm.prank(flow.owner());
-        (bytes32 recipientId, address recipientAddress) = flow.addRecipient(recipient, recipientMetadata);
+        (, address recipientAddress) = flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         // Test successful removal of a recipient
         vm.startPrank(flow.owner());
@@ -35,10 +36,11 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientInvalidId() public {
         address recipient = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
 
         // Add a recipient first
         vm.prank(flow.owner());
-        (bytes32 recipientId, address recipientAddress) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         // Test removing a recipient with an invalid ID (should revert)
         vm.prank(flow.owner());
@@ -53,10 +55,11 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientAlreadyRemoved() public {
         address recipient = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
 
         // Add a recipient
         vm.prank(flow.owner());
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         // Remove the recipient
         vm.prank(flow.owner());
@@ -70,10 +73,11 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientNonManager() public {
         address recipient = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
 
         // Add a recipient
         vm.prank(flow.owner());
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         // Test removing a recipient from a non-manager address (should revert)
         vm.prank(address(0xABC));
@@ -83,6 +87,8 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveMultipleRecipients() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
+        bytes32 recipientId1 = keccak256(abi.encodePacked(recipient1));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(recipient2));
         FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Recipient 1",
             "Description 1",
@@ -100,8 +106,8 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add recipients
         vm.startPrank(flow.owner());
-        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, metadata1);
-        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, metadata2);
+        flow.addRecipient(recipientId1, recipient1, metadata1);
+        flow.addRecipient(recipientId2, recipient2, metadata2);
 
         // Remove first recipient
         flow.removeRecipient(recipientId1);
@@ -125,10 +131,11 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientUpdateMemberUnits() public {
         address recipient = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
 
         // Add a recipient
         vm.prank(flow.owner());
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         // Cast a vote to give the recipient some member units
         uint256 tokenId = 0;
@@ -160,10 +167,11 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
     function testRemoveRecipientAndVoteAgain() public {
         address recipient = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
 
         // Add a recipient
         vm.prank(flow.owner());
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         // Remove the recipient
         vm.prank(flow.owner());
@@ -196,11 +204,13 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testVoteAfterRemovingRecipient() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
+        bytes32 recipientId1 = keccak256(abi.encodePacked(recipient1));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(recipient2));
 
         // Add two recipients
         vm.startPrank(flow.owner());
-        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, recipientMetadata);
-        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
+        flow.addRecipient(recipientId1, recipient1, recipientMetadata);
+        flow.addRecipient(recipientId2, recipient2, recipientMetadata);
         vm.stopPrank();
 
         // Mint a token for voting
@@ -248,6 +258,8 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testRemoveRecipientBaselineMemberUnits() public {
         address recipient1 = address(0x123);
         address recipient2 = address(0x456);
+        bytes32 recipientId1 = keccak256(abi.encodePacked(recipient1));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(recipient2));
         FlowTypes.RecipientMetadata memory metadata1 = FlowTypes.RecipientMetadata(
             "Recipient 1",
             "Description 1",
@@ -265,9 +277,9 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add recipients
         vm.prank(flow.owner());
-        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, metadata1);
+        flow.addRecipient(recipientId1, recipient1, metadata1);
         vm.prank(flow.owner());
-        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, metadata2);
+        flow.addRecipient(recipientId2, recipient2, metadata2);
 
         // Check initial state
         uint128 initialTotalUnits = flow.baselinePool().getTotalUnits();
@@ -317,6 +329,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add a new recipient and verify units are assigned correctly
         address recipient3 = address(0x789);
+        bytes32 recipientId3 = keccak256(abi.encodePacked(recipient3));
         FlowTypes.RecipientMetadata memory metadata3 = FlowTypes.RecipientMetadata(
             "Recipient 3",
             "Description 3",
@@ -325,7 +338,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
             "https://recipient3.com"
         );
         vm.prank(flow.owner());
-        (bytes32 recipientId3, ) = flow.addRecipient(recipient3, metadata3);
+        flow.addRecipient(recipientId3, recipient3, metadata3);
 
         assertEq(
             flow.baselinePool().getTotalUnits(),
@@ -359,12 +372,16 @@ contract RemoveRecipientsTest is ERC721FlowTest {
 
         // Add flow recipients
         vm.startPrank(flow.owner());
-        (bytes32 recipientId1, address flowRecipient1) = flow.addFlowRecipient(
+        bytes32 recipientId1 = keccak256(abi.encodePacked(flowManager1));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(flowManager2));
+        (, address flowRecipient1) = flow.addFlowRecipient(
+            recipientId1,
             metadata1,
             flowManager1,
             address(dummyRewardPool)
         );
-        (bytes32 recipientId2, address flowRecipient2) = flow.addFlowRecipient(
+        (, address flowRecipient2) = flow.addFlowRecipient(
+            recipientId2,
             metadata2,
             flowManager2,
             address(dummyRewardPool)
@@ -427,7 +444,9 @@ contract RemoveRecipientsTest is ERC721FlowTest {
             "https://flowrecipient3.com"
         );
         vm.prank(flow.owner());
-        (bytes32 recipientId3, address flowRecipient3) = flow.addFlowRecipient(
+        bytes32 recipientId3 = keccak256(abi.encodePacked(flowManager3));
+        (, address flowRecipient3) = flow.addFlowRecipient(
+            recipientId3,
             metadata3,
             flowManager3,
             address(dummyRewardPool)

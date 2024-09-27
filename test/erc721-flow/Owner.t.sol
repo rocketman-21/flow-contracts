@@ -100,8 +100,9 @@ contract OwnerFlowTest is ERC721FlowTest {
 
         // Add recipient
         address recipient = address(0x456);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         recipientIds[0] = recipientId;
@@ -136,8 +137,9 @@ contract OwnerFlowTest is ERC721FlowTest {
             );
 
             // Add the recipient
+            bytes32 randomRecipientId = keccak256(abi.encodePacked(randomRecipient));
             vm.prank(manager);
-            (bytes32 randomRecipientId, ) = flow.addRecipient(randomRecipient, recipientMetadata);
+            flow.addRecipient(randomRecipientId, randomRecipient, recipientMetadata);
 
             // Cast a vote for the new recipient
             bytes32[] memory newRecipientIds = new bytes32[](1);
@@ -188,8 +190,9 @@ contract OwnerFlowTest is ERC721FlowTest {
 
         // Add recipient
         address recipient = address(0x789);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         recipientIds[0] = recipientId;
@@ -231,8 +234,9 @@ contract OwnerFlowTest is ERC721FlowTest {
         nounsToken.mint(tokenOwner, tokenId);
 
         address recipient = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         recipientIds[0] = recipientId;
@@ -257,8 +261,9 @@ contract OwnerFlowTest is ERC721FlowTest {
 
         // Add recipient
         address recipient = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         // Mint token to owner and vote
         address tokenOwner = address(0x789);
