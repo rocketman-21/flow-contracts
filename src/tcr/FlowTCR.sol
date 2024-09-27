@@ -127,6 +127,7 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
         if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
             (bytes32 recipientID, ) = flowContract.addRecipient(recipient, metadata);
             itemIDToFlowRecipientID[_itemID] = recipientID;
+            flowRecipientIDToItemID[recipientID] = _itemID;
         } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
             // temporarily set manager to this contract so we can set the reward pool and actual TCR manager after they're deployed
             // make sure address(this) is updated!
