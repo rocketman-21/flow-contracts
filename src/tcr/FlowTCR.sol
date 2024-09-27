@@ -34,6 +34,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
     // Assumes itemID to be unique to the flow recipient ID
     mapping(bytes32 => bytes32) public itemIDToFlowRecipientID;
 
+    // Mapping of Flow recipientIDs to TCR itemIDs
+    mapping(bytes32 => bytes32) public flowRecipientIDToItemID;
+
     // TokenEmitter parameters
     int256 public curveSteepness;
     int256 public basePrice;
@@ -133,6 +136,7 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                 address(this)
             );
             itemIDToFlowRecipientID[_itemID] = flowRecipientID;
+            flowRecipientIDToItemID[flowRecipientID] = _itemID;
 
             ITCRFactory.DeployedContracts memory deployedContracts = tcrFactory.deployFlowTCR(
                 ITCRFactory.FlowTCRParams({
