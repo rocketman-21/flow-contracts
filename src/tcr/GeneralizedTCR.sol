@@ -186,7 +186,7 @@ abstract contract GeneralizedTCR is
         round.feeRewards = round.feeRewards.subCap(arbitrationCost);
 
         uint evidenceGroupID = uint(keccak256(abi.encodePacked(_itemID, item.requests.length - 1)));
-        emit Dispute(request.arbitrator, request.disputeID, request.metaEvidenceID, evidenceGroupID);
+        emit Dispute(request.arbitrator, request.disputeID, request.metaEvidenceID, evidenceGroupID, _itemID);
 
         if (bytes(_evidence).length > 0) {
             emit Evidence(request.arbitrator, evidenceGroupID, msg.sender, _evidence);

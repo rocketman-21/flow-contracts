@@ -4,6 +4,8 @@
 //
 // IEvidence.sol source code Copyright Kleros licensed under the MIT license.
 // With modifications by rocketman for the Nouns Flows project.
+// Changes:
+// - Added itemID to the Dispute event
 pragma solidity ^0.8.0;
 
 import { IArbitrator } from "./IArbitrator.sol";
@@ -39,11 +41,13 @@ interface IEvidence {
      * @param _disputeID ID of the dispute in the Arbitrator contract.
      * @param _metaEvidenceID Unique identifier of meta-evidence.
      * @param _evidenceGroupID Unique identifier of the evidence group that is linked to this dispute.
+     * @param _itemID Unique identifier of the item that is linked to this dispute.
      */
     event Dispute(
         IArbitrator indexed _arbitrator,
         uint256 indexed _disputeID,
         uint256 _metaEvidenceID,
-        uint256 _evidenceGroupID
+        uint256 _evidenceGroupID,
+        bytes32 _itemID
     );
 }
