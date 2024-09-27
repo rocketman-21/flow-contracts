@@ -46,7 +46,14 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
     error INVALID_CURVE_STEEPNESS();
 
     // Event emitted when TokenEmitter parameters are set
-    event TokenEmitterParamsSet(int256 curveSteepness, int256 basePrice, int256 maxPriceIncrease, int256 supplyOffset);
+    event TokenEmitterParamsSet(
+        int256 curveSteepness,
+        int256 basePrice,
+        int256 maxPriceIncrease,
+        int256 supplyOffset,
+        int256 priceDecayPercent,
+        int256 perTimeUnit
+    );
 
     // Event emitted when the required recipient type is set
     event RequiredRecipientTypeSet(FlowTypes.RecipientType requiredRecipientType);
@@ -71,7 +78,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
             _tokenEmitterParams.curveSteepness,
             _tokenEmitterParams.basePrice,
             _tokenEmitterParams.maxPriceIncrease,
-            _tokenEmitterParams.supplyOffset
+            _tokenEmitterParams.supplyOffset,
+            _tokenEmitterParams.priceDecayPercent,
+            _tokenEmitterParams.perTimeUnit
         );
 
         __GeneralizedTCR_init(
@@ -188,14 +197,25 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
      * @param _basePrice The base price for a token if sold on pace
      * @param _maxPriceIncrease The maximum price increase for a token if sold on pace
      * @param _supplyOffset The supply offset for a token if sold on pace
+     * @param _priceDecayPercent The price decay percent for the VRGDACap
+     * @param _perTimeUnit The per time unit for the VRGDACap
      */
     function setTokenEmitterParams(
         int256 _curveSteepness,
         int256 _basePrice,
         int256 _maxPriceIncrease,
-        int256 _supplyOffset
+        int256 _supplyOffset,
+        int256 _priceDecayPercent,
+        int256 _perTimeUnit
     ) external onlyOwner {
-        _setTokenEmitterParams(_curveSteepness, _basePrice, _maxPriceIncrease, _supplyOffset);
+        _setTokenEmitterParams(
+            _curveSteepness,
+            _basePrice,
+            _maxPriceIncrease,
+            _supplyOffset,
+            _priceDecayPercent,
+            _perTimeUnit
+        );
     }
 
     /**
@@ -209,7 +229,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
         int256 _curveSteepness,
         int256 _basePrice,
         int256 _maxPriceIncrease,
-        int256 _supplyOffset
+        int256 _supplyOffset,
+        int256 _priceDecayPercent,
+        int256 _perTimeUnit
     ) internal {
         if (_curveSteepness <= 0) revert INVALID_CURVE_STEEPNESS();
 
@@ -217,7 +239,16 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
         basePrice = _basePrice;
         maxPriceIncrease = _maxPriceIncrease;
         supplyOffset = _supplyOffset;
+        priceDecayPercent = _priceDecayPercent;
+        perTimeUnit = _perTimeUnit;
 
-        emit TokenEmitterParamsSet(_curveSteepness, _basePrice, _maxPriceIncrease, _supplyOffset);
+        emit TokenEmitterParamsSet(
+            _curveSteepness,
+            _basePrice,
+            _maxPriceIncrease,
+            _supplyOffset,
+            _priceDecayPercent,
+            _perTimeUnit
+        );
     }
 }
