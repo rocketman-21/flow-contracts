@@ -100,7 +100,7 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
      * @return itemID The ID of the item.
      */
     function _constructNewItemID(bytes calldata) internal override returns (bytes32 itemID) {
-        itemID = keccak256(abi.encode(address(this), itemList.length));
+        itemID = keccak256(abi.encode(address(this), itemList.length)); // Ensures uniqueness across contracts
     }
 
     /**
@@ -129,11 +129,11 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
 
         // Add the recipient to the Flow contract
         if (recipientType == FlowTypes.RecipientType.ExternalAccount) {
-            (bytes32 recipientID, ) = flowContract.addRecipient(recipientId, recipient, metadata);
+            flowContract.addRecipient(recipientId, recipient, metadata);
         } else if (recipientType == FlowTypes.RecipientType.FlowContract) {
             // temporarily set manager to this contract so we can set the reward pool and actual TCR manager after they're deployed
             // make sure address(this) is updated!
-            (bytes32 flowRecipientID, address flowRecipient) = flowContract.addFlowRecipient(
+            (, address flowRecipient) = flowContract.addFlowRecipient(
                 recipientId,
                 metadata,
                 address(this),
