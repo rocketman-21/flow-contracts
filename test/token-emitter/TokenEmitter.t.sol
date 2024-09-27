@@ -43,11 +43,12 @@ contract TokenEmitterTest is Test {
     int256 public constant BASE_PRICE = int256(1e18) / 3000;
     int256 public constant MAX_PRICE_INCREASE = int256(1e18) / 300;
     int256 public constant SUPPLY_OFFSET = int256(1e18) * 1000;
-    int256 public constant PRICE_DECAY_PERCENT = int256(1e18) / 4; // 25%
+    int256 public constant PRICE_DECAY_PERCENT = int256(1e18) / 2; // 50%
     int256 public constant PER_TIME_UNIT = int256(1e18) * 500; // 500 tokens per day
 
     function setUp() public {
-        owner = address(this);
+        owner = makeAddr("owner");
+        vm.startPrank(owner);
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
         protocolFeeRecipient = makeAddr("protocolFeeRecipient");
@@ -105,6 +106,7 @@ contract TokenEmitterTest is Test {
         // Fund users with ETH
         vm.deal(user1, 100 ether);
         vm.deal(user2, 100 ether);
+        vm.stopPrank();
     }
 
     function testInitialization() public view {
@@ -328,6 +330,7 @@ contract TokenEmitterTest is Test {
         erc20.setMinter(user1);
 
         // Set minter from owner account
+        vm.prank(owner);
         erc20.setMinter(user1);
         assertEq(erc20.minter(), user1, "Minter not set correctly");
     }
@@ -376,7 +379,7 @@ contract TokenEmitterTest is Test {
         // Expect the function to revert due to overflow or invalid computation
     }
 
-    function testSupplyOffsetEffect() public view {
+    function testSupplyOffsetEffect() public {
         uint256 initialSupply = erc20.totalSupply();
         uint256 amountToBuy = 500 * 1e18;
 
@@ -393,7 +396,7 @@ contract TokenEmitterTest is Test {
         assertTrue(costAtOffset > costBeforeOffset, "Cost should increase approaching supply offset");
     }
 
-    function testPriceContinuity() public view {
+    function testPriceContinuity() public {
         uint256 steps = 100;
         uint256 maxAmount = 10000 * 1e18;
 
@@ -429,5 +432,139 @@ contract TokenEmitterTest is Test {
         emit ITokenEmitter.TokensBought(user, user, amountToBuy, cost, protocolRewardsFee);
 
         tokenEmitter.buyToken{ value: totalPayment }(user, amountToBuy, totalPayment, rewardAddresses);
+    }
+
+    function testVRGDAPriceCap() public {
+        vm.warp(block.timestamp + 1 days);
+        address user = user1;
+
+        // Assume initial supply is less than SUPPLY_OFFSET
+        uint256 initialSupply = erc20.totalSupply();
+        uint256 tokensToReachVrgdaCap = uint256(PER_TIME_UNIT) - initialSupply;
+
+        // Start pranking as user
+        vm.startPrank(user);
+
+        // Buy tokens below the supply offset
+        ITokenEmitter.ProtocolRewardAddresses memory rewardAddresses = ITokenEmitter.ProtocolRewardAddresses({
+            builder: address(0),
+            purchaseReferral: address(0)
+        });
+
+        (int256 costBeforeCap, uint256 addedSurgeCostBeforeCap) = tokenEmitter.buyTokenQuote(tokensToReachVrgdaCap);
+        uint256 protocolRewardsFeeBefore = tokenEmitter.computeTotalReward(uint256(costBeforeCap));
+        uint256 totalPaymentBefore = uint256(costBeforeCap) + protocolRewardsFeeBefore;
+
+        assertEq(addedSurgeCostBeforeCap, 0, "Added VRGDACap surge cost should be 0");
+
+        vm.expectEmit(true, true, true, true);
+        emit ITokenEmitter.TokensBought(
+            user,
+            user,
+            tokensToReachVrgdaCap,
+            uint256(costBeforeCap),
+            protocolRewardsFeeBefore
+        );
+
+        tokenEmitter.buyToken{ value: totalPaymentBefore }(
+            user,
+            tokensToReachVrgdaCap,
+            totalPaymentBefore,
+            rewardAddresses
+        );
+
+        // Buy tokens at the supply offset to trigger VRGDACap price increase
+        (int256 costAtCap, uint256 addedSurgeCostAtCap) = tokenEmitter.buyTokenQuote(tokensToReachVrgdaCap);
+        uint256 protocolRewardsFeeAt = tokenEmitter.computeTotalReward(uint256(costAtCap));
+        uint256 totalPaymentAt = uint256(costAtCap) + protocolRewardsFeeAt;
+
+        assertGt(addedSurgeCostAtCap, 0, "Added VRGDACap surge cost should be > 0");
+
+        // Assert that cost at offset is greater than cost before offset
+        assertTrue(costAtCap > costBeforeCap, "Cost should increase at supply offset due to VRGDACap");
+
+        vm.expectEmit(true, true, true, true);
+        emit ITokenEmitter.TokensBought(user, user, tokensToReachVrgdaCap, uint256(costAtCap), protocolRewardsFeeAt);
+
+        tokenEmitter.buyToken{ value: totalPaymentAt }(user, tokensToReachVrgdaCap, totalPaymentAt, rewardAddresses);
+
+        // Additional assertions
+        assertEq(
+            erc20.balanceOf(user),
+            tokensToReachVrgdaCap * 2,
+            "User should have bought tokens up to supply offset"
+        );
+
+        vm.stopPrank();
+
+        // Advance the blockchain time by 3 days
+        vm.warp(block.timestamp + 3 days);
+
+        // Buy additional tokens after waiting
+        (int256 costAfterWait, uint256 surgeCostAfterWait) = tokenEmitter.buyTokenQuote(tokensToReachVrgdaCap);
+        uint256 protocolRewardsFeeAfterWait = tokenEmitter.computeTotalReward(uint256(costAfterWait));
+        uint256 totalPaymentAfterWait = uint256(costAfterWait) + protocolRewardsFeeAfterWait;
+
+        assertEq(surgeCostAfterWait, 0, "Added VRGDACap surge cost should be = 0");
+
+        vm.expectEmit(true, true, true, true);
+        emit ITokenEmitter.TokensBought(
+            user,
+            user,
+            tokensToReachVrgdaCap,
+            uint256(costAfterWait),
+            protocolRewardsFeeAfterWait
+        );
+
+        vm.prank(user);
+        tokenEmitter.buyToken{ value: totalPaymentAfterWait }(
+            user,
+            tokensToReachVrgdaCap,
+            totalPaymentAfterWait,
+            rewardAddresses
+        );
+
+        uint256 balanceBeforeWithdraw = address(tokenEmitter.owner()).balance;
+
+        // Withdraw the extra VRGDA ETH
+        vm.prank(owner);
+        tokenEmitter.withdrawVRGDAETH();
+
+        uint256 balanceAfterWithdraw = address(tokenEmitter.owner()).balance;
+
+        uint256 totalOwnerPayment = surgeCostAfterWait + addedSurgeCostAtCap + addedSurgeCostBeforeCap;
+
+        assertEq(balanceAfterWithdraw - balanceBeforeWithdraw, totalOwnerPayment, "Owner should have received ETH");
+
+        uint256 largePurchase = tokensToReachVrgdaCap * 6;
+
+        // Buy more tokens after withdrawing
+        (int256 costMore, uint256 surgeCostMore) = tokenEmitter.buyTokenQuote(largePurchase);
+        uint256 protocolRewardsFeeMore = tokenEmitter.computeTotalReward(uint256(costMore));
+        uint256 totalPaymentMore = uint256(costMore) + protocolRewardsFeeMore;
+
+        vm.expectEmit(true, true, true, true);
+        emit ITokenEmitter.TokensBought(user, user, largePurchase, uint256(costMore), protocolRewardsFeeMore);
+
+        vm.prank(user);
+        tokenEmitter.buyToken{ value: totalPaymentMore }(user, largePurchase, totalPaymentMore, rewardAddresses);
+
+        // Sell all tokens back
+        uint256 totalTokens = tokenEmitter.erc20().totalSupply();
+        uint256 minPayment = 1; // Set appropriate minimum payment
+        vm.prank(user);
+        tokenEmitter.sellToken(totalTokens, minPayment);
+
+        balanceBeforeWithdraw = address(tokenEmitter.owner()).balance;
+
+        // Withdraw the final VRGDA ETH
+        vm.prank(owner);
+        tokenEmitter.withdrawVRGDAETH();
+
+        balanceAfterWithdraw = address(tokenEmitter.owner()).balance;
+
+        assertEq(balanceAfterWithdraw - balanceBeforeWithdraw, surgeCostMore, "Owner should have received ETH");
+
+        assertEq(address(tokenEmitter).balance, 0, "ETH balance should be 0");
     }
 }

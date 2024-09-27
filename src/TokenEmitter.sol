@@ -7,7 +7,7 @@ import { ERC20VotesMintable } from "./ERC20VotesMintable.sol";
 import { ITokenEmitter } from "./interfaces/ITokenEmitter.sol";
 import { IWETH } from "./interfaces/IWETH.sol";
 import { FlowProtocolRewards } from "./protocol-rewards/abstract/FlowProtocolRewards.sol";
-import { toDaysWadUnsafe } from "./libs/SignedWadMath.sol";
+import { toDaysWadUnsafe, wadDiv } from "./libs/SignedWadMath.sol";
 
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -113,7 +113,7 @@ contract TokenEmitter is
 
         int256 bondingCurveCost = costForToken(int256(erc20.totalSupply()), int256(amount));
 
-        int256 avgTargetPrice = bondingCurveCost / int256(amount);
+        int256 avgTargetPrice = wadDiv(bondingCurveCost, int256(amount));
 
         // not a perfect integration here, but it's more accurate than using basePrice for p_0 in the vrgda
         // shouldn't be issues, but worth triple checking
@@ -125,9 +125,11 @@ contract TokenEmitter is
         });
 
         if (bondingCurveCost >= vrgdaCapCost) {
-            return (bondingCurveCost, 0);
+            totalCost = bondingCurveCost;
+            addedSurgeCost = 0;
         } else {
-            return (vrgdaCapCost, uint256(vrgdaCapCost - bondingCurveCost));
+            totalCost = vrgdaCapCost;
+            addedSurgeCost = uint256(vrgdaCapCost - bondingCurveCost);
         }
     }
 
@@ -204,8 +206,8 @@ contract TokenEmitter is
     }
 
     /**
-     * @notice Allows users to sell tokens and receive ETH with slippage protection
-     * @dev Uses nonReentrant modifier to prevent reentrancy attacks
+     * @notice Allows users to sell tokens and receive ETH with slippage protection.
+     * @dev Only pays back an amount of ETH that fits on the bonding curve, does not factor in VRGDACap extra ETH.
      * @param amount The number of tokens to sell
      * @param minPayment The minimum acceptable payment in wei
      */
@@ -224,6 +226,18 @@ contract TokenEmitter is
         _safeTransferETHWithFallback(_msgSender(), payment);
 
         emit TokensSold(_msgSender(), amount, payment);
+    }
+
+    /**
+     * @notice Allows the owner to withdraw accumulated VRGDACap ETH
+     * @dev Plan is to use this to fund a liquidity pool OR fund the Flow grantees for this token
+     */
+    function withdrawVRGDAETH() external onlyOwner {
+        uint256 amount = vrgdaCapExtraETH;
+        if (amount > 0) {
+            vrgdaCapExtraETH = 0;
+            _safeTransferETHWithFallback(owner(), amount);
+        }
     }
 
     /**
