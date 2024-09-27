@@ -167,7 +167,9 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         address flowManager = address(0x123);
 
         vm.prank(manager);
-        (bytes32 recipientId, address newFlowRecipient) = flow.addFlowRecipient(
+        bytes32 recipientId = keccak256(abi.encodePacked(flowManager));
+        (, address newFlowRecipient) = flow.addFlowRecipient(
+            recipientId,
             metadata,
             flowManager,
             address(dummyRewardPool)
@@ -200,12 +202,17 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Test adding with zero address flowManager (should revert)
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
         vm.prank(manager);
-        flow.addFlowRecipient(metadata, address(0), address(dummyRewardPool));
+        flow.addFlowRecipient(keccak256(abi.encodePacked(address(0))), metadata, address(0), address(dummyRewardPool));
 
         // Test adding with non-manager address (should revert)
         vm.prank(address(0xdead));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
+        flow.addFlowRecipient(
+            keccak256(abi.encodePacked(flowManager)),
+            metadata,
+            flowManager,
+            address(dummyRewardPool)
+        );
     }
 
     function testSetFlowRateAccessControl() public {
@@ -240,12 +247,14 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             url: "https://testrecipient.com"
         });
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(address(0x123), metadata);
+        bytes32 recipientId = keccak256(abi.encodePacked(address(0x123)));
+        flow.addRecipient(recipientId, address(0x123), metadata);
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding");
 
         // Add another recipient
         vm.prank(manager);
-        (bytes32 recipientId2, ) = flow.addRecipient(address(0x456), metadata);
+        bytes32 recipientId2 = keccak256(abi.encodePacked(address(0x456)));
+        flow.addRecipient(recipientId2, address(0x456), metadata);
         assertEq(flow.activeRecipientCount(), 2, "Active recipient count should be 2 after adding second recipient");
 
         // Remove a recipient
@@ -271,7 +280,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Add a flow recipient
         address flowManager = address(0x789);
         vm.prank(manager);
-        flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
+        bytes32 flowRecipientId = keccak256(abi.encodePacked(flowManager));
+        flow.addFlowRecipient(flowRecipientId, metadata, flowManager, address(dummyRewardPool));
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding flow recipient");
 
         // Verify total recipient count

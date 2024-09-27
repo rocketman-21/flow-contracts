@@ -19,9 +19,15 @@ contract FlowRecipientTest is ERC721FlowTest {
             "https://flowrecipient.com"
         );
         address flowManager = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(flowManager));
 
         vm.prank(manager);
-        (, address newFlowAddress) = flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
+        (, address newFlowAddress) = flow.addFlowRecipient(
+            recipientId,
+            metadata,
+            flowManager,
+            address(dummyRewardPool)
+        );
 
         ERC721Flow newFlow = ERC721Flow(newFlowAddress);
 
@@ -49,6 +55,7 @@ contract FlowRecipientTest is ERC721FlowTest {
             "https://flowrecipient.com"
         );
         address flowManager = address(0x123); // New flow manager address
+        bytes32 recipientId = keccak256(abi.encodePacked(flowManager));
 
         vm.startPrank(flow.owner());
 
@@ -64,12 +71,14 @@ contract FlowRecipientTest is ERC721FlowTest {
             }),
             flow.owner()
         );
-        (bytes32 recipientId, address newFlowAddress) = flow.addFlowRecipient(
+        (bytes32 returnedRecipientId, address newFlowAddress) = flow.addFlowRecipient(
+            recipientId,
             metadata,
             flowManager,
             address(dummyRewardPool)
         );
 
+        assertEq(returnedRecipientId, recipientId);
         assertNotEq(newFlowAddress, address(0));
 
         // Verify recipient was added correctly
@@ -117,11 +126,12 @@ contract FlowRecipientTest is ERC721FlowTest {
             "https://flowrecipient.com"
         );
         address emptyManager = address(0);
+        bytes32 recipientId = keccak256(abi.encodePacked(emptyManager));
 
         vm.startPrank(flow.owner());
 
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
-        flow.addFlowRecipient(metadata, emptyManager, address(dummyRewardPool));
+        flow.addFlowRecipient(recipientId, metadata, emptyManager, address(dummyRewardPool));
 
         vm.stopPrank();
     }
@@ -135,19 +145,21 @@ contract FlowRecipientTest is ERC721FlowTest {
             "https://flowrecipient.com"
         );
         address flowManager = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(flowManager));
 
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
-        flow.addFlowRecipient(metadata, flowManager, address(0));
+        flow.addFlowRecipient(recipientId, metadata, flowManager, address(0));
     }
 
     function testAddFlowRecipientEmptyMetadata() public {
         FlowTypes.RecipientMetadata memory emptyMetadata = FlowTypes.RecipientMetadata("", "", "", "", "");
         address flowManager = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(flowManager));
 
         vm.prank(flow.owner());
         vm.expectRevert(IFlow.INVALID_METADATA.selector);
-        flow.addFlowRecipient(emptyMetadata, flowManager, address(dummyRewardPool));
+        flow.addFlowRecipient(recipientId, emptyMetadata, flowManager, address(dummyRewardPool));
     }
 
     function testAddFlowRecipientNonManager() public {
@@ -159,10 +171,11 @@ contract FlowRecipientTest is ERC721FlowTest {
             "https://flowrecipient.com"
         );
         address flowManager = address(0x123);
+        bytes32 recipientId = keccak256(abi.encodePacked(flowManager));
 
         vm.prank(address(0xABC));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.addFlowRecipient(metadata, flowManager, address(dummyRewardPool));
+        flow.addFlowRecipient(recipientId, metadata, flowManager, address(dummyRewardPool));
     }
 
     function testAddMultipleFlowRecipients() public {
@@ -182,11 +195,23 @@ contract FlowRecipientTest is ERC721FlowTest {
         );
         address flowManager1 = address(0x123);
         address flowManager2 = address(0x456);
+        bytes32 recipientId1 = keccak256(abi.encodePacked(flowManager1));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(flowManager2));
 
         vm.startPrank(flow.owner());
 
-        (, address newFlowAddress1) = flow.addFlowRecipient(metadata1, flowManager1, address(dummyRewardPool));
-        (, address newFlowAddress2) = flow.addFlowRecipient(metadata2, flowManager2, address(dummyRewardPool));
+        (, address newFlowAddress1) = flow.addFlowRecipient(
+            recipientId1,
+            metadata1,
+            flowManager1,
+            address(dummyRewardPool)
+        );
+        (, address newFlowAddress2) = flow.addFlowRecipient(
+            recipientId2,
+            metadata2,
+            flowManager2,
+            address(dummyRewardPool)
+        );
 
         assertNotEq(newFlowAddress1, newFlowAddress2);
         assertEq(flow.activeRecipientCount(), 2);

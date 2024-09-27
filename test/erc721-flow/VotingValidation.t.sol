@@ -20,8 +20,9 @@ contract VotingValidationTest is ERC721FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        (bytes32 recipientId, ) = flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](0);
@@ -42,8 +43,10 @@ contract VotingValidationTest is ERC721FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocationsTwo);
 
         // add new recipient
+        address recipient2 = address(23);
+        bytes32 recipientId2 = keccak256(abi.encodePacked(recipient2));
         vm.prank(manager);
-        (bytes32 recipientId2, ) = flow.addRecipient(address(23), recipientMetadata);
+        flow.addRecipient(recipientId2, recipient2, recipientMetadata);
 
         bytes32[] memory recipientIdsTwo = new bytes32[](2);
         recipientIdsTwo[0] = recipientId;
@@ -67,8 +70,9 @@ contract VotingValidationTest is ERC721FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](0);
         uint32[] memory percentAllocations = new uint32[](1);
@@ -82,8 +86,9 @@ contract VotingValidationTest is ERC721FlowTest {
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
         address recipient2 = address(4);
+        bytes32 recipientId2 = keccak256(abi.encodePacked(recipient2));
         vm.prank(manager);
-        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
+        flow.addRecipient(recipientId2, recipient2, recipientMetadata);
 
         vm.prank(flow.owner());
         flow.removeRecipient(recipientId2);
@@ -103,8 +108,9 @@ contract VotingValidationTest is ERC721FlowTest {
         nounsToken.mint(voter1, tokenId);
 
         address recipient = address(3);
+        bytes32 recipientId = keccak256(abi.encodePacked(recipient));
         vm.prank(manager);
-        flow.addRecipient(recipient, recipientMetadata);
+        flow.addRecipient(recipientId, recipient, recipientMetadata);
 
         bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);

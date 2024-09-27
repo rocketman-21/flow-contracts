@@ -32,8 +32,10 @@ contract NounsVotingFlowTest is NounsFlowTest {
         bytes32[] memory recipientIds = new bytes32[](2);
 
         vm.startPrank(manager);
-        (bytes32 recipientId1, ) = flow.addRecipient(recipient1, recipientMetadata);
-        (bytes32 recipientId2, ) = flow.addRecipient(recipient2, recipientMetadata);
+        bytes32 recipientId1 = keccak256(abi.encodePacked(recipient1));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(recipient2));
+        flow.addRecipient(recipientId1, recipient1, recipientMetadata);
+        flow.addRecipient(recipientId2, recipient2, recipientMetadata);
         vm.stopPrank();
 
         recipientIds[0] = recipientId1;

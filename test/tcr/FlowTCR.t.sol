@@ -177,11 +177,9 @@ contract FlowTCRTest is ERC721FlowTest {
     }
 
     // Helper Functions
-    function submitItem(bytes memory _itemData, address _submitter) internal returns (bytes32) {
+    function submitItem(bytes memory _itemData, address _submitter) internal returns (bytes32 itemID) {
         vm.prank(_submitter);
-        flowTCR.addItem(_itemData);
-        bytes32 itemID = keccak256(_itemData);
-        return itemID;
+        itemID = flowTCR.addItem(_itemData);
     }
 
     /**

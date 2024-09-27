@@ -131,7 +131,7 @@ contract TCRFundFlowTest is FlowTCRTest {
             itemData,
             (address, FlowTypes.RecipientMetadata, FlowTypes.RecipientType)
         );
-        bytes32 recipientId = flowTCR.itemIDToFlowRecipientID(itemID);
+        bytes32 recipientId = itemID;
         FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(recipientId);
 
         if (recipientType == FlowTypes.RecipientType.ExternalAccount) {

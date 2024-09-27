@@ -211,28 +211,31 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
     /**
      * @notice Adds an address to the list of approved recipients
-     * @param recipient The address to be added as an approved recipient
-     * @param metadata The metadata of the recipient
+     * @param _recipientId The ID of the recipient. Must be unique and not already in use.
+     * @param _recipient The address to be added as an approved recipient
+     * @param _metadata The metadata of the recipient
      * @return bytes32 The recipientId of the newly created recipient
      * @return address The address of the newly created recipient
      */
     function addRecipient(
-        address recipient,
-        RecipientMetadata memory metadata
+        bytes32 _recipientId,
+        address _recipient,
+        RecipientMetadata memory _metadata
     ) external onlyManager nonReentrant returns (bytes32, address) {
-        (bytes32 recipientId, address recipientAddress) = fs.addRecipient(recipient, metadata);
+        (, address recipientAddress) = fs.addRecipient(_recipientId, _recipient, _metadata);
 
-        emit RecipientCreated(recipientId, fs.recipients[recipientId], msg.sender);
+        emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
         _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
         _updateBonusMemberUnits(recipientAddress, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
 
-        return (recipientId, recipientAddress);
+        return (_recipientId, recipientAddress);
     }
 
     /**
      * @notice Adds a new Flow contract as a recipient
      * @dev This function creates a new Flow contract and adds it as a recipient
+     * @param _recipientId The ID of the recipient. Must be unique and not already in use.
      * @param _metadata The metadata of the recipient
      * @param _flowManager The address of the flow manager for the new contract
      * @param _managerRewardPool The address of the manager reward pool for the new contract
@@ -242,6 +245,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a RecipientCreated event if the recipient is successfully added
      */
     function addFlowRecipient(
+        bytes32 _recipientId,
         RecipientMetadata calldata _metadata,
         address _flowManager,
         address _managerRewardPool
@@ -254,12 +258,12 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         _connectAndInitializeFlowRecipient(recipient);
 
-        bytes32 recipientId = fs.addFlowRecipient(recipient, _metadata);
+        fs.addFlowRecipient(_recipientId, recipient, _metadata);
 
-        emit RecipientCreated(recipientId, fs.recipients[recipientId], msg.sender);
-        emit FlowRecipientCreated(recipientId, recipient);
+        emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
+        emit FlowRecipientCreated(_recipientId, recipient);
 
-        return (recipientId, recipient);
+        return (_recipientId, recipient);
     }
 
     /**

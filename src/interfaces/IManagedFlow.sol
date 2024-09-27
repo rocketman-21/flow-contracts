@@ -6,25 +6,29 @@ import { FlowTypes } from "../storage/FlowStorageV1.sol";
 interface IManagedFlow {
     /**
      * @notice Adds an address to the list of approved recipients
+     * @param newRecipientId The ID of the recipient
      * @param recipient The address to be added as an approved recipient
      * @param metadata The metadata of the recipient
      * @return recipientId The ID of the recipient
-     * @return recipientAddress The address of the newly created Flow contract
+     * @return recipientAddress The address of the Flow recipient
      */
     function addRecipient(
+        bytes32 newRecipientId,
         address recipient,
         FlowTypes.RecipientMetadata memory metadata
     ) external returns (bytes32 recipientId, address recipientAddress);
 
     /**
      * @notice Adds a new Flow contract as a recipient
+     * @param newRecipientId The ID of the recipient
      * @param metadata The metadata of the recipient
      * @param flowManager The address of the flow manager for the new contract
      * @param managerRewardPool The address of the manager reward pool for the new contract
      * @return recipientId The ID of the recipient
-     * @return recipientAddress The address of the newly created Flow contract
+     * @return recipientAddress The address of the newly created flow contract
      */
     function addFlowRecipient(
+        bytes32 newRecipientId,
         FlowTypes.RecipientMetadata memory metadata,
         address flowManager,
         address managerRewardPool

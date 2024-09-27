@@ -24,8 +24,18 @@ contract DelegateVotingTest is ERC721FlowTest {
         address recipient1 = address(3);
         address recipient2 = address(4);
         vm.startPrank(manager);
-        (bytes32 recipientId1, address recipientAddress1) = flow.addRecipient(recipient1, recipientMetadata);
-        (bytes32 recipientId2, address recipientAddress2) = flow.addRecipient(recipient2, recipientMetadata);
+        bytes32 recipientId1 = keccak256(abi.encodePacked(recipient1));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(recipient2));
+        (bytes32 returnedRecipientId1, address recipientAddress1) = flow.addRecipient(
+            recipientId1,
+            recipient1,
+            recipientMetadata
+        );
+        (bytes32 returnedRecipientId2, address recipientAddress2) = flow.addRecipient(
+            recipientId2,
+            recipient2,
+            recipientMetadata
+        );
         vm.stopPrank();
 
         // Prepare vote data
@@ -97,8 +107,18 @@ contract DelegateVotingTest is ERC721FlowTest {
         address recipient1 = address(4);
         address recipient2 = address(5);
         vm.startPrank(manager);
-        (bytes32 recipientId1, address recipientAddress1) = flow.addRecipient(recipient1, recipientMetadata);
-        (bytes32 recipientId2, address recipientAddress2) = flow.addRecipient(recipient2, recipientMetadata);
+        bytes32 recipientId1 = keccak256(abi.encodePacked(recipient1));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(recipient2));
+        (bytes32 returnedRecipientId1, address recipientAddress1) = flow.addRecipient(
+            recipientId1,
+            recipient1,
+            recipientMetadata
+        );
+        (bytes32 returnedRecipientId2, address recipientAddress2) = flow.addRecipient(
+            recipientId2,
+            recipient2,
+            recipientMetadata
+        );
         vm.stopPrank();
 
         // Prepare vote data
