@@ -121,6 +121,10 @@ contract ERC20VotesMintable is
         return 18;
     }
 
+    function totalSupply() public view virtual override(ERC20Upgradeable) returns (uint256) {
+        return super.totalSupply();
+    }
+
     /**
      * @notice Mints new tokens and assigns them to the specified account
      * @dev Only callable by the minter role and protected against reentrancy

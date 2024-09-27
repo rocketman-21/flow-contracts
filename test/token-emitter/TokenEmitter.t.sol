@@ -9,7 +9,7 @@ import { ProtocolRewards } from "../../src/protocol-rewards/ProtocolRewards.sol"
 import { IWETH } from "../../src/interfaces/IWETH.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
-import { BondingSCurve } from "../../src/bonding-curve/BondingSCurve.sol";
+import { BondingSCurve } from "../../src/token-issuance/BondingSCurve.sol";
 import { MockWETH } from "../mocks/MockWETH.sol";
 
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
@@ -43,6 +43,8 @@ contract TokenEmitterTest is Test {
     int256 public constant BASE_PRICE = int256(1e18) / 3000;
     int256 public constant MAX_PRICE_INCREASE = int256(1e18) / 300;
     int256 public constant SUPPLY_OFFSET = int256(1e18) * 1000;
+    int256 public constant PRICE_DECAY_PERCENT = int256(1e18) / 4; // 25%
+    int256 public constant PER_TIME_UNIT = int256(1e18) * 500; // 500 tokens per day
 
     function setUp() public {
         owner = address(this);
@@ -85,15 +87,17 @@ contract TokenEmitterTest is Test {
         erc20.initialize(owner, address(tokenEmitter), address(rewardPool), "Test Token", "TST");
 
         // Initialize TokenEmitter
-        tokenEmitter.initialize(
-            owner,
-            address(erc20),
-            address(weth),
-            CURVE_STEEPNESS,
-            BASE_PRICE,
-            MAX_PRICE_INCREASE,
-            SUPPLY_OFFSET
-        );
+        tokenEmitter.initialize({
+            _initialOwner: owner,
+            _erc20: address(erc20),
+            _weth: address(weth),
+            _curveSteepness: CURVE_STEEPNESS,
+            _basePrice: BASE_PRICE,
+            _maxPriceIncrease: MAX_PRICE_INCREASE,
+            _supplyOffset: SUPPLY_OFFSET,
+            _priceDecayPercent: PRICE_DECAY_PERCENT,
+            _perTimeUnit: PER_TIME_UNIT
+        });
 
         // Set minter for ERC20
         erc20.setMinter(address(tokenEmitter));
@@ -126,7 +130,7 @@ contract TokenEmitterTest is Test {
         // Get the quote for buying tokens
         int256 costInt = tokenEmitter.buyTokenQuoteWithRewards(amountToBuy);
         uint256 totalPayment = uint256(costInt);
-        int256 costWithoutRewardsInt = tokenEmitter.buyTokenQuote(amountToBuy);
+        (int256 costWithoutRewardsInt, uint256 addedSurgeCost) = tokenEmitter.buyTokenQuote(amountToBuy);
         uint256 costWithoutRewards = uint256(costWithoutRewardsInt);
         uint256 protocolRewardsFee = totalPayment - costWithoutRewards;
 
@@ -234,7 +238,7 @@ contract TokenEmitterTest is Test {
         vm.prank(user);
 
         // Get the quote for buying tokens
-        int256 costInt = tokenEmitter.buyTokenQuote(amountToBuy);
+        (int256 costInt, uint256 addedSurgeCost) = tokenEmitter.buyTokenQuote(amountToBuy);
         uint256 cost = uint256(costInt);
         uint256 protocolRewardsFee = tokenEmitter.computeTotalReward(cost);
 
@@ -283,7 +287,7 @@ contract TokenEmitterTest is Test {
         vm.prank(user);
 
         // Get the quote for buying tokens
-        int256 costInt = tokenEmitter.buyTokenQuote(amountToBuy);
+        (int256 costInt, uint256 addedSurgeCost) = tokenEmitter.buyTokenQuote(amountToBuy);
         uint256 cost = uint256(costInt);
         uint256 protocolRewardsFee = tokenEmitter.computeTotalReward(cost);
 
@@ -380,8 +384,10 @@ contract TokenEmitterTest is Test {
         uint256 tokensToReachOffset = uint256(SUPPLY_OFFSET) - initialSupply;
 
         // Buy tokens before supply offset
-        int256 costBeforeOffset = tokenEmitter.buyTokenQuote(tokensToReachOffset - amountToBuy);
-        int256 costAtOffset = tokenEmitter.buyTokenQuote(tokensToReachOffset);
+        (int256 costBeforeOffset, uint256 addedSurgeCostBeforeOffset) = tokenEmitter.buyTokenQuote(
+            tokensToReachOffset - amountToBuy
+        );
+        (int256 costAtOffset, uint256 addedSurgeCostAtOffset) = tokenEmitter.buyTokenQuote(tokensToReachOffset);
 
         // Assert that the cost increases as we approach the supply offset
         assertTrue(costAtOffset > costBeforeOffset, "Cost should increase approaching supply offset");
@@ -395,7 +401,7 @@ contract TokenEmitterTest is Test {
 
         for (uint256 i = 1; i <= steps; i++) {
             uint256 amountToBuy = (maxAmount / steps) * i;
-            int256 cost = tokenEmitter.buyTokenQuote(amountToBuy);
+            (int256 cost, uint256 addedSurgeCost) = tokenEmitter.buyTokenQuote(amountToBuy);
 
             // Ensure cost increases continuously
             assertTrue(cost > previousCost, "Cost should increase continuously");
@@ -408,7 +414,7 @@ contract TokenEmitterTest is Test {
         address user = user1;
         vm.startPrank(user);
 
-        int256 costInt = tokenEmitter.buyTokenQuote(amountToBuy);
+        (int256 costInt, uint256 addedSurgeCost) = tokenEmitter.buyTokenQuote(amountToBuy);
         uint256 cost = uint256(costInt);
         uint256 protocolRewardsFee = tokenEmitter.computeTotalReward(cost);
         uint256 totalPayment = cost + protocolRewardsFee;

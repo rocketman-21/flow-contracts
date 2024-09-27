@@ -86,6 +86,8 @@ interface ITokenEmitter {
      * @param basePrice The base price for token emission
      * @param maxPriceIncrease The maximum price increase for token emission
      * @param supplyOffset The supply offset for the bonding curve
+     * @param priceDecayPercent The price decay percent for the VRGDACap
+     * @param perTimeUnit The per time unit for the VRGDACap
      */
     function initialize(
         address initialOwner,
@@ -94,15 +96,18 @@ interface ITokenEmitter {
         int256 curveSteepness,
         int256 basePrice,
         int256 maxPriceIncrease,
-        int256 supplyOffset
+        int256 supplyOffset,
+        int256 priceDecayPercent,
+        int256 perTimeUnit
     ) external;
 
     /**
      * @dev Calculates the cost to buy a certain amount of tokens
      * @param amount The number of tokens to buy
-     * @return The cost to buy the specified amount of tokens
+     * @return totalCost The cost to buy the specified amount of tokens
+     * @return surgeCost The cost to buy the specified amount of tokens
      */
-    function buyTokenQuote(uint256 amount) external view returns (int256);
+    function buyTokenQuote(uint256 amount) external view returns (int256 totalCost, uint256 surgeCost);
 
     /**
      * @dev Calculates the payment received when selling a certain amount of tokens

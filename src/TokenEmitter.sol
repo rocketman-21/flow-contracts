@@ -1,24 +1,49 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.27;
 
-import { BondingSCurve } from "./bonding-curve/BondingSCurve.sol";
+import { BondingSCurve } from "./token-issuance/BondingSCurve.sol";
+import { VRGDACap } from "./token-issuance/VRGDACap.sol";
 import { ERC20VotesMintable } from "./ERC20VotesMintable.sol";
 import { ITokenEmitter } from "./interfaces/ITokenEmitter.sol";
 import { IWETH } from "./interfaces/IWETH.sol";
 import { FlowProtocolRewards } from "./protocol-rewards/abstract/FlowProtocolRewards.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { toDaysWadUnsafe } from "./libs/SignedWadMath.sol";
+
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
  * @title TokenEmitter
  * @dev Contract for emitting tokens using a bonding curve mechanism
  */
-contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeable, FlowProtocolRewards {
+contract TokenEmitter is
+    ITokenEmitter,
+    BondingSCurve,
+    VRGDACap,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    ReentrancyGuardUpgradeable,
+    FlowProtocolRewards
+{
     /// @notice The ERC20 token being emitted
     ERC20VotesMintable public erc20;
 
     /// @notice The WETH token
     IWETH public WETH;
+
+    // The start time of token emission for the VRGDACap
+    uint256 public vrgdaCapStartTime;
+
+    // The extra ETH received from high VRGDACap prices
+    uint256 public vrgdaCapExtraETH;
+
+    ///                                                          ///
+    ///                           ERRORS                         ///
+    ///                                                          ///
+
+    /// @notice Reverts for address zero
+    error INVALID_ADDRESS_ZERO();
 
     /**
      * @param _protocolRewards The protocol rewards contract address
@@ -41,6 +66,8 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
      * @param _basePrice The base price for token emission
      * @param _maxPriceIncrease The maximum price increase for token emission
      * @param _supplyOffset The supply offset for the bonding curve
+     * @param _priceDecayPercent The price decay percent for the VRGDACap
+     * @param _perTimeUnit The per time unit for the VRGDACap
      */
     function initialize(
         address _initialOwner,
@@ -49,7 +76,9 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
         int256 _curveSteepness,
         int256 _basePrice,
         int256 _maxPriceIncrease,
-        int256 _supplyOffset
+        int256 _supplyOffset,
+        int256 _priceDecayPercent,
+        int256 _perTimeUnit
     ) public initializer {
         if (_erc20 == address(0)) revert INVALID_ADDRESS_ZERO();
         if (_weth == address(0)) revert INVALID_ADDRESS_ZERO();
@@ -58,19 +87,48 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
         erc20 = ERC20VotesMintable(_erc20);
         WETH = IWETH(_weth);
 
+        // If we are upgrading, don't reset the start time
+        if (vrgdaCapStartTime == 0) vrgdaCapStartTime = block.timestamp;
+
+        __Ownable_init();
+
+        _transferOwnership(_initialOwner);
+
         __ReentrancyGuard_init();
 
-        __BondingSCurve_init(_initialOwner, _curveSteepness, _basePrice, _maxPriceIncrease, _supplyOffset);
+        __BondingSCurve_init(_curveSteepness, _basePrice, _maxPriceIncrease, _supplyOffset);
+        __VRGDACap_init(_priceDecayPercent, _perTimeUnit);
     }
 
     /**
      * @notice Calculates the cost to buy a certain amount of tokens
      * @dev Uses the bonding curve to determine the cost
      * @param amount The number of tokens to buy
-     * @return cost The cost to buy the specified amount of tokens
+     * @return totalCost The cost to buy the specified amount of tokens
+     * @return addedSurgeCost The extra ETH paid by users due to high VRGDACap prices
+     * @dev Uses the bonding curve to determine the minimum cost, but if sales are ahead of schedule, the VRGDACap price will be used
      */
-    function buyTokenQuote(uint256 amount) public view returns (int256 cost) {
-        return costForToken(int256(IERC20(address(erc20)).totalSupply()), int256(amount));
+    function buyTokenQuote(uint256 amount) public view returns (int256 totalCost, uint256 addedSurgeCost) {
+        if (amount == 0) revert INVALID_AMOUNT();
+
+        int256 bondingCurveCost = costForToken(int256(erc20.totalSupply()), int256(amount));
+
+        int256 avgTargetPrice = bondingCurveCost / int256(amount);
+
+        // not a perfect integration here, but it's more accurate than using basePrice for p_0 in the vrgda
+        // shouldn't be issues, but worth triple checking
+        int256 vrgdaCapCost = xToY({
+            timeSinceStart: toDaysWadUnsafe(block.timestamp - vrgdaCapStartTime),
+            sold: int256(erc20.totalSupply()),
+            amount: int256(amount),
+            avgTargetPrice: avgTargetPrice
+        });
+
+        if (bondingCurveCost >= vrgdaCapCost) {
+            return (bondingCurveCost, 0);
+        } else {
+            return (vrgdaCapCost, uint256(vrgdaCapCost - bondingCurveCost));
+        }
     }
 
     /**
@@ -79,11 +137,11 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
      * @param amount The number of tokens to buy
      * @return cost The cost to buy the specified amount of tokens including protocol rewards
      */
-    function buyTokenQuoteWithRewards(uint256 amount) public view returns (int256 cost) {
-        int256 costBeforeRewards = buyTokenQuote(amount);
-        if (costBeforeRewards < 0) return costBeforeRewards;
+    function buyTokenQuoteWithRewards(uint256 amount) public view returns (int256) {
+        (int256 totalCost, ) = buyTokenQuote(amount);
+        if (totalCost < 0) revert INVALID_COST();
 
-        return costBeforeRewards + int256(computeTotalReward(uint256(costBeforeRewards)));
+        return totalCost + int256(computeTotalReward(uint256(totalCost)));
     }
 
     /**
@@ -93,7 +151,7 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
      * @return payment The payment received for selling the specified amount of tokens
      */
     function sellTokenQuote(uint256 amount) public view returns (int256 payment) {
-        return paymentToSell(int256(IERC20(address(erc20)).totalSupply()), int256(amount));
+        return paymentToSell(int256(erc20.totalSupply()), int256(amount));
     }
 
     /**
@@ -112,7 +170,7 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
         if (user == address(0)) revert INVALID_ADDRESS_ZERO();
         if (amount == 0) revert INVALID_AMOUNT();
 
-        int256 costInt = buyTokenQuote(amount);
+        (int256 costInt, uint256 surgeCost) = buyTokenQuote(amount);
         if (costInt < 0) revert INVALID_COST();
         uint256 costForTokens = uint256(costInt);
 
@@ -135,6 +193,10 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
             protocolRewardsRecipients.builder,
             protocolRewardsRecipients.purchaseReferral
         );
+
+        if (surgeCost > 0) {
+            vrgdaCapExtraETH += surgeCost;
+        }
 
         erc20.mint(user, amount);
 
@@ -195,4 +257,9 @@ contract TokenEmitter is ITokenEmitter, BondingSCurve, ReentrancyGuardUpgradeabl
             if (!wethSuccess) revert("WETH transfer failed");
         }
     }
+
+    /// @notice Ensures the caller is authorized to upgrade the contract
+    /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
+    /// @param _newImpl The new implementation address
+    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
 }

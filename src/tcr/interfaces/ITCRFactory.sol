@@ -13,18 +13,20 @@ import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/in
 interface ITCRFactory {
     /**
      * @dev Parameters for initializing a TokenEmitter
-     * @param initialOwner The address of the initial owner of the contract
      * @param curveSteepness The steepness of the bonding curve
      * @param basePrice The base price for token emission
      * @param maxPriceIncrease The maximum price increase for token emission
      * @param supplyOffset The supply offset for the bonding curve
+     * @param priceDecayPercent The price decay percent for the VRGDACap
+     * @param perTimeUnit The per time unit for the VRGDACap
      */
     struct TokenEmitterParams {
-        address initialOwner;
         int256 curveSteepness;
         int256 basePrice;
         int256 maxPriceIncrease;
         int256 supplyOffset;
+        int256 priceDecayPercent;
+        int256 perTimeUnit;
     }
 
     /**

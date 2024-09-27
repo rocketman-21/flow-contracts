@@ -77,6 +77,8 @@ contract DeployNounsFlow is DeployScript {
         int256 supplyOffset = -1 * int256(vm.envUint("SUPPLY_OFFSET")); // note - multiply by -1 here since we want to move the graph right
         address protocolRewards = vm.envAddress("PROTOCOL_REWARDS");
         address protocolFeeRecipient = vm.envAddress("PROTOCOL_FEE_RECIPIENT");
+        int256 priceDecayPercent = int256(vm.envUint("PRICE_DECAY_PERCENT"));
+        int256 perTimeUnit = int256(vm.envUint("PER_TIME_UNIT"));
 
         // Deploy NounsFlow implementation
         NounsFlow nounsFlowImpl = new NounsFlow();
@@ -124,7 +126,9 @@ contract DeployNounsFlow is DeployScript {
             curveSteepness: curveSteepness,
             basePrice: basePrice,
             maxPriceIncrease: maxPriceIncrease,
-            supplyOffset: supplyOffset
+            supplyOffset: supplyOffset,
+            priceDecayPercent: priceDecayPercent,
+            perTimeUnit: perTimeUnit
         });
 
         // Prepare initialization data
@@ -178,11 +182,13 @@ contract DeployNounsFlow is DeployScript {
                 clearingMetaEvidence: "",
                 requiredRecipientType: FlowTypes.RecipientType.FlowContract // For the first top level pool, we require a FlowContract recipient
             }),
-            tokenEmitterParams: IFlowTCR.TokenEmitterParams({
+            tokenEmitterParams: ITCRFactory.TokenEmitterParams({
                 curveSteepness: curveSteepness,
                 basePrice: basePrice,
                 maxPriceIncrease: maxPriceIncrease,
-                supplyOffset: supplyOffset
+                supplyOffset: supplyOffset,
+                priceDecayPercent: priceDecayPercent,
+                perTimeUnit: perTimeUnit
             })
         });
 

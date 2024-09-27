@@ -7,7 +7,6 @@ import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 import { IFlowTCR } from "./interfaces/IGeneralizedTCR.sol";
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { ITCRFactory } from "./interfaces/ITCRFactory.sol";
-import { FlowRecipients } from "../library/FlowRecipients.sol";
 import { FlowTCRItems } from "./library/FlowTCRItems.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 
@@ -39,6 +38,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
     int256 public basePrice;
     int256 public maxPriceIncrease;
     int256 public supplyOffset;
+    // TokenEmitter VRGDACap parameters
+    int256 public priceDecayPercent;
+    int256 public perTimeUnit;
 
     // Error emitted when the curve steepness is invalid
     error INVALID_CURVE_STEEPNESS();
@@ -59,7 +61,7 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
     function initialize(
         ContractParams memory _contractParams,
         TCRParams memory _tcrParams,
-        TokenEmitterParams memory _tokenEmitterParams
+        ITCRFactory.TokenEmitterParams memory _tokenEmitterParams
     ) public initializer {
         flowContract = _contractParams.flowContract;
         tcrFactory = _contractParams.tcrFactory;
@@ -153,11 +155,12 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                 ITCRFactory.ERC20Params({ initialOwner: owner(), name: metadata.title, symbol: "TCRT" }), // TODO update all
                 ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) }),
                 ITCRFactory.TokenEmitterParams({
-                    initialOwner: owner(),
                     curveSteepness: curveSteepness,
                     basePrice: basePrice,
                     maxPriceIncrease: maxPriceIncrease,
-                    supplyOffset: supplyOffset
+                    supplyOffset: supplyOffset,
+                    priceDecayPercent: priceDecayPercent,
+                    perTimeUnit: perTimeUnit
                 })
             );
 
