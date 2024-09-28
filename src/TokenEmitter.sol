@@ -124,6 +124,9 @@ contract TokenEmitter is
             avgTargetPrice: avgTargetPrice
         });
 
+        if (vrgdaCapCost < 0) revert INVALID_COST();
+        if (bondingCurveCost < 0) revert INVALID_COST();
+
         if (bondingCurveCost >= vrgdaCapCost) {
             totalCost = bondingCurveCost;
             addedSurgeCost = 0;
@@ -236,6 +239,7 @@ contract TokenEmitter is
         uint256 amount = vrgdaCapExtraETH;
         if (amount > 0) {
             vrgdaCapExtraETH = 0;
+            emit VRGDACapETHWithdrawn(amount);
             _safeTransferETHWithFallback(owner(), amount);
         }
     }

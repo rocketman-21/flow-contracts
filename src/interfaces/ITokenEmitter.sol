@@ -78,6 +78,12 @@ interface ITokenEmitter {
     event TokensSold(address indexed seller, uint256 amount, uint256 payment);
 
     /**
+     * @dev Event emitted when ETH is withdrawn from the VRGDACap
+     * @param amount The amount of ETH withdrawn
+     */
+    event VRGDACapETHWithdrawn(uint256 amount);
+
+    /**
      * @dev Initializes the TokenEmitter contract
      * @param initialOwner The address of the initial owner of the contract
      * @param erc20 The address of the ERC20 token to be emitted

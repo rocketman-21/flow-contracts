@@ -24,13 +24,23 @@ abstract contract VRGDACap is IVRGDACap {
     int256 public priceDecayPercent;
 
     ///                                                          ///
+    ///                         ERRORS                         ///
+    ///                                                          ///
+
+    error INVALID_PER_TIME_UNIT();
+
+    error NON_NEGATIVE_DECAY_CONSTANT();
+
+    ///                                                          ///
     ///                         INITIALIZER                      ///
     ///                                                          ///
 
     /// @notice Sets price decay percent and per time unit for the VRGDACap.
     /// @param _priceDecayPercent The percent price decays per unit of time with no sales, scaled by 1e18.
     /// @param _perTimeUnit The number of tokens to target selling in 1 full unit of time, scaled by 1e18.
-    function __VRGDACap_init(int256 _priceDecayPercent, int256 _perTimeUnit) public {
+    function __VRGDACap_init(int256 _priceDecayPercent, int256 _perTimeUnit) internal {
+        if (_perTimeUnit <= 0) revert INVALID_PER_TIME_UNIT();
+
         perTimeUnit = _perTimeUnit;
 
         priceDecayPercent = _priceDecayPercent;
@@ -38,7 +48,7 @@ abstract contract VRGDACap is IVRGDACap {
         decayConstant = wadLn(1e18 - _priceDecayPercent);
 
         // The decay constant must be negative for VRGDAs to work.
-        require(decayConstant < 0, "NON_NEGATIVE_DECAY_CONSTANT");
+        if (decayConstant >= 0) revert NON_NEGATIVE_DECAY_CONSTANT();
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -53,7 +63,7 @@ abstract contract VRGDACap is IVRGDACap {
         int256 sold,
         int256 amount,
         int256 avgTargetPrice
-    ) public view virtual returns (int256) {
+    ) internal view returns (int256) {
         return
             pIntegral(timeSinceStart, sold + amount, avgTargetPrice) - pIntegral(timeSinceStart, sold, avgTargetPrice);
     }

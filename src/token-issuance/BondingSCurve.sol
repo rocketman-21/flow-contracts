@@ -61,7 +61,7 @@ abstract contract BondingSCurve {
         int256 _basePrice,
         int256 _maxPriceIncrease,
         int256 _supplyOffset
-    ) public {
+    ) internal {
         if (_curveSteepness <= 0) revert INVALID_CURVE_STEEPNESS();
 
         curveSteepness = _curveSteepness;
