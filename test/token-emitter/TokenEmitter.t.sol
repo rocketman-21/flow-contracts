@@ -130,7 +130,7 @@ contract TokenEmitterTest is Test {
         vm.startPrank(user);
 
         // Get the quote for buying tokens
-        int256 costInt = tokenEmitter.buyTokenQuoteWithRewards(amountToBuy);
+        (int256 costInt, ) = tokenEmitter.buyTokenQuoteWithRewards(amountToBuy);
         uint256 totalPayment = uint256(costInt);
         (int256 costWithoutRewardsInt, uint256 addedSurgeCost) = tokenEmitter.buyTokenQuote(amountToBuy);
         uint256 costWithoutRewards = uint256(costWithoutRewardsInt);

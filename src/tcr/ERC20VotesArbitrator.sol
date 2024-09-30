@@ -125,6 +125,7 @@ contract ERC20VotesArbitrator is
             newDispute.rounds[0].revealPeriodEndTime,
             newDispute.rounds[0].appealPeriodEndTime,
             newDispute.rounds[0].totalSupply,
+            newDispute.rounds[0].creationBlock,
             _extraData,
             _choices
         );
@@ -272,18 +273,25 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Reveal a previously committed vote for a dispute
      * @param disputeId The id of the dispute to reveal the vote for
+     * @param voter The address of the voter. Added for custodial voting.
      * @param choice The choice that was voted for
      * @param reason The reason for the vote
      * @param salt The salt used in the commit phase
      */
-    function revealVote(uint256 disputeId, uint256 choice, bytes calldata reason, bytes32 salt) external nonReentrant {
+    function revealVote(
+        uint256 disputeId,
+        address voter,
+        uint256 choice,
+        bytes calldata reason,
+        bytes32 salt
+    ) external nonReentrant {
         Dispute storage dispute = disputes[disputeId];
         uint256 round = dispute.currentRound;
 
         if (_getVotingRoundState(disputeId, round) != DisputeState.Reveal) revert VOTING_CLOSED();
         if (choice == 0 || choice > dispute.choices) revert INVALID_VOTE_CHOICE();
 
-        Receipt storage receipt = dispute.rounds[round].receipts[msg.sender];
+        Receipt storage receipt = dispute.rounds[round].receipts[voter];
         if (!receipt.hasCommitted) revert NO_COMMITTED_VOTE();
         if (receipt.hasRevealed) revert ALREADY_REVEALED_VOTE();
 
@@ -291,7 +299,7 @@ contract ERC20VotesArbitrator is
         bytes32 reconstructedHash = keccak256(abi.encode(choice, reason, salt));
         if (reconstructedHash != receipt.secretHash) revert HASHES_DO_NOT_MATCH();
 
-        uint256 votes = votingToken.getPastVotes(msg.sender, dispute.rounds[round].creationBlock);
+        uint256 votes = votingToken.getPastVotes(voter, dispute.rounds[round].creationBlock);
 
         if (votes == 0) revert VOTER_HAS_NO_VOTES();
 
@@ -302,7 +310,7 @@ contract ERC20VotesArbitrator is
         dispute.rounds[round].votes += votes;
         dispute.rounds[round].choiceVotes[choice] += votes;
 
-        emit VoteRevealed(msg.sender, disputeId, receipt.secretHash, choice, reason, votes);
+        emit VoteRevealed(voter, disputeId, receipt.secretHash, choice, reason, votes);
     }
 
     /**
