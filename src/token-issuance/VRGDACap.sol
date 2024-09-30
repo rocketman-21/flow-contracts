@@ -63,7 +63,7 @@ abstract contract VRGDACap is IVRGDACap {
         int256 sold,
         int256 amount,
         int256 avgTargetPrice
-    ) internal view returns (int256) {
+    ) public view returns (int256) {
         return
             pIntegral(timeSinceStart, sold + amount, avgTargetPrice) - pIntegral(timeSinceStart, sold, avgTargetPrice);
     }
