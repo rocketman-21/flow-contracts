@@ -121,7 +121,7 @@ contract TokenEmitter is
             timeSinceStart: toDaysWadUnsafe(block.timestamp - vrgdaCapStartTime),
             sold: int256(erc20.totalSupply()),
             amount: int256(amount),
-            avgTargetPrice: avgTargetPrice
+            avgTargetPrice: avgTargetPrice < 0 ? 1 : avgTargetPrice // ensure target price is positive
         });
 
         if (vrgdaCapCost < 0) revert INVALID_COST();
