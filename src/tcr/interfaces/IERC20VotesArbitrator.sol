@@ -194,7 +194,7 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 indexed disputeId,
         bytes32 secretHash,
         uint256 choice,
-        bytes reason,
+        string reason,
         uint256 votes
     );
 
