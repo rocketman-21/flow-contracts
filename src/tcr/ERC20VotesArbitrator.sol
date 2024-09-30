@@ -393,6 +393,22 @@ contract ERC20VotesArbitrator is
     }
 
     /**
+     * @notice Checks if a voter can vote in a specific round
+     * @param disputeId The ID of the dispute
+     * @param round The round number
+     * @param voter The address of the voter
+     * @return votingPower The voting power of the voter in the round
+     * @return canVote True if the voter can vote in the round, false otherwise
+     */
+    function votingPowerInRound(uint256 disputeId, uint256 round, address voter) external view returns (uint256, bool) {
+        Dispute storage dispute = disputes[disputeId];
+        VotingRound storage votingRound = dispute.rounds[round];
+        uint256 votes = votingToken.getPastVotes(voter, votingRound.creationBlock);
+
+        return (votes, votes > 0);
+    }
+
+    /**
      * @notice Calculates the cost required to appeal a specific dispute.
      * @param _currentRound The current round number of the dispute.
      * @return The calculated appeal cost.
