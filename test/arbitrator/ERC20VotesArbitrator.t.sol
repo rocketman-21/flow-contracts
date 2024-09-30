@@ -49,7 +49,7 @@ contract ERC20VotesArbitratorTest is FlowTCRTest {
 
     function revealVote(uint256 disputeID, address voter, uint256 choice, string memory reason, bytes32 salt) internal {
         vm.prank(voter);
-        arbitrator.revealVote(disputeID, choice, bytes(reason), salt);
+        arbitrator.revealVote(disputeID, voter, choice, bytes(reason), salt);
     }
 
     // Helper function to submit an item and challenge it

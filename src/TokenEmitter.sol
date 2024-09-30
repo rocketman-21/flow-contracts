@@ -144,13 +144,15 @@ contract TokenEmitter is
      * @notice Calculates the cost to buy a certain amount of tokens including protocol rewards
      * @dev Uses the bonding curve to determine the cost
      * @param amount The number of tokens to buy
-     * @return cost The cost to buy the specified amount of tokens including protocol rewards
+     * @return totalCost The cost to buy the specified amount of tokens including protocol rewards
+     * @return addedSurgeCost The extra ETH paid by users due to high VRGDACap prices
      */
-    function buyTokenQuoteWithRewards(uint256 amount) public view returns (int256) {
-        (int256 totalCost, ) = buyTokenQuote(amount);
-        if (totalCost < 0) revert INVALID_COST();
+    function buyTokenQuoteWithRewards(uint256 amount) public view returns (int256 totalCost, uint256 addedSurgeCost) {
+        (int256 costInt, uint256 surgeCost) = buyTokenQuote(amount);
+        if (costInt < 0) revert INVALID_COST();
 
-        return totalCost + int256(computeTotalReward(uint256(totalCost)));
+        totalCost = costInt + int256(computeTotalReward(uint256(costInt)));
+        addedSurgeCost = surgeCost;
     }
 
     /**

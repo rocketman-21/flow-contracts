@@ -214,6 +214,7 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param revealPeriodEndTime The timestamp when the reveal period ends
      * @param appealPeriodEndTime The timestamp when the appeal period ends
      * @param totalSupply The total supply of voting tokens at dispute creation
+     * @param creationBlock The block number when the dispute was created
      * @param extraData Additional data related to the dispute
      * @param choices The number of choices available for voting
      */
@@ -225,6 +226,7 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 revealPeriodEndTime,
         uint256 appealPeriodEndTime,
         uint256 totalSupply,
+        uint256 creationBlock,
         bytes extraData,
         uint256 choices
     );
