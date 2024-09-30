@@ -282,7 +282,7 @@ contract ERC20VotesArbitrator is
         uint256 disputeId,
         address voter,
         uint256 choice,
-        bytes calldata reason,
+        string calldata reason,
         bytes32 salt
     ) external nonReentrant {
         Dispute storage dispute = disputes[disputeId];

@@ -580,6 +580,7 @@ abstract contract GeneralizedTCR is
      *  @return removeItemCost The total cost in ERC20 tokens to remove an item.
      *  @return challengeSubmissionCost The total cost in ERC20 tokens to challenge a submission.
      *  @return challengeRemovalCost The total cost in ERC20 tokens to challenge a removal request.
+     *  @return arbitrationCost The cost in ERC20 tokens to arbitrate a dispute.
      */
     function getTotalCosts()
         external
@@ -588,10 +589,11 @@ abstract contract GeneralizedTCR is
             uint256 addItemCost,
             uint256 removeItemCost,
             uint256 challengeSubmissionCost,
-            uint256 challengeRemovalCost
+            uint256 challengeRemovalCost,
+            uint256 arbitrationCost
         )
     {
-        uint256 arbitrationCost = arbitrator.arbitrationCost(arbitratorExtraData);
+        arbitrationCost = arbitrator.arbitrationCost(arbitratorExtraData);
 
         addItemCost = submissionBaseDeposit + arbitrationCost;
         removeItemCost = removalBaseDeposit + arbitrationCost;
