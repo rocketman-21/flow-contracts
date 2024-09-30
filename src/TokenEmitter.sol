@@ -115,13 +115,17 @@ contract TokenEmitter is
 
         int256 avgTargetPrice = wadDiv(bondingCurveCost, int256(amount));
 
+        if (avgTargetPrice < 0) {
+            avgTargetPrice = 1; // ensure target price is positive
+        }
+
         // not a perfect integration here, but it's more accurate than using basePrice for p_0 in the vrgda
         // shouldn't be issues, but worth triple checking
         int256 vrgdaCapCost = xToY({
             timeSinceStart: toDaysWadUnsafe(block.timestamp - vrgdaCapStartTime),
             sold: int256(erc20.totalSupply()),
             amount: int256(amount),
-            avgTargetPrice: avgTargetPrice < 0 ? 1 : avgTargetPrice // ensure target price is positive
+            avgTargetPrice: avgTargetPrice
         });
 
         if (vrgdaCapCost < 0) revert INVALID_COST();
