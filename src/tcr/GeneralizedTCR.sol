@@ -473,6 +473,7 @@ abstract contract GeneralizedTCR is
         uint evidenceGroupID = uint(keccak256(abi.encodePacked(_itemID, item.requests.length)));
         if (item.requests.length == 0) {
             item.data = _item;
+            item.manager = msg.sender;
             itemList.push(_itemID);
             itemIDtoIndex[_itemID] = itemList.length - 1;
 

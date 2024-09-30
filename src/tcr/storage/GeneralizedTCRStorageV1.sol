@@ -22,6 +22,7 @@ contract GeneralizedTCRStorageV1 {
      */
     struct Item {
         bytes data; // The data describing the item.
+        address manager; // The address of the manager of the item. For future use for eg: voluntary withdrawal from the list.
         IGeneralizedTCR.Status status; // The current status of the item.
         Request[] requests; // List of status change requests made for the item in the form requests[requestID].
     }
