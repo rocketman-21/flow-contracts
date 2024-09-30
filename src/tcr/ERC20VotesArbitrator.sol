@@ -400,12 +400,23 @@ contract ERC20VotesArbitrator is
      * @return votingPower The voting power of the voter in the round
      * @return canVote True if the voter can vote in the round, false otherwise
      */
-    function votingPowerInRound(uint256 disputeId, uint256 round, address voter) external view returns (uint256, bool) {
+    function votingPowerInRound(uint256 disputeId, uint256 round, address voter) public view returns (uint256, bool) {
         Dispute storage dispute = disputes[disputeId];
         VotingRound storage votingRound = dispute.rounds[round];
         uint256 votes = votingToken.getPastVotes(voter, votingRound.creationBlock);
 
         return (votes, votes > 0);
+    }
+
+    /**
+     * @notice Checks if a voter can vote in the current round
+     * @param disputeId The ID of the dispute
+     * @param voter The address of the voter
+     * @return votingPower The voting power of the voter in the current round
+     * @return canVote True if the voter can vote in the current round, false otherwise
+     */
+    function votingPowerInCurrentRound(uint256 disputeId, address voter) public view returns (uint256, bool) {
+        return votingPowerInRound(disputeId, disputes[disputeId].currentRound, voter);
     }
 
     /**
