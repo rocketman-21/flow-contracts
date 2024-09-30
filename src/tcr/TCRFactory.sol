@@ -115,14 +115,16 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             erc20: erc20Address,
             basePrice: tokenEmitterParams.basePrice,
             supplyOffset: tokenEmitterParams.supplyOffset,
-            initialOwner: tokenEmitterParams.initialOwner,
+            initialOwner: params.governor, // Set owner to governor
             curveSteepness: tokenEmitterParams.curveSteepness,
-            maxPriceIncrease: tokenEmitterParams.maxPriceIncrease
+            maxPriceIncrease: tokenEmitterParams.maxPriceIncrease,
+            priceDecayPercent: tokenEmitterParams.priceDecayPercent,
+            perTimeUnit: tokenEmitterParams.perTimeUnit
         });
 
         // Initialize the arbitrator
         IERC20VotesArbitrator(arbitratorAddress).initialize({
-            initialOwner: params.governor,
+            initialOwner: params.governor, // Set owner to governor
             votingToken: address(erc20Address),
             arbitrable: tcrAddress,
             votingPeriod: arbitratorParams.votingPeriod,
@@ -155,11 +157,13 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
                 clearingMetaEvidence: params.clearingMetaEvidence,
                 requiredRecipientType: params.requiredRecipientType
             }),
-            IFlowTCR.TokenEmitterParams({
+            TokenEmitterParams({
                 curveSteepness: tokenEmitterParams.curveSteepness,
                 basePrice: tokenEmitterParams.basePrice,
                 maxPriceIncrease: tokenEmitterParams.maxPriceIncrease,
-                supplyOffset: tokenEmitterParams.supplyOffset
+                supplyOffset: tokenEmitterParams.supplyOffset,
+                priceDecayPercent: tokenEmitterParams.priceDecayPercent,
+                perTimeUnit: tokenEmitterParams.perTimeUnit
             })
         );
 

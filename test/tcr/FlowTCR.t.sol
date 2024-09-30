@@ -137,11 +137,13 @@ contract FlowTCRTest is ERC721FlowTest {
                 clearingMetaEvidence: CLEARING_META_EVIDENCE,
                 requiredRecipientType: FlowTypes.RecipientType.None
             }),
-            IFlowTCR.TokenEmitterParams({
+            ITCRFactory.TokenEmitterParams({
                 curveSteepness: int256(1e18) / 100,
                 basePrice: int256(1e18) / 3000,
                 maxPriceIncrease: int256(1e18) / 300,
-                supplyOffset: int256(1e18) * 1000
+                supplyOffset: int256(1e18) * 1000,
+                priceDecayPercent: int256(1e18) / 4, // 25%
+                perTimeUnit: int256(1e18) * 500 // 500 tokens per day
             })
         );
 

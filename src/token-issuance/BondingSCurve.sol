@@ -2,13 +2,11 @@
 pragma solidity ^0.8.27;
 
 import { wadLn, wadExp, wadMul, wadDiv } from "../libs/SignedWadMath.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title Bonding S-Curve
 /// @author rocketman
 /// @author Math help from o1
-abstract contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
+abstract contract BondingSCurve {
     /*//////////////////////////////////////////////////////////////
                             CURVE PARAMETERS
     //////////////////////////////////////////////////////////////*/
@@ -40,9 +38,6 @@ abstract contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     ///                           ERRORS                         ///
     ///                                                          ///
 
-    /// @notice Reverts for address zero
-    error INVALID_ADDRESS_ZERO();
-
     /// @notice Reverts for negative amount
     error INVALID_AMOUNT();
 
@@ -57,24 +52,17 @@ abstract contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
     ///                                                          ///
 
     /// @notice Sets target price and per time unit price decay for the VRGDA.
-    /// @param _initialOwner The initial owner of the contract
     /// @param _curveSteepness The steepness of the curve, scaled by 1e18.
     /// @param _basePrice The base price for a token if sold on pace, scaled by 1e18.
     /// @param _maxPriceIncrease The maximum price increase for a token if sold on pace, scaled by 1e18.
     /// @param _supplyOffset The supply offset for a token if sold on pace, scaled by 1e18.
     function __BondingSCurve_init(
-        address _initialOwner,
         int256 _curveSteepness,
         int256 _basePrice,
         int256 _maxPriceIncrease,
         int256 _supplyOffset
-    ) public {
-        if (_initialOwner == address(0)) revert INVALID_ADDRESS_ZERO();
+    ) internal {
         if (_curveSteepness <= 0) revert INVALID_CURVE_STEEPNESS();
-
-        __Ownable_init();
-
-        _transferOwnership(_initialOwner);
 
         curveSteepness = _curveSteepness;
         basePrice = _basePrice;
@@ -130,13 +118,4 @@ abstract contract BondingSCurve is UUPSUpgradeable, OwnableUpgradeable {
         // Add the two terms together
         return term1 + term2;
     }
-
-    ///                                                          ///
-    ///                        VRGDA UPGRADE                     ///
-    ///                                                          ///
-
-    /// @notice Ensures the caller is authorized to upgrade the contract
-    /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
-    /// @param _newImpl The new implementation address
-    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
 }
