@@ -175,34 +175,24 @@ contract ERC20VotesMintable is
         // dont let people update rewards pool for same account
         if (from == to) return;
 
-        uint128 fromUnits = IRewardPool(rewardPool).getMemberUnits(from);
-        uint128 toUnits = IRewardPool(rewardPool).getMemberUnits(to);
-
         // update member units in the reward pool
-        // subtract from old account, add to new account
-
-        // double check for overflow before casting
-        // and scale back by 1e14 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
+        // and scale back by 1e12 per https://docs.superfluid.finance/docs/protocol/distributions/guides/pools#about-member-units
         // gives someone with 1 token at least 1e6 units to work with
-        uint256 scaledUnits = amount / 1e12;
 
-        // todo investigate whether small token transfers can let someone transfer without transfering member units
-        if (scaledUnits == 0) revert INVALID_AMOUNT_FOR_MEMBER_UNITS();
-
-        if (scaledUnits > type(uint128).max) revert POOL_UNITS_OVERFLOW();
-        uint128 transferredUnits = uint128(scaledUnits);
-
-        // if minting from 0 address, don't subtract member units from 0x0
+        // if minting from 0 address, don't update member units
         if (from != address(0)) {
-            // shouldn't ever happen but to be safe
-            if (fromUnits < transferredUnits) revert POOL_UNITS_OVERFLOW();
-            IRewardPool(rewardPool).updateMemberUnits(from, fromUnits - transferredUnits);
+            uint256 rawBalance = balanceOf(from);
+            if (rawBalance > type(uint128).max) revert POOL_UNITS_OVERFLOW();
+            uint128 fromUnits = uint128(rawBalance / 1e12);
+            IRewardPool(rewardPool).updateMemberUnits(from, fromUnits);
         }
 
-        // if transferring to 0 address, don't add member units to 0x0
+        // if transferring to 0 address, don't update member units
         if (to != address(0)) {
-            if (toUnits + transferredUnits > type(uint128).max) revert POOL_UNITS_OVERFLOW();
-            IRewardPool(rewardPool).updateMemberUnits(to, toUnits + transferredUnits);
+            uint256 rawBalance = balanceOf(to);
+            if (rawBalance > type(uint128).max) revert POOL_UNITS_OVERFLOW();
+            uint128 toUnits = uint128(rawBalance / 1e12);
+            IRewardPool(rewardPool).updateMemberUnits(to, toUnits);
         } else {
             // burning tokens here since to is the 0 address
             // limitation of superfluid means that when total member units decrease, you must call `distributeFlow` again
