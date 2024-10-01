@@ -179,11 +179,11 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                 })
             );
 
-            // set manager to new TCR and manager reward pool
+            // set manager on the newly created Flow contract to the new TCR and manager reward pool
             // can only be done by the manager
-            flowContract.setManagerRewardPool(deployedContracts.rewardPoolAddress);
+            IManagedFlow(flowRecipient).setManagerRewardPool(deployedContracts.rewardPoolAddress);
             // now that the reward pool is set, we can set the actual manager
-            flowContract.setManager(deployedContracts.tcrAddress);
+            IManagedFlow(flowRecipient).setManager(deployedContracts.tcrAddress);
         }
     }
 
