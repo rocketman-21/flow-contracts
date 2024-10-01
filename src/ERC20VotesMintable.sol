@@ -180,17 +180,17 @@ contract ERC20VotesMintable is
 
         // if minting from 0 address, don't update member units
         if (from != address(0)) {
-            uint256 rawBalance = balanceOf(from);
-            if (rawBalance > type(uint128).max) revert POOL_UNITS_OVERFLOW();
-            uint128 fromUnits = uint128(rawBalance / 1e12);
+            uint256 units = balanceOf(from) / 1e12;
+            if (units > type(uint128).max) revert POOL_UNITS_OVERFLOW();
+            uint128 fromUnits = uint128(units);
             IRewardPool(rewardPool).updateMemberUnits(from, fromUnits);
         }
 
         // if transferring to 0 address, don't update member units
         if (to != address(0)) {
-            uint256 rawBalance = balanceOf(to);
-            if (rawBalance > type(uint128).max) revert POOL_UNITS_OVERFLOW();
-            uint128 toUnits = uint128(rawBalance / 1e12);
+            uint256 units = balanceOf(to) / 1e12;
+            if (units > type(uint128).max) revert POOL_UNITS_OVERFLOW();
+            uint128 toUnits = uint128(units);
             IRewardPool(rewardPool).updateMemberUnits(to, toUnits);
         } else {
             // burning tokens here since to is the 0 address
