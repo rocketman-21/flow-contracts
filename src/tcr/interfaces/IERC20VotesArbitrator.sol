@@ -143,6 +143,13 @@ interface IERC20VotesArbitrator is IArbitrator {
     event VotingDelaySet(uint256 oldVotingDelay, uint256 newVotingDelay);
 
     /**
+     * @notice Emitted when the reveal period is set
+     * @param oldRevealPeriod The previous reveal period
+     * @param newRevealPeriod The new reveal period
+     */
+    event RevealPeriodSet(uint256 oldRevealPeriod, uint256 newRevealPeriod);
+
+    /**
      * @notice Emitted when the appeal cost is set
      * @param oldAppealCost The previous appeal cost
      * @param newAppealCost The new appeal cost
