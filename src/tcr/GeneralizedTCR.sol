@@ -560,7 +560,7 @@ abstract contract GeneralizedTCR is
         request.resolved = true;
         request.ruling = Party(_ruling);
 
-        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, true, true, item.status);
+        emit ItemStatusChange(itemID, item.requests.length - 1, request.rounds.length - 1, false, true, item.status);
 
         // Automatically withdraw first deposits and reimbursements (first round only).
         if (winner == Party.None) {
