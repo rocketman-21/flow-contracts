@@ -596,6 +596,18 @@ contract ERC20VotesArbitrator is
     }
 
     /**
+     * @notice Owner function for setting the reveal period
+     * @param newRevealPeriod new reveal period, in blocks
+     */
+    function setRevealPeriod(uint256 newRevealPeriod) external onlyOwner {
+        if (newRevealPeriod < MIN_REVEAL_PERIOD || newRevealPeriod > MAX_REVEAL_PERIOD) revert INVALID_REVEAL_PERIOD();
+        uint256 oldRevealPeriod = _revealPeriod;
+        _revealPeriod = newRevealPeriod;
+
+        emit RevealPeriodSet(oldRevealPeriod, _revealPeriod);
+    }
+
+    /**
      * @notice Owner function for setting the voting period
      * @param newVotingPeriod new voting period, in blocks
      */
