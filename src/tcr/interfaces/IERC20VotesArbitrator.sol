@@ -183,15 +183,15 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @notice Emitted when a vote has been cast on a dispute
      * @param voter The address of the voter
      * @param disputeId The ID of the dispute
-     * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
+     * @param commitHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
      */
-    event VoteCommitted(address indexed voter, uint256 disputeId, bytes32 secretHash);
+    event VoteCommitted(address indexed voter, uint256 disputeId, bytes32 commitHash);
 
     /**
      * @notice Emitted when a vote has been revealed for a dispute
      * @param voter The address of the voter
      * @param disputeId The ID of the dispute
-     * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
+     * @param commitHash The keccak256 hash of the voter's choice, reason (optional) and salt (tightly packed in this order)
      * @param choice The revealed choice of the voter
      * @param reason The reason for the vote
      * @param votes The number of votes cast
@@ -199,7 +199,7 @@ interface IERC20VotesArbitrator is IArbitrator {
     event VoteRevealed(
         address indexed voter,
         uint256 indexed disputeId,
-        bytes32 secretHash,
+        bytes32 commitHash,
         uint256 choice,
         string reason,
         uint256 votes

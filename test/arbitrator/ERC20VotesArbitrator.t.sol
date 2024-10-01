@@ -42,9 +42,9 @@ contract ERC20VotesArbitratorTest is FlowTCRTest {
     }
 
     function commitVote(uint256 disputeID, address voter, uint256 choice, string memory reason, bytes32 salt) internal {
-        bytes32 secretHash = keccak256(abi.encode(choice, reason, salt));
+        bytes32 commitHash = keccak256(abi.encode(choice, reason, salt));
         vm.prank(voter);
-        arbitrator.commitVote(disputeID, secretHash);
+        arbitrator.commitVote(disputeID, commitHash);
     }
 
     function revealVote(uint256 disputeID, address voter, uint256 choice, string memory reason, bytes32 salt) internal {
