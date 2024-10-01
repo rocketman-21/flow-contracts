@@ -31,7 +31,6 @@ contract ERC20VotesMintable is
     address public rewardPool;
 
     error POOL_UNITS_OVERFLOW();
-    error INVALID_AMOUNT_FOR_MEMBER_UNITS();
 
     ///                                                          ///
     ///                          MODIFIERS                       ///
