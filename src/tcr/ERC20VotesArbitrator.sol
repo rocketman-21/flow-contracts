@@ -66,6 +66,7 @@ contract ERC20VotesArbitrator is
         emit VotingPeriodSet(_votingPeriod, votingPeriod_);
         emit VotingDelaySet(_votingDelay, votingDelay_);
         emit AppealPeriodSet(_appealPeriod, appealPeriod_);
+        emit RevealPeriodSet(_revealPeriod, revealPeriod_);
         emit AppealCostSet(_appealCost, appealCost_);
         emit ArbitrationCostSet(_arbitrationCost, arbitrationCost_);
 
@@ -605,6 +606,40 @@ contract ERC20VotesArbitrator is
         _revealPeriod = newRevealPeriod;
 
         emit RevealPeriodSet(oldRevealPeriod, _revealPeriod);
+    }
+
+    /**
+     * @notice Owner function for setting the appeal period
+     * @param newAppealPeriod new appeal period, in blocks
+     */
+    function setAppealPeriod(uint256 newAppealPeriod) external onlyOwner {
+        if (newAppealPeriod < MIN_APPEAL_PERIOD || newAppealPeriod > MAX_APPEAL_PERIOD) revert INVALID_APPEAL_PERIOD();
+        uint256 oldAppealPeriod = _appealPeriod;
+        _appealPeriod = newAppealPeriod;
+
+        emit AppealPeriodSet(oldAppealPeriod, _appealPeriod);
+    }
+
+    /**
+     * @notice Owner function for setting the arbitration cost
+     * @param newArbitrationCost new arbitration cost, in wei
+     */
+    function setArbitrationCost(uint256 newArbitrationCost) external onlyOwner {
+        uint256 oldArbitrationCost = _arbitrationCost;
+        _arbitrationCost = newArbitrationCost;
+
+        emit ArbitrationCostSet(oldArbitrationCost, _arbitrationCost);
+    }
+
+    /**
+     * @notice Owner function for setting the appeal cost
+     * @param newAppealCost new appeal cost, in wei
+     */
+    function setAppealCost(uint256 newAppealCost) external onlyOwner {
+        uint256 oldAppealCost = _appealCost;
+        _appealCost = newAppealCost;
+
+        emit AppealCostSet(oldAppealCost, _appealCost);
     }
 
     /**
