@@ -194,17 +194,17 @@ contract FlowTCRTest is ERC721FlowTest {
         advanceTime(VOTING_DELAY + 2);
 
         // Commit votes
-        bytes32 requesterSecretHash = keccak256(abi.encode(uint256(1), "For registration", bytes32("salt")));
+        bytes32 requesterCommitHash = keccak256(abi.encode(uint256(1), "For registration", bytes32("salt")));
         vm.prank(requester);
-        arbitrator.commitVote(disputeID, requesterSecretHash);
+        arbitrator.commitVote(disputeID, requesterCommitHash);
 
-        bytes32 challengerSecretHash = keccak256(abi.encode(uint256(2), "Against registration", bytes32("salt2")));
+        bytes32 challengerCommitHash = keccak256(abi.encode(uint256(2), "Against registration", bytes32("salt2")));
         vm.prank(challenger);
-        arbitrator.commitVote(disputeID, challengerSecretHash);
+        arbitrator.commitVote(disputeID, challengerCommitHash);
 
-        bytes32 swingVoterSecretHash = keccak256(abi.encode(uint256(winner), "Swing vote", bytes32("salt3")));
+        bytes32 swingVoterCommitHash = keccak256(abi.encode(uint256(winner), "Swing vote", bytes32("salt3")));
         vm.prank(swingVoter);
-        arbitrator.commitVote(disputeID, swingVoterSecretHash);
+        arbitrator.commitVote(disputeID, swingVoterCommitHash);
 
         // Advance time to reveal period
         advanceTime(VOTING_PERIOD);

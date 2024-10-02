@@ -127,6 +127,7 @@ contract ERC20VotesArbitrator is
             newDispute.rounds[0].appealPeriodEndTime,
             newDispute.rounds[0].totalSupply,
             newDispute.rounds[0].creationBlock,
+            newDispute.rounds[0].cost,
             _extraData,
             _choices
         );
@@ -263,12 +264,12 @@ contract ERC20VotesArbitrator is
     /**
      * @notice Cast a vote for a dispute
      * @param disputeId The id of the dispute to vote on
-     * @param secretHash Commit keccak256 hash of voter's choice, reason (optional) and salt (in this order)
+     * @param commitHash Commit keccak256 hash of voter's choice, reason (optional) and salt (in this order)
      */
-    function commitVote(uint256 disputeId, bytes32 secretHash) external nonReentrant {
-        _commitVoteInternal(msg.sender, disputeId, secretHash);
+    function commitVote(uint256 disputeId, bytes32 commitHash) external nonReentrant {
+        _commitVoteInternal(msg.sender, disputeId, commitHash);
 
-        emit VoteCommitted(msg.sender, disputeId, secretHash);
+        emit VoteCommitted(msg.sender, disputeId, commitHash);
     }
 
     /**
@@ -298,7 +299,7 @@ contract ERC20VotesArbitrator is
 
         // Reconstruct the hash to verify the revealed vote
         bytes32 reconstructedHash = keccak256(abi.encode(choice, reason, salt));
-        if (reconstructedHash != receipt.secretHash) revert HASHES_DO_NOT_MATCH();
+        if (reconstructedHash != receipt.commitHash) revert HASHES_DO_NOT_MATCH();
 
         uint256 votes = votingToken.getPastVotes(voter, dispute.rounds[round].creationBlock);
 
@@ -311,16 +312,16 @@ contract ERC20VotesArbitrator is
         dispute.rounds[round].votes += votes;
         dispute.rounds[round].choiceVotes[choice] += votes;
 
-        emit VoteRevealed(voter, disputeId, receipt.secretHash, choice, reason, votes);
+        emit VoteRevealed(voter, disputeId, receipt.commitHash, choice, reason, votes);
     }
 
     /**
      * @notice Internal function that caries out voting commitment logic
      * @param voter The voter that is casting their vote
      * @param disputeId The id of the dispute to vote on
-     * @param secretHash The keccak256 hash of the voter's choice, reason (optional) and salt (in this order)
+     * @param commitHash The keccak256 hash of the voter's choice, reason (optional) and salt (in this order)
      */
-    function _commitVoteInternal(address voter, uint256 disputeId, bytes32 secretHash) internal {
+    function _commitVoteInternal(address voter, uint256 disputeId, bytes32 commitHash) internal {
         Dispute storage dispute = disputes[disputeId];
         uint256 round = dispute.currentRound;
 
@@ -333,7 +334,7 @@ contract ERC20VotesArbitrator is
         if (votes == 0) revert VOTER_HAS_NO_VOTES();
 
         receipt.hasCommitted = true;
-        receipt.secretHash = secretHash;
+        receipt.commitHash = commitHash;
     }
 
     /**

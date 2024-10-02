@@ -265,13 +265,13 @@ contract TCRFundFlowTest is FlowTCRTest {
         advanceTime(VOTING_DELAY + 2);
 
         // Commit votes for a tie
-        bytes32 requesterSecretHash = keccak256(abi.encode(uint256(1), "For registration", bytes32("salt")));
+        bytes32 requesterCommitHash = keccak256(abi.encode(uint256(1), "For registration", bytes32("salt")));
         vm.prank(requester);
-        arbitrator.commitVote(disputeID, requesterSecretHash);
+        arbitrator.commitVote(disputeID, requesterCommitHash);
 
-        bytes32 challengerSecretHash = keccak256(abi.encode(uint256(2), "Against registration", bytes32("salt2")));
+        bytes32 challengerCommitHash = keccak256(abi.encode(uint256(2), "Against registration", bytes32("salt2")));
         vm.prank(challenger);
-        arbitrator.commitVote(disputeID, challengerSecretHash);
+        arbitrator.commitVote(disputeID, challengerCommitHash);
 
         // Advance time to reveal period
         advanceTime(VOTING_PERIOD);
