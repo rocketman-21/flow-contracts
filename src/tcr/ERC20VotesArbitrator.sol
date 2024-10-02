@@ -127,6 +127,7 @@ contract ERC20VotesArbitrator is
             newDispute.rounds[0].appealPeriodEndTime,
             newDispute.rounds[0].totalSupply,
             newDispute.rounds[0].creationBlock,
+            newDispute.rounds[0].cost,
             _extraData,
             _choices
         );
