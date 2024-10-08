@@ -424,6 +424,29 @@ contract ERC20VotesArbitrator is
     }
 
     /**
+     * @notice Allows the owner to withdraw the rewards for a round if there were no votes in the round
+     * @notice Owner can reimburse applicants, or burn the tokens etc.
+     * @param disputeId The ID of the dispute.
+     * @param round The round number.
+     */
+    function withdrawRewardsForInvalidRound(uint256 disputeId, uint256 round) external onlyOwner {
+        Dispute storage dispute = disputes[disputeId];
+        VotingRound storage votingRound = dispute.rounds[round];
+        uint256 totalRewards = votingRound.cost; // Total amount to distribute among voters
+
+        if (round > dispute.currentRound) revert INVALID_ROUND();
+
+        // Ensure the dispute round is finalized
+        if (_getVotingRoundState(disputeId, round) != DisputeState.Solved) {
+            revert DISPUTE_NOT_SOLVED();
+        }
+
+        if (votingRound.votes > 0) revert VOTES_WERE_CAST();
+
+        IERC20(address(votingToken)).safeTransfer(owner(), totalRewards);
+    }
+
+    /**
      * @notice Allows voters to withdraw their proportional share of the cost for a voting round if they voted on the correct side of the ruling.
      * @param disputeId The ID of the dispute.
      * @param round The round number.
