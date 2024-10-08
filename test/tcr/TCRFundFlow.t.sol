@@ -283,8 +283,8 @@ contract TCRFundFlowTest is FlowTCRTest {
         vm.prank(challenger);
         arbitrator.revealVote(disputeID, challenger, 2, "Against registration", bytes32("salt2"));
 
-        // Advance time to end of reveal and appeal periods
-        advanceTime(REVEAL_PERIOD + APPEAL_PERIOD);
+        // Advance time to end of reveal
+        advanceTime(REVEAL_PERIOD);
 
         // Execute the ruling
         arbitrator.executeRuling(disputeID);

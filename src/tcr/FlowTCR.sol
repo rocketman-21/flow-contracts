@@ -91,8 +91,7 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
             _tcrParams.removalBaseDeposit,
             _tcrParams.submissionChallengeBaseDeposit,
             _tcrParams.removalChallengeBaseDeposit,
-            _tcrParams.challengePeriodDuration,
-            _tcrParams.stakeMultipliers
+            _tcrParams.challengePeriodDuration
         );
     }
 
@@ -163,11 +162,10 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                     submissionChallengeBaseDeposit: submissionChallengeBaseDeposit,
                     removalChallengeBaseDeposit: removalChallengeBaseDeposit,
                     challengePeriodDuration: challengePeriodDuration,
-                    stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier],
-                    requiredRecipientType: FlowTypes.RecipientType.None
+                    requiredRecipientType: FlowTypes.RecipientType.ExternalAccount // children are not flows for now, TODO make this configurable
                 }),
                 arbitrator.getArbitratorParamsForFactory(),
-                ITCRFactory.ERC20Params({ initialOwner: owner(), name: metadata.title, symbol: "TCRT" }), // TODO update all
+                ITCRFactory.ERC20Params({ initialOwner: owner(), name: metadata.title, symbol: "TCR" }), // TODO update all
                 ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) }),
                 ITCRFactory.TokenEmitterParams({
                     curveSteepness: curveSteepness,

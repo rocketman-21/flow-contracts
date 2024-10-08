@@ -67,8 +67,6 @@ contract DeployNounsFlow is DeployScript {
         uint256 votingPeriod = vm.envUint("VOTING_PERIOD");
         uint256 votingDelay = vm.envUint("VOTING_DELAY");
         uint256 revealPeriod = vm.envUint("REVEAL_PERIOD");
-        uint256 appealPeriod = vm.envUint("APPEAL_PERIOD");
-        uint256 appealCost = vm.envUint("APPEAL_COST");
         uint256 arbitrationCost = vm.envUint("ARBITRATION_COST");
         address WETH = vm.envAddress("WETH");
         int256 curveSteepness = int256(vm.envUint("CURVE_STEEPNESS"));
@@ -170,13 +168,6 @@ contract DeployNounsFlow is DeployScript {
                 submissionChallengeBaseDeposit: submissionChallengeBaseDeposit,
                 removalChallengeBaseDeposit: removalChallengeBaseDeposit,
                 challengePeriodDuration: challengePeriodDuration,
-                // shared stake - applied when there is no winner or loser. Set to 0 to make it easy to appeal a no ruling.
-                // MULTIPLIER_DIVISOR = 10000
-                // winner stake - applied when the winner of the dispute is the requester
-                // set to 5000 to make it less expensive for a winner to support an appeal against their win
-                // loser stake - applied when the winner of the dispute is the challenger
-                // set to 15000 to make it more expensive for a loser to support an appeal against their loss
-                stakeMultipliers: [uint256(0), uint256(5000), uint256(15000)],
                 arbitratorExtraData: "",
                 registrationMetaEvidence: "",
                 clearingMetaEvidence: "",
@@ -216,8 +207,6 @@ contract DeployNounsFlow is DeployScript {
             votingPeriod: votingPeriod,
             votingDelay: votingDelay,
             revealPeriod: revealPeriod,
-            appealPeriod: appealPeriod,
-            appealCost: appealCost,
             arbitrationCost: arbitrationCost
         });
 

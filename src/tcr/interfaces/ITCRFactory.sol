@@ -41,7 +41,6 @@ interface ITCRFactory {
      * @param submissionChallengeBaseDeposit Base deposit for challenging a submission
      * @param removalChallengeBaseDeposit Base deposit for challenging a removal
      * @param challengePeriodDuration Duration of the challenge period
-     * @param stakeMultipliers Multipliers for appeals
      * @param requiredRecipientType The required recipient type for the TCR
      */
     struct FlowTCRParams {
@@ -55,7 +54,6 @@ interface ITCRFactory {
         uint submissionChallengeBaseDeposit;
         uint removalChallengeBaseDeposit;
         uint challengePeriodDuration;
-        uint[3] stakeMultipliers;
         FlowTypes.RecipientType requiredRecipientType;
     }
 
@@ -64,16 +62,12 @@ interface ITCRFactory {
      * @param votingPeriod The voting period duration
      * @param votingDelay The delay before voting starts
      * @param revealPeriod The period for revealing votes
-     * @param appealPeriod The period for appealing decisions
-     * @param appealCost The cost of appealing a decision
      * @param arbitrationCost The cost of arbitration
      */
     struct ArbitratorParams {
         uint256 votingPeriod;
         uint256 votingDelay;
         uint256 revealPeriod;
-        uint256 appealPeriod;
-        uint256 appealCost;
         uint256 arbitrationCost;
     }
 
