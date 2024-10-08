@@ -354,7 +354,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         int96 memberFlowRate = getMemberTotalFlowRate(childAddress);
 
         // Call setFlowRate on the child contract
-        // only set if buffer required is less than balance of contract
+        // only set if balance of contract is greater than buffer required
         if (fs.superToken.getBufferAmountByFlowRate(memberFlowRate) < fs.superToken.balanceOf(childAddress)) {
             IFlow(childAddress).setFlowRate(memberFlowRate);
         }
@@ -509,6 +509,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
+
+        // update child flows
+        // warning - values() copies entire array into memory, could run out of gas for huge arrays
+        // must keep child flows below ~500 per o1 estimates
+        address[] memory childFlows = _childFlows.values();
+        for (uint256 i = 0; i < childFlows.length; i++) {
+            _setChildFlowRate(childFlows[i]);
+        }
     }
 
     /**
