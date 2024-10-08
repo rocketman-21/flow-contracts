@@ -374,6 +374,56 @@ contract ERC20VotesArbitrator is
     }
 
     /**
+     * @notice Allows voters to view their proportional share of the cost for a voting round if they voted on the correct side.
+     * @param disputeId The ID of the dispute.
+     * @param round The round number.
+     * @param voter The address of the voter.
+     * @return The amount of rewards the voter is entitled to.
+     */
+    function getRewardsForRound(uint256 disputeId, uint256 round, address voter) external view returns (uint256) {
+        Dispute storage dispute = disputes[disputeId];
+        VotingRound storage votingRound = dispute.rounds[round];
+        Receipt storage receipt = votingRound.receipts[voter];
+
+        if (round > dispute.currentRound) revert INVALID_ROUND();
+
+        // Ensure the dispute round is finalized
+        if (_getVotingRoundState(disputeId, round) != DisputeState.Solved) return 0;
+
+        // If no votes were cast, return 0
+        if (votingRound.votes == 0) return 0;
+
+        // Check that the voter has voted
+        if (!receipt.hasRevealed) return 0;
+
+        // Check that the voter hasn't already claimed
+        if (votingRound.rewardsClaimed[voter]) return 0;
+
+        uint256 winningChoice = _determineWinningChoice(disputeId, round);
+
+        uint256 amount = 0;
+        uint256 totalRewards = votingRound.cost; // Total amount to distribute among voters
+
+        if (winningChoice == 0) {
+            // Ruling is 0 or Party.None, both sides can withdraw proportional share
+            amount = (receipt.votes * totalRewards) / votingRound.votes;
+        } else {
+            // Ruling is not 0, only winning voters can withdraw
+            if (receipt.choice != winningChoice) {
+                return 0;
+            }
+            uint256 totalWinningVotes = votingRound.choiceVotes[winningChoice];
+
+            if (totalWinningVotes == 0) return 0;
+
+            // Calculate voter's share
+            amount = (receipt.votes * totalRewards) / totalWinningVotes;
+        }
+
+        return amount;
+    }
+
+    /**
      * @notice Allows voters to withdraw their proportional share of the cost for a voting round if they voted on the correct side of the ruling.
      * @param disputeId The ID of the dispute.
      * @param round The round number.
