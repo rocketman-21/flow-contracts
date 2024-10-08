@@ -71,10 +71,17 @@ interface IERC20VotesMintable {
     function decimals() external view returns (uint8);
 
     /**
+     * @dev Returns the addresses that are ignored when updating rewards
+     * @return The addresses
+     */
+    function ignoreRewardsAddresses() external view returns (address[] memory);
+
+    /**
      * @dev Initializes the ERC20 token contract
      * @param initialOwner The address of the initial owner
      * @param minter The address of the minter
      * @param rewardPool The address of the reward pool
+     * @param ignoreRewardsAddresses The addresses to ignore when updating rewards
      * @param name The name of the token
      * @param symbol The symbol of the token
      */
@@ -82,6 +89,7 @@ interface IERC20VotesMintable {
         address initialOwner,
         address minter,
         address rewardPool,
+        address[] memory ignoreRewardsAddresses,
         string calldata name,
         string calldata symbol
     ) external;

@@ -100,13 +100,18 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
         // Deploy TokenEmitter proxy
         address tokenEmitterAddress = address(new ERC1967Proxy(tokenEmitterImplementation, ""));
 
+        address[] memory ignoreRewardsAddresses = new address[](2);
+        ignoreRewardsAddresses[0] = address(tcrAddress);
+        ignoreRewardsAddresses[1] = address(arbitratorAddress);
+
         // Initialize the ERC20VotesMintable token
         IERC20VotesMintable(erc20Address).initialize({
             initialOwner: erc20Params.initialOwner,
             minter: tokenEmitterAddress,
+            rewardPool: rewardPoolAddress,
+            ignoreRewardsAddresses: ignoreRewardsAddresses,
             name: erc20Params.name,
-            symbol: erc20Params.symbol,
-            rewardPool: rewardPoolAddress
+            symbol: erc20Params.symbol
         });
 
         // Initialize the TokenEmitter

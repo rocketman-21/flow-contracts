@@ -190,11 +190,16 @@ contract DeployNounsFlow is DeployScript {
             funder: nounsFlow
         });
 
+        address[] memory ignoreRewardsAddresses = new address[](2);
+        ignoreRewardsAddresses[0] = address(flowTCR);
+        ignoreRewardsAddresses[1] = address(erc20Arbitrator);
+
         // Initialize ERC20VotesMintable
         IERC20VotesMintable(erc20Mintable).initialize({
             initialOwner: initialOwner,
             minter: tokenEmitter,
             rewardPool: rewardPool,
+            ignoreRewardsAddresses: ignoreRewardsAddresses,
             name: "Nouns Flow",
             symbol: "FLOWS"
         });

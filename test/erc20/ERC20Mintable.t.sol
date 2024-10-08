@@ -67,7 +67,15 @@ contract ERC20MintableTest is Test {
 
         // Initialize the token
         vm.prank(owner);
-        IERC20VotesMintable(tokenProxy).initialize(owner, minter, address(rewardPool), "Test Token", "TST");
+        address[] memory ignoreRewardsAddresses = new address[](0);
+        IERC20VotesMintable(tokenProxy).initialize({
+            initialOwner: owner,
+            minter: minter,
+            rewardPool: address(rewardPool),
+            ignoreRewardsAddresses: ignoreRewardsAddresses,
+            name: "Test Token",
+            symbol: "TST"
+        });
 
         // Set the token variable to the proxy address
         token = ERC20VotesMintable(tokenProxy);
