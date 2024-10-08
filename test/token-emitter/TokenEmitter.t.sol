@@ -85,7 +85,15 @@ contract TokenEmitterTest is Test {
         rewardPool.initialize(ISuperToken(address(superToken)), address(erc20), address(tokenEmitter));
 
         // Initialize ERC20VotesMintable
-        erc20.initialize(owner, address(tokenEmitter), address(rewardPool), "Test Token", "TST");
+        address[] memory ignoreRewardsAddresses = new address[](0);
+        erc20.initialize(
+            owner,
+            address(tokenEmitter),
+            address(rewardPool),
+            ignoreRewardsAddresses,
+            "Test Token",
+            "TST"
+        );
 
         // Initialize TokenEmitter
         tokenEmitter.initialize({

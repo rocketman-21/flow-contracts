@@ -145,7 +145,18 @@ contract FlowTCRTest is ERC721FlowTest {
         );
 
         erc20Token = ERC20VotesMintable(erc20TokenProxy);
-        erc20Token.initialize(governor, governor, address(rewardPool), "Test Token", "TST");
+        address[] memory ignoreRewardsAddresses = new address[](2);
+        ignoreRewardsAddresses[0] = address(flowTCR);
+        ignoreRewardsAddresses[1] = address(arbitrator);
+
+        erc20Token.initialize({
+            _initialOwner: governor,
+            _minter: governor,
+            _rewardPool: address(rewardPool),
+            _ignoreRewardsAddressSet: ignoreRewardsAddresses,
+            _name: "Test Token",
+            _symbol: "TST"
+        });
 
         arbitrator = ERC20VotesArbitrator(arbitratorProxy);
         arbitrator.initialize(

@@ -8,6 +8,7 @@ import { ERC20Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC2
 
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import { ERC20VotesUpgradeable } from "./base/erc20/ERC20VotesUpgradeable.sol";
 
@@ -21,6 +22,8 @@ contract ERC20VotesMintable is
     ReentrancyGuardUpgradeable,
     ERC20VotesUpgradeable
 {
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     // An address who has permissions to mint tokens
     address public minter;
 
@@ -29,6 +32,8 @@ contract ERC20VotesMintable is
 
     // The address of the reward pool
     address public rewardPool;
+
+    EnumerableSet.AddressSet private _ignoreRewardsAddresses;
 
     error POOL_UNITS_OVERFLOW();
 
@@ -79,6 +84,7 @@ contract ERC20VotesMintable is
      * @param _initialOwner The address of the initial owner
      * @param _minter The address of the minter
      * @param _rewardPool The address of the reward pool
+     * @param _ignoreRewardsAddressSet The addresses to ignore when updating rewards
      * @param _name The name of the token
      * @param _symbol The symbol of the token
      */
@@ -86,6 +92,7 @@ contract ERC20VotesMintable is
         address _initialOwner,
         address _minter,
         address _rewardPool,
+        address[] memory _ignoreRewardsAddressSet,
         string calldata _name,
         string calldata _symbol
     ) external initializer {
@@ -95,6 +102,10 @@ contract ERC20VotesMintable is
 
         minter = _minter;
         rewardPool = _rewardPool;
+
+        for (uint256 i = 0; i < _ignoreRewardsAddressSet.length; i++) {
+            _ignoreRewardsAddresses.add(_ignoreRewardsAddressSet[i]);
+        }
 
         __ERC20Mintable_init(_name, _symbol);
 
@@ -122,6 +133,10 @@ contract ERC20VotesMintable is
 
     function totalSupply() public view virtual override(ERC20Upgradeable) returns (uint256) {
         return super.totalSupply();
+    }
+
+    function ignoreRewardsAddresses() external view returns (address[] memory) {
+        return _ignoreRewardsAddresses.values();
     }
 
     /**
@@ -179,7 +194,7 @@ contract ERC20VotesMintable is
         // gives someone with 1 token at least 1e6 units to work with
 
         // if minting from 0 address, don't update member units
-        if (from != address(0)) {
+        if (from != address(0) && !_ignoreRewardsAddresses.contains(from)) {
             uint256 units = balanceOf(from) / 1e12;
             if (units > type(uint128).max) revert POOL_UNITS_OVERFLOW();
             uint128 fromUnits = uint128(units);
@@ -187,7 +202,7 @@ contract ERC20VotesMintable is
         }
 
         // if transferring to 0 address, don't update member units
-        if (to != address(0)) {
+        if (to != address(0) && !_ignoreRewardsAddresses.contains(to)) {
             uint256 units = balanceOf(to) / 1e12;
             if (units > type(uint128).max) revert POOL_UNITS_OVERFLOW();
             uint128 toUnits = uint128(units);
