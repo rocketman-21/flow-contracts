@@ -11,7 +11,8 @@ library FlowVotes {
         uint32 bps,
         uint256 tokenId,
         uint256 totalWeight,
-        uint256 percentageScale
+        uint256 percentageScale,
+        address voter
     ) public returns (uint128 memberUnits, address recipientAddress, FlowTypes.RecipientType recipientType) {
         recipientAddress = fs.recipients[recipientId].recipient;
         recipientType = fs.recipients[recipientId].recipientType;
@@ -29,6 +30,7 @@ library FlowVotes {
 
         // update votes, track recipient, bps, and total member units assigned
         fs.votes[tokenId].push(FlowTypes.VoteAllocation({ recipientId: recipientId, bps: bps, memberUnits: newUnits }));
+        fs.voters[tokenId] = voter;
     }
 
     /**
