@@ -8,6 +8,8 @@ import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/in
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
 import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+
 interface FlowTypes {
     // Struct to hold the recipientId and their corresponding BPS for a vote
     struct VoteAllocation {
@@ -98,4 +100,8 @@ contract FlowStorageV1 is FlowTypes {
     /// The member units to assign to each recipient of the baseline salary pool
     /// @dev Heed warning above
     uint128 public constant BASELINE_MEMBER_UNITS = 1e5;
+
+    /// The enumerable list of child flow contracts
+    /// @dev Heed warning above
+    EnumerableSet.AddressSet internal _childFlows;
 }
