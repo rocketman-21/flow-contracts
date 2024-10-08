@@ -13,17 +13,21 @@ library FlowRecipients {
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      * @return address The address of the removed recipient
      */
-    function removeRecipient(FlowTypes.Storage storage fs, bytes32 recipientId) external returns (address) {
+    function removeRecipient(
+        FlowTypes.Storage storage fs,
+        bytes32 recipientId
+    ) external returns (address, FlowTypes.RecipientType) {
         if (fs.recipients[recipientId].recipient == address(0)) revert IFlow.INVALID_RECIPIENT_ID();
         if (fs.recipients[recipientId].removed) revert IFlow.RECIPIENT_ALREADY_REMOVED();
 
         address recipientAddress = fs.recipients[recipientId].recipient;
+        FlowTypes.RecipientType recipientType = fs.recipients[recipientId].recipientType;
         fs.recipientExists[recipientAddress] = false;
 
         fs.recipients[recipientId].removed = true;
         fs.activeRecipientCount--;
 
-        return recipientAddress;
+        return (recipientAddress, recipientType);
     }
 
     /**

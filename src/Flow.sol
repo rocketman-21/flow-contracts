@@ -10,6 +10,7 @@ import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/acc
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
@@ -20,6 +21,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     using SuperTokenV1Library for ISuperToken;
     using FlowRecipients for Storage;
     using FlowVotes for Storage;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     /**
      * @notice Initializes the Flow contract
@@ -263,6 +265,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _connectAndInitializeFlowRecipient(recipient);
 
         fs.addFlowRecipient(_recipientId, recipient, _metadata);
+        _childFlows.add(recipient);
 
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
         emit FlowRecipientCreated(_recipientId, recipient);
@@ -316,7 +319,11 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a RecipientRemoved event if the recipient is successfully removed
      */
     function removeRecipient(bytes32 recipientId) external onlyManager nonReentrant {
-        address recipientAddress = fs.removeRecipient(recipientId);
+        (address recipientAddress, RecipientType recipientType) = fs.removeRecipient(recipientId);
+
+        if (recipientType == RecipientType.FlowContract) {
+            _childFlows.remove(recipientAddress);
+        }
 
         emit RecipientRemoved(recipientAddress, recipientId);
 
@@ -347,7 +354,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         int96 memberFlowRate = getMemberTotalFlowRate(childAddress);
 
         // Call setFlowRate on the child contract
-        // only set if buffer required is less than balance of contract
+        // only set if balance of contract is greater than buffer required
         if (fs.superToken.getBufferAmountByFlowRate(memberFlowRate) < fs.superToken.balanceOf(childAddress)) {
             IFlow(childAddress).setFlowRate(memberFlowRate);
         }
@@ -502,6 +509,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
+
+        // update child flows
+        // warning - values() copies entire array into memory, could run out of gas for huge arrays
+        // must keep child flows below ~500 per o1 estimates
+        address[] memory childFlows = _childFlows.values();
+        for (uint256 i = 0; i < childFlows.length; i++) {
+            _setChildFlowRate(childFlows[i]);
+        }
     }
 
     /**
