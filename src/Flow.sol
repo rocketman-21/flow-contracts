@@ -96,17 +96,19 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param bps The basis points of the vote to be split with the recipient.
      * @param tokenId The tokenId owned by the voter.
      * @param totalWeight The voting power of the voter.
+     * @param voter The address of the voter.
      * @dev Requires that the recipient is valid, and the weight is greater than the minimum vote weight.
      * Emits a VoteCast event upon successful execution.
      */
-    function _vote(bytes32 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight) internal {
+    function _vote(bytes32 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight, address voter) internal {
         // calculate new member units for recipient and create vote
         (uint128 memberUnits, address recipientAddress, RecipientType recipientType) = fs.createVote(
             recipientId,
             bps,
             tokenId,
             totalWeight,
-            PERCENTAGE_SCALE
+            PERCENTAGE_SCALE,
+            voter
         );
 
         // update member units
@@ -167,7 +169,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function _setVotesAllocationForTokenId(
         uint256 tokenId,
         bytes32[] memory recipientIds,
-        uint32[] memory percentAllocations
+        uint32[] memory percentAllocations,
+        address voter
     ) internal {
         uint256 sum = 0;
         // overflow should be impossible in for-loop index
@@ -175,13 +178,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             sum += percentAllocations[i];
         }
         if (sum != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
+        if (voter == address(0)) revert ADDRESS_ZERO();
 
         // update member units for previous votes
         _clearPreviousVotes(tokenId);
 
         // set new votes
         for (uint256 i = 0; i < recipientIds.length; i++) {
-            _vote(recipientIds[i], percentAllocations[i], tokenId, fs.tokenVoteWeight);
+            _vote(recipientIds[i], percentAllocations[i], tokenId, fs.tokenVoteWeight, voter);
         }
     }
 

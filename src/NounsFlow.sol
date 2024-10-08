@@ -142,7 +142,7 @@ contract NounsFlow is INounsFlow, Flow {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof))
                 revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
-            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
+            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
         }
     }
 

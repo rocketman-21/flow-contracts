@@ -78,6 +78,8 @@ interface FlowTypes {
         uint256 tokenVoteWeight;
         // The mapping of a token to a list of votes allocations (recipient, BPS)
         mapping(uint256 => VoteAllocation[]) votes;
+        // The mapping of a token to the address that voted with it
+        mapping(uint256 => address) voters;
     }
 }
 

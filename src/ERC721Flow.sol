@@ -58,7 +58,7 @@ contract ERC721Flow is IERC721Flow, Flow {
         fs.validateVotes(recipientIds, percentAllocations);
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
-            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations);
+            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
         }
     }
 
