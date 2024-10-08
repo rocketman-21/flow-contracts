@@ -60,7 +60,6 @@ contract GeneralizedTCRStorageV1 {
      * @param submissionChallengeBaseDeposit Base deposit for challenging a submission
      * @param removalChallengeBaseDeposit Base deposit for challenging a removal
      * @param challengePeriodDuration Duration of the challenge period
-     * @param stakeMultipliers Multipliers for appeals
      * @param arbitratorExtraData Extra data for the arbitrator
      * @param registrationMetaEvidence MetaEvidence for registration requests
      * @param clearingMetaEvidence MetaEvidence for removal requests
@@ -72,7 +71,6 @@ contract GeneralizedTCRStorageV1 {
         uint submissionChallengeBaseDeposit;
         uint removalChallengeBaseDeposit;
         uint challengePeriodDuration;
-        uint[3] stakeMultipliers;
         bytes arbitratorExtraData;
         string registrationMetaEvidence;
         string clearingMetaEvidence;
@@ -155,23 +153,6 @@ contract GeneralizedTCRStorageV1 {
      * @notice The number of times the meta evidence has been updated. Used to track the latest meta evidence ID
      */
     uint256 public metaEvidenceUpdates;
-
-    /**
-     * @notice Multiplier for calculating the fee stake paid by the party that won the previous round
-     */
-    uint256 public winnerStakeMultiplier;
-    /**
-     * @notice Multiplier for calculating the fee stake paid by the party that lost the previous round
-     */
-    uint256 public loserStakeMultiplier;
-    /**
-     * @notice Multiplier for calculating the fee stake that must be paid in the case where arbitrator refused to arbitrate
-     */
-    uint256 public sharedStakeMultiplier;
-    /**
-     * @notice Divisor parameter for multipliers
-     */
-    uint256 public constant MULTIPLIER_DIVISOR = 10000;
 
     /**
      * @notice List of IDs of all submitted items

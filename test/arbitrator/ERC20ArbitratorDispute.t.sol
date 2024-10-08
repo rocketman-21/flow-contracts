@@ -74,7 +74,7 @@ contract ERC20ArbitratorDisputeTest is ERC20VotesArbitratorTest {
         revealVote(disputeID, voter3, 1, "Reason 3", salt3);
 
         // Advance time to end of reveal period
-        advanceTime(REVEAL_PERIOD + APPEAL_PERIOD);
+        advanceTime(REVEAL_PERIOD);
 
         // Execute ruling
         arbitrator.executeRuling(disputeID);
@@ -89,7 +89,7 @@ contract ERC20ArbitratorDisputeTest is ERC20VotesArbitratorTest {
         // Get the latest dispute ID
         uint256 disputeID = arbitrator.disputeCount();
 
-        // The current round is 0 as no appeals have occurred
+        // The current round is 0
         uint256 currentRound = 0;
 
         // Voter1 attempts to withdraw their rewards

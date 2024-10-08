@@ -72,7 +72,7 @@ contract BasicTCRTest is FlowTCRTest {
         assertTrue(disputed, "Item should be disputed after challenge");
         assertEq(parties[uint256(IArbitrable.Party.Requester)], requester, "Requester should be correct");
         assertEq(parties[uint256(IArbitrable.Party.Challenger)], challenger, "Challenger should be correct");
-        assertEq(numberOfRounds, 2, "Number of rounds should be 2"); // new round is made after challenge for any appeals that occur post challenge
+        assertEq(numberOfRounds, 1, "Number of rounds should be 1"); // no new round is made after challenge
         assertFalse(resolved, "Request should not be resolved yet");
         assertEq(address(erc20VotesArbitrator), address(arbitrator), "Arbitrator should be correct");
         assertEq(arbitratorExtraData, ARBITRATOR_EXTRA_DATA, "Arbitrator extra data should be correct");
@@ -201,7 +201,7 @@ contract BasicTCRTest is FlowTCRTest {
         assertTrue(disputed, "Item should be disputed after challenge");
         assertEq(parties[uint256(IArbitrable.Party.Requester)], requester, "Requester should be correct");
         assertEq(parties[uint256(IArbitrable.Party.Challenger)], challenger, "Challenger should be correct");
-        assertEq(numberOfRounds, 2, "Number of rounds should be 2"); // new round is made after challenge for any appeals that occur post challenge
+        assertEq(numberOfRounds, 1, "Number of rounds should be 1"); // no new round is made after challenge
         assertFalse(resolved, "Request should not be resolved yet");
 
         voteAndExecute(disputeID, IArbitrable.Party.Requester);

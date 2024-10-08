@@ -31,7 +31,7 @@ library TCRRounds {
      * @param contributor The address of the contributor.
      * @param amount The amount of ERC20 tokens to contribute.
      * @param totalRequired The total amount required for this side.
-     * @return contribution The amount of appeal fees contributed.
+     * @return contribution The amount of fees contributed.
      */
     function contribute(
         GeneralizedTCRStorageV1.Round storage round,

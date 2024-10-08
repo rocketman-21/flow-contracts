@@ -40,15 +40,6 @@ interface IGeneralizedTCR {
     /// @notice The side must be either Requester or Challenger.
     error INVALID_SIDE();
 
-    /// @notice The dispute must be raised to fund an appeal.
-    error A_DISPUTE_MUST_BE_RAISED_TO_FUND_AN_APPEAL();
-
-    /// @notice Contributions must be made within the appeal period.
-    error CONTRIBUTIONS_MUST_BE_MADE_WITHIN_THE_APPEAL_PERIOD();
-
-    /// @notice The loser must contribute during the first half of the appeal period.
-    error LOSER_MUST_CONTRIBUTE_DURING_FIRST_HALF_OF_APPEAL_PERIOD();
-
     /// @notice The request must be resolved before executing the ruling.
     error REQUEST_MUST_BE_RESOLVED();
 
@@ -138,38 +129,6 @@ interface IGeneralizedTCR {
      * @param _evidenceGroupID The evidence group ID used for this request
      */
     event RequestEvidenceGroupID(bytes32 indexed _itemID, uint indexed _requestIndex, uint indexed _evidenceGroupID);
-
-    /**
-     * @notice Emitted when a party contributes to an appeal
-     * @param _itemID The ID of the item
-     * @param _contributor The address making the contribution
-     * @param _request The index of the request
-     * @param _round The index of the round receiving the contribution
-     * @param _amount The amount of the contribution
-     * @param _side The party receiving the contribution
-     */
-    event AppealContribution(
-        bytes32 indexed _itemID,
-        address indexed _contributor,
-        uint indexed _request,
-        uint _round,
-        uint _amount,
-        IArbitrable.Party _side
-    );
-
-    /**
-     * @notice Emitted when one of the parties successfully paid its appeal fees
-     * @param _itemID The ID of the item
-     * @param _request The index of the request
-     * @param _round The index of the round
-     * @param _side The side that is fully funded
-     */
-    event HasPaidAppealFee(
-        bytes32 indexed _itemID,
-        uint indexed _request,
-        uint indexed _round,
-        IArbitrable.Party _side
-    );
 }
 
 interface IFlowTCR is IGeneralizedTCR {

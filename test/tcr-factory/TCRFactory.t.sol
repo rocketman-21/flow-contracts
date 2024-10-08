@@ -53,8 +53,6 @@ contract TCRFactoryTest is Test {
     uint256 public constant VOTING_PERIOD = 86_400;
     uint256 public constant VOTING_DELAY = 1;
     uint256 public constant REVEAL_PERIOD = 86_400;
-    uint256 public constant APPEAL_PERIOD = 21_600;
-    uint256 public constant APPEAL_COST = 1e18 / 10_000;
     uint256 public constant ARBITRATION_COST = 1e18 / 10_000;
 
     // Superfluid
@@ -125,7 +123,6 @@ contract TCRFactoryTest is Test {
             submissionChallengeBaseDeposit: SUBMISSION_CHALLENGE_BASE_DEPOSIT,
             removalChallengeBaseDeposit: REMOVAL_CHALLENGE_BASE_DEPOSIT,
             challengePeriodDuration: CHALLENGE_PERIOD,
-            stakeMultipliers: [STAKE_MULTIPLIER, STAKE_MULTIPLIER, STAKE_MULTIPLIER],
             requiredRecipientType: FlowTypes.RecipientType.None
         });
 
@@ -133,8 +130,6 @@ contract TCRFactoryTest is Test {
             votingPeriod: VOTING_PERIOD,
             votingDelay: VOTING_DELAY,
             revealPeriod: REVEAL_PERIOD,
-            appealPeriod: APPEAL_PERIOD,
-            appealCost: APPEAL_COST,
             arbitrationCost: ARBITRATION_COST
         });
 
@@ -209,12 +204,6 @@ contract TCRFactoryTest is Test {
             "Reveal period not set correctly"
         );
         assertEq(
-            erc20VotesArbitrator._appealPeriod(),
-            arbitratorParams.appealPeriod,
-            "Appeal period not set correctly"
-        );
-        assertEq(erc20VotesArbitrator._appealCost(), arbitratorParams.appealCost, "Appeal cost not set correctly");
-        assertEq(
             erc20VotesArbitrator._arbitrationCost(),
             arbitratorParams.arbitrationCost,
             "Arbitration cost not set correctly"
@@ -265,21 +254,6 @@ contract TCRFactoryTest is Test {
             flowParams.challengePeriodDuration,
             "challengePeriodDuration not set correctly"
         );
-        assertEq(
-            flowTCR.sharedStakeMultiplier(),
-            flowParams.stakeMultipliers[0],
-            "sharedStakeMultiplier not set correctly"
-        );
-        assertEq(
-            flowTCR.winnerStakeMultiplier(),
-            flowParams.stakeMultipliers[1],
-            "winnerStakeMultiplier not set correctly"
-        );
-        assertEq(
-            flowTCR.loserStakeMultiplier(),
-            flowParams.stakeMultipliers[2],
-            "loserStakeMultiplier not set correctly"
-        );
 
         // Check ERC20 token
         ERC20VotesMintable erc20Token = ERC20VotesMintable(
@@ -300,8 +274,6 @@ contract TCRFactoryTest is Test {
         assertEq(votesArbitrator._votingPeriod(), arbitratorParams.votingPeriod, "Voting period not set correctly");
         assertEq(votesArbitrator._votingDelay(), arbitratorParams.votingDelay, "Voting delay not set correctly");
         assertEq(votesArbitrator._revealPeriod(), arbitratorParams.revealPeriod, "Reveal period not set correctly");
-        assertEq(votesArbitrator._appealPeriod(), arbitratorParams.appealPeriod, "Appeal period not set correctly");
-        assertEq(votesArbitrator._appealCost(), arbitratorParams.appealCost, "Appeal cost not set correctly");
         assertEq(
             votesArbitrator._arbitrationCost(),
             arbitratorParams.arbitrationCost,

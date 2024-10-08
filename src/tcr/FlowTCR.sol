@@ -91,8 +91,7 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
             _tcrParams.removalBaseDeposit,
             _tcrParams.submissionChallengeBaseDeposit,
             _tcrParams.removalChallengeBaseDeposit,
-            _tcrParams.challengePeriodDuration,
-            _tcrParams.stakeMultipliers
+            _tcrParams.challengePeriodDuration
         );
     }
 
@@ -163,7 +162,6 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                     submissionChallengeBaseDeposit: submissionChallengeBaseDeposit,
                     removalChallengeBaseDeposit: removalChallengeBaseDeposit,
                     challengePeriodDuration: challengePeriodDuration,
-                    stakeMultipliers: [sharedStakeMultiplier, winnerStakeMultiplier, loserStakeMultiplier],
                     requiredRecipientType: FlowTypes.RecipientType.ExternalAccount // children are not flows for now, TODO make this configurable
                 }),
                 arbitrator.getArbitratorParamsForFactory(),

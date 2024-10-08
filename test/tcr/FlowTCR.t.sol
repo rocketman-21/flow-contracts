@@ -70,8 +70,6 @@ contract FlowTCRTest is ERC721FlowTest {
     uint256 public constant VOTING_PERIOD = 86_400; // MIN_VOTING_PERIOD
     uint256 public constant VOTING_DELAY = 1; // MIN_VOTING_DELAY
     uint256 public constant REVEAL_PERIOD = 86_400; // MIN_REVEAL_PERIOD
-    uint256 public constant APPEAL_PERIOD = 21_600; // MIN_APPEAL_PERIOD
-    uint256 public constant APPEAL_COST = 1e18 / 10_000; // MIN_APPEAL_COST
     uint256 public constant ARBITRATION_COST = 1e18 / 10_000; // MIN_ARBITRATION_COST
 
     function setUp() public virtual override {
@@ -131,7 +129,6 @@ contract FlowTCRTest is ERC721FlowTest {
                 submissionChallengeBaseDeposit: SUBMISSION_CHALLENGE_BASE_DEPOSIT,
                 removalChallengeBaseDeposit: REMOVAL_CHALLENGE_BASE_DEPOSIT,
                 challengePeriodDuration: CHALLENGE_PERIOD,
-                stakeMultipliers: STAKE_MULTIPLIERS,
                 arbitratorExtraData: ARBITRATOR_EXTRA_DATA,
                 registrationMetaEvidence: REGISTRATION_META_EVIDENCE,
                 clearingMetaEvidence: CLEARING_META_EVIDENCE,
@@ -158,8 +155,6 @@ contract FlowTCRTest is ERC721FlowTest {
             VOTING_PERIOD,
             VOTING_DELAY,
             REVEAL_PERIOD,
-            APPEAL_PERIOD,
-            APPEAL_COST,
             ARBITRATION_COST
         );
 
@@ -219,8 +214,8 @@ contract FlowTCRTest is ERC721FlowTest {
         vm.prank(swingVoter);
         arbitrator.revealVote(disputeID, swingVoter, uint256(winner), "Swing vote", bytes32("salt3"));
 
-        // Advance time to end of reveal and appeal periods
-        advanceTime(REVEAL_PERIOD + APPEAL_PERIOD);
+        // Advance time to end of reveal
+        advanceTime(REVEAL_PERIOD);
 
         // Execute the ruling
         arbitrator.executeRuling(disputeID);

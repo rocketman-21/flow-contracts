@@ -23,7 +23,7 @@ import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/
 
 /**
  *  @title GeneralizedTCR
- *  This contract is a curated registry for any types of items. Just like a TCR contract it features the request-challenge protocol and appeal fees crowdfunding.
+ *  This contract is a curated registry for any types of items. Just like a TCR contract it features the request-challenge protocol.
  */
 abstract contract GeneralizedTCR is
     IArbitrable,
@@ -41,7 +41,7 @@ abstract contract GeneralizedTCR is
     /**
      *  @dev Initialize the arbitrable curated registry.
      *  @param _initialOwner The initial owner of the contract
-     *  @param _arbitrator Arbitrator to resolve potential disputes. The arbitrator is trusted to support appeal periods and not reenter.
+     *  @param _arbitrator Arbitrator to resolve potential disputes.
      *  @param _arbitratorExtraData Extra data for the trusted arbitrator contract.
      *  @param _registrationMetaEvidence The URI of the meta evidence object for registration requests.
      *  @param _clearingMetaEvidence The URI of the meta evidence object for clearing requests.
@@ -52,10 +52,6 @@ abstract contract GeneralizedTCR is
      *  @param _submissionChallengeBaseDeposit The base deposit to challenge a submission.
      *  @param _removalChallengeBaseDeposit The base deposit to challenge a removal request.
      *  @param _challengePeriodDuration The time in seconds parties have to challenge a request.
-     *  @param _stakeMultipliers Multipliers of the arbitration cost in basis points (see MULTIPLIER_DIVISOR) as follows:
-     *  - The multiplier applied to each party's fee stake for a round when there is no winner/loser in the previous round (e.g. when the arbitrator refused to arbitrate).
-     *  - The multiplier applied to the winner's fee stake for the subsequent round.
-     *  - The multiplier applied to the loser's fee stake for the subsequent round.
      */
     function __GeneralizedTCR_init(
         address _initialOwner,
@@ -69,8 +65,7 @@ abstract contract GeneralizedTCR is
         uint _removalBaseDeposit,
         uint _submissionChallengeBaseDeposit,
         uint _removalChallengeBaseDeposit,
-        uint _challengePeriodDuration,
-        uint[3] memory _stakeMultipliers
+        uint _challengePeriodDuration
     ) public {
         __Ownable2Step_init();
         __ReentrancyGuard_init();
@@ -92,9 +87,6 @@ abstract contract GeneralizedTCR is
         submissionChallengeBaseDeposit = _submissionChallengeBaseDeposit;
         removalChallengeBaseDeposit = _removalChallengeBaseDeposit;
         challengePeriodDuration = _challengePeriodDuration;
-        sharedStakeMultiplier = _stakeMultipliers[0];
-        winnerStakeMultiplier = _stakeMultipliers[1];
-        loserStakeMultiplier = _stakeMultipliers[2];
         registrationMetaEvidence = _registrationMetaEvidence;
         clearingMetaEvidence = _clearingMetaEvidence;
     }
@@ -189,7 +181,6 @@ abstract contract GeneralizedTCR is
 
         arbitratorDisputeIDToItem[address(request.arbitrator)][request.disputeID] = _itemID;
         request.disputed = true;
-        request.rounds.push(); // prepare for any new appeals given the new dispute
         round.feeRewards = round.feeRewards.subCap(arbitrationCost);
 
         uint evidenceGroupID = uint(keccak256(abi.encodePacked(_itemID, item.requests.length - 1)));
@@ -197,68 +188,6 @@ abstract contract GeneralizedTCR is
 
         if (bytes(_evidence).length > 0) {
             emit Evidence(request.arbitrator, evidenceGroupID, msg.sender, _evidence);
-        }
-    }
-
-    /** @dev Takes up to the total amount required to fund a side of an appeal. Reimburses the rest. Creates an appeal if both sides are fully funded.
-     *  @param _itemID The ID of the item which request to fund.
-     *  @param _side The recipient of the contribution.
-     *  @param _erc20Amount The amount of ERC20 tokens to use to fund the appeal.
-     */
-    function fundAppeal(bytes32 _itemID, Party _side, uint _erc20Amount) external nonReentrant {
-        if (_side != Party.Requester && _side != Party.Challenger) revert INVALID_SIDE();
-        if (items[_itemID].status != Status.RegistrationRequested && items[_itemID].status != Status.ClearingRequested)
-            revert ITEM_MUST_HAVE_PENDING_REQUEST();
-
-        Request storage request = items[_itemID].requests[items[_itemID].requests.length - 1];
-        if (!request.disputed) revert A_DISPUTE_MUST_BE_RAISED_TO_FUND_AN_APPEAL();
-        (uint appealPeriodStart, uint appealPeriodEnd) = request.arbitrator.appealPeriod(request.disputeID);
-        if (block.timestamp < appealPeriodStart || block.timestamp >= appealPeriodEnd)
-            revert CONTRIBUTIONS_MUST_BE_MADE_WITHIN_THE_APPEAL_PERIOD();
-
-        uint multiplier;
-        {
-            Party winner = Party(request.arbitrator.currentRuling(request.disputeID));
-            Party loser;
-            if (winner == Party.Requester) loser = Party.Challenger;
-            else if (winner == Party.Challenger) loser = Party.Requester;
-            if (_side == loser && (block.timestamp - appealPeriodStart >= (appealPeriodEnd - appealPeriodStart) / 2))
-                revert LOSER_MUST_CONTRIBUTE_DURING_FIRST_HALF_OF_APPEAL_PERIOD();
-
-            if (_side == winner) multiplier = winnerStakeMultiplier;
-            else if (_side == loser) multiplier = loserStakeMultiplier;
-            else multiplier = sharedStakeMultiplier;
-        }
-
-        Round storage round = request.rounds[request.rounds.length - 1];
-        uint appealCost = request.arbitrator.appealCost(request.disputeID, request.arbitratorExtraData);
-        uint totalCost = appealCost.addCap((appealCost.mulCap(multiplier)) / MULTIPLIER_DIVISOR);
-        uint contribution = _contribute(round, _side, msg.sender, _erc20Amount, totalCost);
-
-        emit AppealContribution(
-            _itemID,
-            msg.sender,
-            items[_itemID].requests.length - 1,
-            request.rounds.length - 1,
-            contribution,
-            _side
-        );
-
-        if (round.amountPaid[uint(_side)] >= totalCost) {
-            round.hasPaid[uint(_side)] = true;
-            emit HasPaidAppealFee(_itemID, items[_itemID].requests.length - 1, request.rounds.length - 1, _side);
-        }
-
-        // Raise appeal if both sides are fully funded.
-        if (round.hasPaid[uint(Party.Challenger)] && round.hasPaid[uint(Party.Requester)]) {
-            // increase allowance for arbitrator to spend the ERC20 tokens
-            erc20.safeIncreaseAllowance(address(request.arbitrator), appealCost);
-
-            // appeal - arbitrator will transferFrom() the ERC20 tokens to itself
-            request.arbitrator.appeal(request.disputeID, request.arbitratorExtraData);
-
-            request.rounds.push(); // if appeal is successfully funded, a new round is created
-            round.feeRewards = round.feeRewards.subCap(appealCost);
         }
     }
 
@@ -319,7 +248,6 @@ abstract contract GeneralizedTCR is
     }
 
     /** @dev Give a ruling for a dispute. Can only be called by the arbitrator. TRUSTED.
-     *  Accounts for the situation where the winner loses a case due to paying less appeal fees than expected.
      *  @param _disputeID ID of the dispute in the arbitrator contract.
      *  @param _ruling Ruling given by the arbitrator. Note that 0 is reserved for "Refused to arbitrate".
      */
@@ -333,12 +261,6 @@ abstract contract GeneralizedTCR is
         if (_ruling > RULING_OPTIONS) revert INVALID_RULING_OPTION();
         if (address(request.arbitrator) != msg.sender) revert ONLY_ARBITRATOR_CAN_RULE();
         if (request.resolved) revert REQUEST_MUST_NOT_BE_RESOLVED();
-
-        // The ruling is inverted if the loser paid its fees.
-        if (round.hasPaid[uint(Party.Requester)] == true)
-            // If one side paid its fees, the ruling is in its favor. Note that if the other side had also paid, an appeal would have been created.
-            resultRuling = Party.Requester;
-        else if (round.hasPaid[uint(Party.Challenger)] == true) resultRuling = Party.Challenger;
 
         emit Ruling(IArbitrator(msg.sender), _disputeID, uint(resultRuling));
         _executeRuling(_disputeID, uint(resultRuling));
@@ -414,28 +336,7 @@ abstract contract GeneralizedTCR is
         governor = _governor;
     }
 
-    /** @dev Change the proportion of arbitration fees that must be paid as fee stake by parties when there is no winner or loser.
-     *  @param _sharedStakeMultiplier Multiplier of arbitration fees that must be paid as fee stake. In basis points.
-     */
-    function changeSharedStakeMultiplier(uint _sharedStakeMultiplier) external onlyGovernor {
-        sharedStakeMultiplier = _sharedStakeMultiplier;
-    }
-
-    /** @dev Change the proportion of arbitration fees that must be paid as fee stake by the winner of the previous round.
-     *  @param _winnerStakeMultiplier Multiplier of arbitration fees that must be paid as fee stake. In basis points.
-     */
-    function changeWinnerStakeMultiplier(uint _winnerStakeMultiplier) external onlyGovernor {
-        winnerStakeMultiplier = _winnerStakeMultiplier;
-    }
-
-    /** @dev Change the proportion of arbitration fees that must be paid as fee stake by the party that lost the previous round.
-     *  @param _loserStakeMultiplier Multiplier of arbitration fees that must be paid as fee stake. In basis points.
-     */
-    function changeLoserStakeMultiplier(uint _loserStakeMultiplier) external onlyGovernor {
-        loserStakeMultiplier = _loserStakeMultiplier;
-    }
-
-    /** @dev Change the arbitrator to be used for disputes that may be raised. The arbitrator is trusted to support appeal periods and not reenter.
+    /** @dev Change the arbitrator to be used for disputes that may be raised.
      *  @param _arbitrator The new trusted arbitrator to be used in disputes.
      *  @param _arbitratorExtraData The extra data used by the new arbitrator.
      */
@@ -513,7 +414,7 @@ abstract contract GeneralizedTCR is
      *  @param _contributor The contributor.
      *  @param _amount The amount contributed.
      *  @param _totalRequired The total amount required for this side.
-     *  @return The amount of appeal fees contributed.
+     *  @return The amount contributed.
      */
     function _contribute(
         Round storage _round,
@@ -692,7 +593,6 @@ abstract contract GeneralizedTCR is
      *  @param _itemID The ID of the queried item.
      *  @param _request The request to be queried.
      *  @param _round The round to be queried.
-     *  @return appealed Whether appealed or not.
      *  @return amountPaid Tracks the sum paid for each Party in this round.
      *  @return hasPaid True if the Party has fully paid its fee in this round.
      *  @return feeRewards Sum of reimbursable fees and stake rewards available to the parties that made contributions to the side that ultimately wins a dispute.
@@ -701,11 +601,11 @@ abstract contract GeneralizedTCR is
         bytes32 _itemID,
         uint _request,
         uint _round
-    ) external view returns (bool appealed, uint[3] memory amountPaid, bool[3] memory hasPaid, uint feeRewards) {
+    ) external view returns (uint[3] memory amountPaid, bool[3] memory hasPaid, uint feeRewards) {
         Item storage item = items[_itemID];
         Request storage request = item.requests[_request];
         Round storage round = request.rounds[_round];
-        return (_round != (request.rounds.length - 1), round.amountPaid, round.hasPaid, round.feeRewards);
+        return (round.amountPaid, round.hasPaid, round.feeRewards);
     }
 
     /* Modifiers */

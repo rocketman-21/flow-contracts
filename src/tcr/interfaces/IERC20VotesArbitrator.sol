@@ -25,14 +25,8 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when trying to execute a dispute that is not in the Solved state
     error DISPUTE_NOT_SOLVED();
 
-    /// @notice Error thrown when trying to execute a dispute that is not in the Appealable state
-    error DISPUTE_NOT_APPEALABLE();
-
     /// @notice Error thrown when trying to execute a dispute that has already been executed
     error DISPUTE_ALREADY_EXECUTED();
-
-    /// @notice Error thrown when the appeal period is outside the allowed range
-    error INVALID_APPEAL_PERIOD();
 
     /// @notice Error thrown when the round is invalid
     error INVALID_ROUND();
@@ -43,20 +37,11 @@ interface IERC20VotesArbitrator is IArbitrator {
     /// @notice Error thrown when there are no winning votes
     error NO_WINNING_VOTES();
 
-    /// @notice Error thrown when the max appeal rounds is reached
-    error MAX_APPEAL_ROUNDS_REACHED();
-
-    /// @notice Error thrown when the appeal cost is outside the allowed range
-    error INVALID_APPEAL_COST();
-
     /// @notice Error thrown when the arbitration cost is outside the allowed range
     error INVALID_ARBITRATION_COST();
 
     /// @notice Error thrown when the arbitrable address is invalid (zero address)
     error INVALID_ARBITRABLE_ADDRESS();
-
-    /// @notice Error thrown when the appeal period is ended
-    error APPEAL_PERIOD_ENDED();
 
     /// @notice Error thrown when the voting is closed for a dispute
     error VOTING_CLOSED();
@@ -110,9 +95,8 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param votingStartTime The timestamp when voting starts
      * @param votingEndTime The timestamp when voting ends
      * @param revealPeriodEndTime The timestamp when the reveal period ends
-     * @param appealPeriodEndTime The timestamp when the appeal period ends
      * @param totalSupply The total supply of voting tokens at dispute creation
-     * @param cost The cost paid by the arbitrable contract for this voting round. Either arbitrationCost or appealCost
+     * @param cost The cost paid by the arbitrable contract for this voting round.
      * @param extraData Additional data related to the dispute
      */
     event DisputeReset(
@@ -120,20 +104,10 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 votingStartTime,
         uint256 votingEndTime,
         uint256 revealPeriodEndTime,
-        uint256 appealPeriodEndTime,
         uint256 totalSupply,
         uint256 cost,
         bytes extraData
     );
-
-    /**
-     * @notice Emitted when an appeal is raised
-     * @param disputeId The ID of the dispute
-     * @param roundNumber The round number of the appeal
-     * @param appealer The address of the appealer
-     * @param appealCost The cost of the appeal
-     */
-    event AppealRaised(uint256 disputeId, uint256 roundNumber, address appealer, uint256 appealCost);
 
     /**
      * @notice Emitted when the voting delay is set
@@ -150,13 +124,6 @@ interface IERC20VotesArbitrator is IArbitrator {
     event RevealPeriodSet(uint256 oldRevealPeriod, uint256 newRevealPeriod);
 
     /**
-     * @notice Emitted when the appeal cost is set
-     * @param oldAppealCost The previous appeal cost
-     * @param newAppealCost The new appeal cost
-     */
-    event AppealCostSet(uint256 oldAppealCost, uint256 newAppealCost);
-
-    /**
      * @notice Emitted when a voter withdraws their proportional share of the cost for a voting round
      * @param disputeId The ID of the dispute
      * @param round The round number
@@ -171,13 +138,6 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param newArbitrationCost The new arbitration cost
      */
     event ArbitrationCostSet(uint256 oldArbitrationCost, uint256 newArbitrationCost);
-
-    /**
-     * @notice Emitted when the appeal period is set
-     * @param oldAppealPeriod The previous appeal period
-     * @param newAppealPeriod The new appeal period
-     */
-    event AppealPeriodSet(uint256 oldAppealPeriod, uint256 newAppealPeriod);
 
     /**
      * @notice Emitted when a vote has been cast on a dispute
@@ -219,10 +179,9 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param votingStartTime The timestamp when voting starts
      * @param votingEndTime The timestamp when voting ends
      * @param revealPeriodEndTime The timestamp when the reveal period ends
-     * @param appealPeriodEndTime The timestamp when the appeal period ends
      * @param totalSupply The total supply of voting tokens at dispute creation
      * @param creationBlock The block number when the dispute was created
-     * @param arbitrationCost The cost paid by the arbitrable contract for this voting round. Either arbitrationCost or appealCost
+     * @param arbitrationCost The cost paid by the arbitrable contract for this voting round.
      * @param extraData Additional data related to the dispute
      * @param choices The number of choices available for voting
      */
@@ -232,7 +191,6 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 votingStartTime,
         uint256 votingEndTime,
         uint256 revealPeriodEndTime,
-        uint256 appealPeriodEndTime,
         uint256 totalSupply,
         uint256 creationBlock,
         uint256 arbitrationCost,
@@ -248,8 +206,6 @@ interface IERC20VotesArbitrator is IArbitrator {
      * @param votingPeriod The initial voting period
      * @param votingDelay The initial voting delay
      * @param revealPeriod The initial reveal period to reveal committed votes
-     * @param appealPeriod The initial appeal period
-     * @param appealCost The initial appeal cost
      * @param arbitrationCost The initial arbitration cost
      */
     function initialize(
@@ -259,8 +215,6 @@ interface IERC20VotesArbitrator is IArbitrator {
         uint256 votingPeriod,
         uint256 votingDelay,
         uint256 revealPeriod,
-        uint256 appealPeriod,
-        uint256 appealCost,
         uint256 arbitrationCost
     ) external;
 }

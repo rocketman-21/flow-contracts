@@ -130,8 +130,6 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             votingPeriod: arbitratorParams.votingPeriod,
             votingDelay: arbitratorParams.votingDelay,
             revealPeriod: arbitratorParams.revealPeriod,
-            appealPeriod: arbitratorParams.appealPeriod,
-            appealCost: arbitratorParams.appealCost,
             arbitrationCost: arbitratorParams.arbitrationCost
         });
 
@@ -151,7 +149,6 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
                 submissionChallengeBaseDeposit: params.submissionChallengeBaseDeposit,
                 removalChallengeBaseDeposit: params.removalChallengeBaseDeposit,
                 challengePeriodDuration: params.challengePeriodDuration,
-                stakeMultipliers: params.stakeMultipliers,
                 arbitratorExtraData: params.arbitratorExtraData,
                 registrationMetaEvidence: params.registrationMetaEvidence,
                 clearingMetaEvidence: params.clearingMetaEvidence,

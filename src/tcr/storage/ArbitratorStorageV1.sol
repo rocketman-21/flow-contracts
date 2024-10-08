@@ -20,9 +20,6 @@ contract ArbitratorStorageV1 {
     /** @notice The min setable voting delay */
     uint256 public constant MIN_VOTING_DELAY = 1;
 
-    /** @notice The max setable appeal rounds */
-    uint256 public constant MAX_APPEAL_ROUNDS = 10;
-
     /** @notice The max setable voting delay */
     uint256 public constant MAX_VOTING_DELAY = 604_800; // 1 week
 
@@ -32,20 +29,6 @@ contract ArbitratorStorageV1 {
 
     /** @notice The maximum setable reveal period */
     uint256 public constant MAX_REVEAL_PERIOD = 604_800; // 7 days
-
-    /** @notice The minimum setable appeal period */
-    // TODO update after testing
-    uint256 public constant MIN_APPEAL_PERIOD = 1; // 6 hours
-
-    /** @notice The maximum setable appeal period */
-    uint256 public constant MAX_APPEAL_PERIOD = 604_800; // 7 days
-
-    /** @notice The minimum setable appeal cost */
-    // TODO update after testing
-    uint256 public constant MIN_APPEAL_COST = 1e18 / 10_000; // 1 ten-thousandth of a token
-
-    /** @notice The maximum setable appeal cost */
-    uint256 public constant MAX_APPEAL_COST = 1e18 * 1_000_000; // 1 million tokens
 
     /** @notice The minimum setable arbitration cost */
     uint256 public constant MIN_ARBITRATION_COST = 1e18 / 10_000; // 1 ten-thousandth of a token
@@ -62,17 +45,11 @@ contract ArbitratorStorageV1 {
     /** @notice The number of seconds between the vote start and the vote end */
     uint256 public _votingPeriod;
 
-    /** @notice The number of seconds after a dispute is executed that a party can appeal the decision */
-    uint256 public _appealPeriod;
-
     /** @notice The number of seconds between the proposal creation and the vote start */
     uint256 public _votingDelay;
 
     /** @notice The number of seconds for the reveal period after voting ends */
     uint256 public _revealPeriod;
-
-    /** @notice The cost of appealing a dispute */
-    uint256 public _appealCost;
 
     /** @notice The total number of disputes created */
     uint256 public disputeCount;
@@ -99,7 +76,6 @@ contract ArbitratorStorageV1 {
         Pending, // Dispute is pending and not yet active for voting
         Active, // Dispute is active and open for voting
         Reveal, // Voting has ended, and votes can be revealed
-        Appealable, // Dispute is appealable
         Solved // Dispute has been solved but not yet executed
     }
 
@@ -122,7 +98,7 @@ contract ArbitratorStorageV1 {
     }
 
     struct VotingRound {
-        /** @notice The cost paid by the arbitrable contract for this voting round. Either arbitrationCost or appealCost */
+        /** @notice The cost paid by the arbitrable contract for this voting round. */
         uint256 cost;
         /** @notice Timestamp when voting commit period starts */
         uint256 votingStartTime;
@@ -132,10 +108,6 @@ contract ArbitratorStorageV1 {
         uint256 revealPeriodStartTime;
         /** @notice Timestamp when the reveal period ends */
         uint256 revealPeriodEndTime;
-        /** @notice Timestamp when the appeal period starts */
-        uint256 appealPeriodStartTime;
-        /** @notice Timestamp when the appeal period ends */
-        uint256 appealPeriodEndTime;
         /** @notice Total number of votes cast */
         uint256 votes;
         /** @notice The winning choice in the dispute */
