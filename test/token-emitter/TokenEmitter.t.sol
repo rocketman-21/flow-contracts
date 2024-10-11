@@ -573,6 +573,7 @@ contract TokenEmitterTest is Test {
 
         assertEq(balanceAfterWithdraw - balanceBeforeWithdraw, surgeCostMore, "Owner should have received ETH");
 
-        assertEq(address(tokenEmitter).balance, 0, "ETH balance should be 0");
+        // some left over is expected due to overcharging on purchases by 1 wei to avoid precision loss
+        assertApproxEqAbs(address(tokenEmitter).balance, 0, 10, "ETH balance should be basically 0");
     }
 }
