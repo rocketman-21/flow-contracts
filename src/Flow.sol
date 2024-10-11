@@ -336,11 +336,12 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param recipientAddress The address of the removed recipient
      */
     function _removeFromPools(address recipientAddress) internal {
+        int96 totalFlowRate = getTotalFlowRate();
         _updateBonusMemberUnits(recipientAddress, 0);
         _updateBaselineMemberUnits(recipientAddress, 0);
 
         // limitation of superfluid means that when total member units decrease, you must call `distributeFlow` again
-        _setFlowRate(fs.cachedFlowRate);
+        _setFlowRate(totalFlowRate);
     }
 
     /**
