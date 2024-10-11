@@ -82,6 +82,8 @@ interface FlowTypes {
         mapping(uint256 => VoteAllocation[]) votes;
         // The mapping of a token to the address that voted with it
         mapping(uint256 => address) voters;
+        // The cached flow rate
+        int96 cachedFlowRate;
     }
 }
 
