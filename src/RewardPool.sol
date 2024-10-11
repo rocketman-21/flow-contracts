@@ -31,6 +31,11 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     /// @notice The funder of the pool
     address public funder;
 
+    /// @notice The cached flow rate
+    /// @dev Used to prevent precision loss from removing members from a flow
+    /// !! Especially important when tokens will be burned often
+    int96 public cachedFlowRate;
+
     /// The Superfluid pool configuration
     PoolConfig public poolConfig =
         PoolConfig({ transferabilityForUnitsOwner: false, distributionFromAnyAddress: false });
@@ -68,6 +73,8 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      */
     function setFlowRate(int96 _flowRate) public onlyOwnerOrFunder nonReentrant {
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
+
+        cachedFlowRate = _flowRate;
 
         superToken.distributeFlow(address(this), rewardPool, _flowRate);
     }
@@ -123,8 +130,8 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
      * @notice Helper function to get the total flow rate of the pool
      * @return totalFlowRate The total flow rate of the pool
      */
-    function getTotalFlowRate() public view returns (int96 totalFlowRate) {
-        totalFlowRate = rewardPool.getTotalFlowRate();
+    function getTotalFlowRate() public view returns (int96) {
+        return cachedFlowRate;
     }
 
     /**

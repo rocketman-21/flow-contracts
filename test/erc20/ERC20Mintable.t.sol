@@ -191,4 +191,68 @@ contract ERC20MintableTest is Test {
         // Ensure the delegation hasn't changed
         assertEq(token.delegates(user), delegatee);
     }
+
+    function _transferTestTokenToFlow(address flowAddress, uint256 amount) internal {
+        vm.startPrank(minter);
+
+        // Mint underlying tokens
+        TestToken(testUSDC).mint(minter, amount);
+
+        // Approve SuperToken to spend underlying tokens
+        TestToken(testUSDC).approve(address(superToken), amount);
+
+        // Upgrade (wrap) the tokens
+        ISuperToken(address(superToken)).upgrade(amount);
+
+        // Transfer the wrapped tokens to the Flow contract
+        ISuperToken(address(superToken)).transfer(flowAddress, amount);
+
+        vm.stopPrank();
+    }
+
+    function fundRewardPoolWithSuperTokens(uint256 amount) internal {
+        _transferTestTokenToFlow(address(rewardPool), amount);
+    }
+
+    function testFlowRatePrecisionLoss() public {
+        uint256 burnAmount = 7e16;
+
+        fundRewardPoolWithSuperTokens(1e24);
+
+        // Mint user tokens
+        vm.prank(minter);
+        token.mint(user, 1e18);
+
+        // Set flow rate (~1,000 USDCx/month)
+        vm.prank(owner);
+        rewardPool.setFlowRate(400e12);
+
+        // Check flowrate and member units
+        assertEq(rewardPool.getTotalFlowRate(), 400e12);
+        assertEq(rewardPool.getMemberUnits(user), 1e6);
+
+        // Burn single share
+        vm.prank(minter);
+        token.burn(user, burnAmount);
+
+        uint256 newShares = 1e6 - burnAmount / 1e12;
+        assertEq(rewardPool.getMemberUnits(user), newShares);
+
+        // Confirm flowrate has gone down
+        assertEq(rewardPool.getTotalFlowRate(), 400e12);
+
+        vm.prank(minter);
+        token.mint(user, burnAmount);
+        vm.prank(minter);
+        token.burn(user, burnAmount + 1e12);
+
+        assertEq(rewardPool.getTotalFlowRate(), 400e12);
+
+        // Reset flowrate
+        vm.prank(owner);
+        rewardPool.setFlowRate(400e12);
+
+        // Confirm flowrate can be reset
+        assertEq(rewardPool.getTotalFlowRate(), 400e12);
+    }
 }
