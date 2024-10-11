@@ -404,6 +404,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) external onlyOwnerOrParent nonReentrant {
+        fs.cachedFlowRate = _flowRate;
         _setFlowRate(_flowRate);
     }
 
@@ -604,11 +605,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     /**
      * @return totalFlowRate The total flow rate of the pools and the manager reward pool
      */
-    function getTotalFlowRate() public view returns (int96 totalFlowRate) {
-        totalFlowRate =
-            fs.bonusPool.getTotalFlowRate() +
-            fs.baselinePool.getTotalFlowRate() +
-            fs.superToken.getFlowRate(address(this), fs.managerRewardPool);
+    function getTotalFlowRate() public view returns (int96) {
+        return fs.cachedFlowRate;
     }
 
     /**

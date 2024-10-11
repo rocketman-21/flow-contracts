@@ -45,6 +45,12 @@ interface IRewardPool {
     function resetFlowRate() external;
 
     /**
+     * @notice Retrieves the total flow rate of the pool
+     * @return totalFlowRate The total flow rate of the pool
+     */
+    function getTotalFlowRate() external view returns (int96 totalFlowRate);
+
+    /**
      * @notice Helper function to get the claimable balance for a member at the current time
      * @param member The address of the member
      * @return claimableBalance The claimable balance for the member
