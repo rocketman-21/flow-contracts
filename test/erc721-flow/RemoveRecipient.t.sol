@@ -463,4 +463,61 @@ contract RemoveRecipientsTest is ERC721FlowTest {
             "New recipient should have baseline member units"
         );
     }
+
+    function testAddAndRemoveMultipleRecipients() public {
+        int96 flowRate = 400e12;
+
+        vm.prank(flow.owner());
+        flow.setFlowRate(flowRate);
+
+        uint256 numRecipients = 10;
+        bytes32[] memory recipientIds = new bytes32[](numRecipients);
+        address[] memory flowRecipients = new address[](numRecipients);
+
+        vm.deal(address(flow.owner()), 1e30);
+        vm.deal(address(this), 1e30);
+
+        // Add 1000 recipients
+        for (uint256 i = 0; i < numRecipients; i++) {
+            address flowManager = address(uint160(i + 1));
+            FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
+                string(abi.encodePacked("Flow Recipient ", i + 1)),
+                string(abi.encodePacked("Description ", i + 1)),
+                string(abi.encodePacked("ipfs://image", i + 1)),
+                string(abi.encodePacked("Tagline ", i + 1)),
+                string(abi.encodePacked("https://flowrecipient", i + 1, ".com"))
+            );
+            vm.prank(flow.owner());
+            recipientIds[i] = keccak256(abi.encodePacked(flowManager));
+            (, flowRecipients[i]) = flow.addFlowRecipient(
+                recipientIds[i],
+                metadata,
+                flowManager,
+                address(dummyRewardPool)
+            );
+        }
+
+        // Verify all recipients were added correctly
+        assertEq(
+            flow.baselinePool().getTotalUnits(),
+            flow.BASELINE_MEMBER_UNITS() * numRecipients + 1,
+            "Total units incorrect after adding recipients"
+        );
+
+        // Remove all added recipients
+        for (uint256 i = 0; i < numRecipients; i++) {
+            vm.prank(flow.owner());
+            flow.removeRecipient(recipientIds[i]);
+        }
+
+        // ensure flow rate stays consistent
+        assertEq(flow.getTotalFlowRate(), flowRate);
+
+        // Verify all recipients were removed correctly
+        assertEq(flow.baselinePool().getTotalUnits(), 1, "Final total units should be 1 (for address(this))");
+
+        for (uint256 i = 0; i < numRecipients; i++) {
+            assertEq(flow.baselinePool().getUnits(flowRecipients[i]), 0, "Removed recipient should have 0 units");
+        }
+    }
 }
