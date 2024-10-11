@@ -470,7 +470,7 @@ contract RemoveRecipientsTest is ERC721FlowTest {
         vm.prank(flow.owner());
         flow.setFlowRate(flowRate);
 
-        uint256 numRecipients = 10;
+        uint256 numRecipients = 50;
         bytes32[] memory recipientIds = new bytes32[](numRecipients);
         address[] memory flowRecipients = new address[](numRecipients);
 
