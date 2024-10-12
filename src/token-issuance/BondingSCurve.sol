@@ -80,7 +80,10 @@ abstract contract BondingSCurve {
         if (sold < 0) revert INVALID_SOLD_AMOUNT();
         if (amount < 0) revert INVALID_AMOUNT();
 
-        return pIntegral(sold + amount) - pIntegral(sold);
+        // add 1 wei to simulate rounding up
+        // prevents situations where buying tiny amount of tokens
+        // results in buyer paying less due to precision loss
+        return (pIntegral(sold + amount) - pIntegral(sold)) + 1;
     }
 
     // given # of tokens sold and # to sell, returns the payment for selling
