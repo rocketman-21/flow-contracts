@@ -82,7 +82,7 @@ abstract contract BondingSCurve {
 
         // add 1 wei to simulate rounding up
         // prevents situations where buying tiny amount of tokens
-        // results in buyer paying less due to percision loss
+        // results in buyer paying less due to precision loss
         return (pIntegral(sold + amount) - pIntegral(sold)) + 1;
     }
 
