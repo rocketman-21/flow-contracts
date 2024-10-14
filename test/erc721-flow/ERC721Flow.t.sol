@@ -157,7 +157,7 @@ contract ERC721FlowTest is Test {
         setUp();
 
         vm.prank(address(sf.governance.owner()));
-        sf.governance.enableTrustedForwarder(sf.host, superToken, address(forwarder));
+        sf.governance.enableTrustedForwarder(sf.host, ISuperToken(address(0)), address(forwarder));
 
         address bulkPoolWithdrawImpl = address(new BulkPoolWithdraw());
         address bulkPoolWithdraw = address(new ERC1967Proxy(bulkPoolWithdrawImpl, ""));
