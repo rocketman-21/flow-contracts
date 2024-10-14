@@ -16,13 +16,16 @@ import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/
 import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
 import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
 import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/superfluid/SuperToken.sol";
+import { MacroForwarder, IUserDefinedMacro } from "@superfluid-finance/ethereum-contracts/contracts/utils/MacroForwarder.sol";
 import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
 import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
+import { BulkPoolWithdraw } from "../../src/macros/BulkPoolWithdraw.sol";
 
 contract ERC721FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
     SuperfluidFrameworkDeployer internal deployer;
+    MacroForwarder internal forwarder;
     SuperToken internal superToken;
     RewardPool internal dummyRewardPool;
 
@@ -142,9 +145,37 @@ contract ERC721FlowTest is Test {
             manager
         );
 
+        forwarder = new MacroForwarder(sf.host);
+
         superToken = token;
         testUSDC = address(underlyingToken);
 
         flow = deployFlow(address(nounsToken), address(superToken));
+    }
+
+    function test_bulkPoolWithdraw() public {
+        setUp();
+
+        address bulkPoolWithdrawImpl = address(new BulkPoolWithdraw());
+        address bulkPoolWithdraw = address(new ERC1967Proxy(bulkPoolWithdrawImpl, ""));
+
+        BulkPoolWithdraw(bulkPoolWithdraw).initialize(address(manager));
+
+        // Setup test data
+        address testUser = address(0x1234);
+        address baselinePoolAddr = address(flow.baselinePool());
+        address bonusPoolAddr = address(flow.bonusPool());
+
+        // Prepare params for BulkPoolWithdraw
+        bytes memory params = abi.encode(baselinePoolAddr, bonusPoolAddr);
+
+        // Run macro through MacroForwarder
+        vm.prank(testUser);
+        bool success = forwarder.runMacro(IUserDefinedMacro(bulkPoolWithdraw), params);
+
+        // Assert
+        assertTrue(success, "Macro execution should succeed");
+        // assertEq(ISuperfluidPool(baselinePoolAddr).getClaimableNow(testUser), 0, "Baseline pool should be emptied");
+        // assertEq(ISuperfluidPool(bonusPoolAddr).getClaimableNow(testUser), 0, "Bonus pool should be emptied");
     }
 }
