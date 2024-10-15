@@ -9,9 +9,8 @@ import { MockERC721 } from "../mocks/MockERC721.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
-import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
-import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { ISuperfluid, ISuperToken, ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+
 import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
 import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.sol";
 import { TestToken } from "@superfluid-finance/ethereum-contracts/contracts/utils/TestToken.sol";
@@ -19,6 +18,7 @@ import { SuperToken } from "@superfluid-finance/ethereum-contracts/contracts/sup
 import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
 import { IRewardPool } from "../../src/interfaces/IRewardPool.sol";
+import { BulkPoolWithdraw } from "../../src/macros/BulkPoolWithdraw.sol";
 
 contract ERC721FlowTest is Test {
     SuperfluidFrameworkDeployer.Framework internal sf;
