@@ -13,8 +13,8 @@ contract BulkPoolWithdraw is IUserDefinedMacro {
 
     constructor() payable {}
 
-    function getParams(address baselinePoolAddr, address bonusPoolAddr) public pure returns (bytes memory) {
-        return abi.encode(baselinePoolAddr, bonusPoolAddr);
+    function getParams(address[] memory poolAddresses) public pure returns (bytes memory) {
+        return abi.encode(poolAddresses);
     }
 
     /**
@@ -46,23 +46,33 @@ contract BulkPoolWithdraw is IUserDefinedMacro {
         address msgSender
     ) external view returns (ISuperfluid.Operation[] memory operations) {
         // Parse params
-        (address baselinePoolAddr, address bonusPoolAddr) = abi.decode(params, (address, address));
-
-        // Build operations for both baseline and bonus pools
-        ISuperfluid.Operation[] memory baselineOps = _buildPoolOperations(
-            host,
-            ISuperfluidPool(baselinePoolAddr),
-            msgSender
-        );
-        ISuperfluid.Operation[] memory bonusOps = _buildPoolOperations(host, ISuperfluidPool(bonusPoolAddr), msgSender);
-
-        // Combine operations
-        operations = new ISuperfluid.Operation[](baselineOps.length + bonusOps.length);
-        for (uint i = 0; i < baselineOps.length; i++) {
-            operations[i] = baselineOps[i];
+        address[] memory poolAddresses = abi.decode(params, (address[]));
+        if (poolAddresses.length == 0) revert ADDRESS_ZERO();
+        // Calculate total number of operations
+        uint256 totalOperations = 0;
+        for (uint256 i = 0; i < poolAddresses.length; i++) {
+            ISuperfluidPool pool = ISuperfluidPool(poolAddresses[i]);
+            (int256 claimableBalance, ) = pool.getClaimableNow(msgSender);
+            if (claimableBalance > 0) {
+                totalOperations += 2; // One for claim, one for downgrade
+            }
         }
-        for (uint i = 0; i < bonusOps.length; i++) {
-            operations[baselineOps.length + i] = bonusOps[i];
+
+        // Initialize operations array
+        operations = new ISuperfluid.Operation[](totalOperations);
+
+        // Build operations for all pools
+        uint256 operationIndex = 0;
+        for (uint256 i = 0; i < poolAddresses.length; i++) {
+            ISuperfluidPool pool = ISuperfluidPool(poolAddresses[i]);
+            (int256 claimableBalance, ) = pool.getClaimableNow(msgSender);
+            if (claimableBalance > 0) {
+                ISuperfluid.Operation[] memory poolOps = _buildPoolOperations(host, pool, msgSender);
+                for (uint256 j = 0; j < poolOps.length; j++) {
+                    operations[operationIndex] = poolOps[j];
+                    operationIndex++;
+                }
+            }
         }
 
         return operations;

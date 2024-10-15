@@ -21,7 +21,10 @@ contract BulkWithdrawTest is Test {
         address bonusPoolAddr = address(0x33Fe9F9aED096C9828a565fFBd457F6EB0f13d7f);
 
         // Prepare params for BulkPoolWithdraw
-        bytes memory params = abi.encode(baselinePoolAddr, bonusPoolAddr);
+        address[] memory poolAddresses = new address[](2);
+        poolAddresses[0] = baselinePoolAddr;
+        poolAddresses[1] = bonusPoolAddr;
+        bytes memory params = abi.encode(poolAddresses);
 
         MacroForwarder forwarder = MacroForwarder(0xfD01285b9435bc45C243E5e7F978E288B2912de6);
 
