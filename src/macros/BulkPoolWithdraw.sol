@@ -1,38 +1,32 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.27;
 
-import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-
 import { ISuperfluid, BatchOperation, IGeneralDistributionAgreementV1, ISuperToken, ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
 import { IUserDefinedMacro } from "@superfluid-finance/ethereum-contracts/contracts/utils/MacroForwarder.sol";
 
-contract BulkPoolWithdraw is UUPSUpgradeable, Ownable2StepUpgradeable, IUserDefinedMacro {
+contract BulkPoolWithdraw is IUserDefinedMacro {
     /**
      * @notice Reverts if the address is zero
      */
     error ADDRESS_ZERO();
 
-    constructor() payable initializer {}
+    constructor() payable {}
 
-    /**
-     * @notice Initializes the Macro contract
-     * @param _initialOwner The address of the initial owner
-     */
-    function initialize(address _initialOwner) public initializer {
-        if (_initialOwner == address(0)) revert ADDRESS_ZERO();
-
-        __Ownable2Step_init();
-
-        _transferOwnership(_initialOwner);
+    function getParams(address baselinePoolAddr, address bonusPoolAddr) public pure returns (bytes memory) {
+        return abi.encode(baselinePoolAddr, bonusPoolAddr);
     }
 
     /**
-     * @notice Ensures the caller is authorized to upgrade the contract
-     * @param _newImpl The new implementation address
+     * @dev A post-check function which is called after execution.
+     * It allows to do arbitrary checks based on the state after execution,
+     * and to revert if the result is not as expected.
+     * Can be an empty implementation if no check is needed.
+     * @param  host       The host contract set for the executing MacroForwarder.
+     * @param  params     The encoded parameters as provided to `MacroForwarder.runMacro()`
+     * @param  msgSender  The msg.sender of the call to the MacroForwarder.
      */
-    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
+    function postCheck(ISuperfluid host, bytes memory params, address msgSender) external view override {}
 
     /**
      * @notice Bulk withdraws from baseline and bonus pool for UX
@@ -50,7 +44,7 @@ contract BulkPoolWithdraw is UUPSUpgradeable, Ownable2StepUpgradeable, IUserDefi
         ISuperfluid host,
         bytes memory params,
         address msgSender
-    ) external view override returns (ISuperfluid.Operation[] memory operations) {
+    ) external view returns (ISuperfluid.Operation[] memory operations) {
         // Parse params
         (address baselinePoolAddr, address bonusPoolAddr) = abi.decode(params, (address, address));
 
