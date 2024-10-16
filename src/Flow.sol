@@ -266,6 +266,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.addFlowRecipient(_recipientId, recipient, _metadata);
         _childFlows.add(recipient);
 
+        // transfer supertoken to the new flow contract of amount buffer amount
+        uint256 bufferAmount = fs.superToken.getBufferAmountByFlowRate(getMemberTotalFlowRate(recipient));
+        if (bufferAmount < fs.superToken.balanceOf(address(this))) {
+            // transfer supertoken to the new flow contract so the flow can be started
+            fs.superToken.transfer(recipient, bufferAmount);
+            // set flow rate for the new flow contract
+            _setChildFlowRate(recipient);
+        }
+
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
         emit FlowRecipientCreated(_recipientId, recipient);
 
@@ -478,8 +487,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function _setFlowRate(int96 _flowRate) internal {
-        // @0x52 there's a weird bug where the flow rates round down as more and more recipients are removed. 1e3 removed leads to ~1e8 rounded down in the total flow rate.
-
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
         int96 oldTotalFlowRate = getTotalFlowRate();
 
