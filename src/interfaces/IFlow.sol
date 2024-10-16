@@ -38,6 +38,9 @@ interface IFlowEvents {
     /// @notice Emitted when a new child flow recipient is created
     event FlowRecipientCreated(bytes32 indexed recipientId, address indexed recipient);
 
+    /// @notice Emitted when the metadata is set
+    event MetadataSet(FlowTypes.RecipientMetadata metadata);
+
     /// @notice Emitted when the flow is initialized
     event FlowInitialized(
         address indexed owner,

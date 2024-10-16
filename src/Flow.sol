@@ -166,13 +166,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param tokenId The tokenId owned by the voter.
      * @param recipientIds The recipientIds of the grant recipients to vote for.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
+     * @return hasTokenVotedBefore - true if the tokenId has voted before, false otherwise
      */
     function _setVotesAllocationForTokenId(
         uint256 tokenId,
         bytes32[] memory recipientIds,
         uint32[] memory percentAllocations,
         address voter
-    ) internal {
+    ) internal returns (bool hasTokenVotedBefore) {
         uint256 sum = 0;
         // overflow should be impossible in for-loop index
         for (uint256 i = 0; i < percentAllocations.length; i++) {
@@ -180,6 +181,11 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         }
         if (sum != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
         if (voter == address(0)) revert ADDRESS_ZERO();
+
+        // if there was a voter set for this tokenId, set hasTokenVotedBefore to true
+        if (fs.voters[tokenId] != address(0)) {
+            hasTokenVotedBefore = true;
+        }
 
         // update member units for previous votes
         _clearPreviousVotes(tokenId);
@@ -267,7 +273,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _childFlows.add(recipient);
 
         // transfer supertoken to the new flow contract of amount buffer amount
-        uint256 bufferAmount = fs.superToken.getBufferAmountByFlowRate(getMemberTotalFlowRate(recipient));
+        // + 1 wei to ensure that the flow can be started
+        uint256 bufferAmount = fs.superToken.getBufferAmountByFlowRate(getMemberTotalFlowRate(recipient)) + 1;
         if (bufferAmount < fs.superToken.balanceOf(address(this))) {
             // transfer supertoken to the new flow contract so the flow can be started
             fs.superToken.transfer(recipient, bufferAmount);
@@ -279,6 +286,32 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit FlowRecipientCreated(_recipientId, recipient);
 
         return (_recipientId, recipient);
+    }
+
+    /**
+     * @notice Sets all the child flow rates
+     * @dev Called when a new vote is added
+     */
+    function _setAllChildFlowRates() internal {
+        // update child flows
+        // warning - values() copies entire array into memory, could run out of gas for huge arrays
+        // must keep child flows below ~500 per o1 estimates
+        address[] memory childFlows = _childFlows.values();
+        for (uint256 i = 0; i < childFlows.length; i++) {
+            _setChildFlowRate(childFlows[i]);
+        }
+    }
+
+    /**
+     * @notice Internal function to be called after votes are cast
+     * @param hasNewVotes - true if there are new votes (new member units being added), false otherwise
+     * Useful for saving gas when there are no new votes. If there are new member units being added however,
+     * we want to update all child flow rates to ensure that the correct flow rates are set
+     */
+    function _afterVotesCast(bool hasNewVotes) internal {
+        if (hasNewVotes) {
+            _setAllChildFlowRates();
+        }
     }
 
     /**
@@ -517,13 +550,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
 
-        // update child flows
-        // warning - values() copies entire array into memory, could run out of gas for huge arrays
-        // must keep child flows below ~500 per o1 estimates
-        address[] memory childFlows = _childFlows.values();
-        for (uint256 i = 0; i < childFlows.length; i++) {
-            _setChildFlowRate(childFlows[i]);
-        }
+        _setAllChildFlowRates();
     }
 
     /**
@@ -577,6 +604,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             /* eg (100 * 2*1e4) / (1e6) */
             scaledAmount := div(mul(amount, scaledPercent), PERCENTAGE_SCALE)
         }
+    }
+
+    /**
+     * @notice Let's the owner set the metadata for the flow
+     * @param metadata The metadata of the flow
+     */
+    function setMetadata(RecipientMetadata memory metadata) external onlyOwner {
+        fs.metadata = metadata;
+        emit MetadataSet(metadata);
     }
 
     /**
