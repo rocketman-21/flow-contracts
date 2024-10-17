@@ -224,7 +224,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
         _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
-        _updateBonusMemberUnits(recipientAddress, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipientAddress, 100); // 100 units for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         return (_recipientId, recipientAddress);
     }
@@ -303,9 +303,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // Initialize member units
         _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
-        // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
-        // TODO update to be > 1, because rn it's balanced with address(this)
-        _updateBonusMemberUnits(recipient, 1);
+        // 100 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipient, 100);
     }
 
     /**
