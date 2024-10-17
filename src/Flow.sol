@@ -5,6 +5,7 @@ import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow } from "./interfaces/IFlow.sol";
 import { FlowRecipients } from "./library/FlowRecipients.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
+import { FlowRates } from "./library/FlowRates.sol";
 
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -20,6 +21,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     using SuperTokenV1Library for ISuperToken;
     using FlowRecipients for Storage;
     using FlowVotes for Storage;
+    using FlowRates for Storage;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /**
@@ -261,9 +263,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         address _flowManager,
         address _managerRewardPool
     ) external onlyManager returns (bytes32, address) {
-        FlowRecipients.validateMetadata(_metadata);
-        if (_flowManager == address(0)) revert ADDRESS_ZERO();
-        if (_managerRewardPool == address(0)) revert ADDRESS_ZERO();
+        FlowRecipients.validateFlowRecipient(_metadata, _flowManager, _managerRewardPool);
 
         address recipient = _deployFlowRecipient(_metadata, _flowManager, _managerRewardPool);
 
@@ -382,25 +382,19 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childAddress The address of the child Flow contract
      */
     function _setChildFlowRate(address childAddress) internal {
-        if (childAddress == address(0)) revert ADDRESS_ZERO();
+        (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) = fs.calculateBufferAmount(
+            childAddress,
+            address(this)
+        );
 
-        int96 memberFlowRate = getMemberTotalFlowRate(childAddress);
-
-        // add 1% buffer to the flow rate to account for some weird rounding errors
-        uint256 bufferAmount = (fs.superToken.getBufferAmountByFlowRate(memberFlowRate) * 101) / 100;
-
-        if (bufferAmount > fs.superToken.balanceOf(childAddress)) {
-            // ensure this contract has enough balance to transfer to the child contract
-            if (bufferAmount < fs.superToken.balanceOf(address(this))) {
-                // transfer supertoken to the new flow contract so the flow can be started
-                fs.superToken.transfer(childAddress, bufferAmount - fs.superToken.balanceOf(childAddress));
-            }
+        if (shouldTransfer) {
+            fs.superToken.transfer(childAddress, transferAmount);
         }
 
         // Call setFlowRate on the child contract
         // only set if balance of contract is greater than buffer required
         if (bufferAmount <= fs.superToken.balanceOf(childAddress)) {
-            IFlow(childAddress).setFlowRate(memberFlowRate);
+            IFlow(childAddress).setFlowRate(getMemberTotalFlowRate(childAddress));
         }
     }
 
@@ -499,6 +493,10 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         return address(fs.superToken);
     }
 
+    /**
+     * @notice Sets the flow to the manager reward pool
+     * @param _newManagerRewardFlowRate The new flow rate to the manager reward pool
+     */
     function _setFlowToManagerRewardPool(int96 _newManagerRewardFlowRate) internal {
         int96 rewardPoolFlowRate = getManagerRewardPoolFlowRate();
 
@@ -526,27 +524,12 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
         int96 oldTotalFlowRate = getTotalFlowRate();
 
-        int256 managerRewardFlowRatePercent = int256(
-            _scaleAmountByPercentage(uint96(_flowRate), fs.managerRewardPoolFlowRatePercent)
+        (int96 baselineFlowRate, int96 bonusFlowRate, int96 managerRewardFlowRate) = fs.calculateFlowRates(
+            _flowRate,
+            PERCENTAGE_SCALE
         );
-
-        if (managerRewardFlowRatePercent > type(int96).max) revert FLOW_RATE_TOO_HIGH();
-
-        int96 managerRewardFlowRate = int96(managerRewardFlowRatePercent);
 
         _setFlowToManagerRewardPool(managerRewardFlowRate);
-
-        int96 remainingFlowRate = _flowRate - managerRewardFlowRate;
-
-        int256 baselineFlowRate256 = int256(
-            _scaleAmountByPercentage(uint96(remainingFlowRate), fs.baselinePoolFlowRatePercent)
-        );
-
-        if (baselineFlowRate256 > type(int96).max) revert FLOW_RATE_TOO_HIGH();
-
-        int96 baselineFlowRate = int96(baselineFlowRate256);
-        // cannot be negative because remainingFlowRate will always be greater than baselineFlowRate
-        int96 bonusFlowRate = remainingFlowRate - baselineFlowRate;
 
         emit FlowRateUpdated(oldTotalFlowRate, _flowRate, baselineFlowRate, bonusFlowRate, managerRewardFlowRate);
 
@@ -591,25 +574,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Multiplies an amount by a scaled percentage
-     *  @param amount Amount to get `scaledPercentage` of
-     *  @param scaledPercent Percent scaled by PERCENTAGE_SCALE
-     *  @return scaledAmount Percent of `amount`.
-     */
-    function _scaleAmountByPercentage(
-        uint256 amount,
-        uint256 scaledPercent
-    ) internal pure returns (uint256 scaledAmount) {
-        // use assembly to bypass checking for overflow & division by 0
-        // scaledPercent has been validated to be < PERCENTAGE_SCALE)
-        // & PERCENTAGE_SCALE will never be 0
-        assembly {
-            /* eg (100 * 2*1e4) / (1e6) */
-            scaledAmount := div(mul(amount, scaledPercent), PERCENTAGE_SCALE)
-        }
-    }
-
-    /**
      * @notice Let's the owner set the metadata for the flow
      * @param metadata The metadata of the flow
      */
@@ -634,8 +598,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param memberAddr The address of the member
      * @return flowRate The flow rate for the member
      */
-    function getMemberTotalFlowRate(address memberAddr) public view returns (int96 flowRate) {
-        flowRate = fs.bonusPool.getMemberFlowRate(memberAddr) + fs.baselinePool.getMemberFlowRate(memberAddr);
+    function getMemberTotalFlowRate(address memberAddr) public view returns (int96) {
+        return fs.getMemberTotalFlowRate(memberAddr);
     }
 
     /**
@@ -643,8 +607,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param memberAddr The address of the member
      * @return totalUnits The total units for the member
      */
-    function getTotalMemberUnits(address memberAddr) public view returns (uint256 totalUnits) {
-        totalUnits = fs.bonusPool.getUnits(memberAddr) + fs.baselinePool.getUnits(memberAddr);
+    function getTotalMemberUnits(address memberAddr) public view returns (uint256) {
+        return fs.getTotalMemberUnits(memberAddr);
     }
 
     /**
@@ -679,14 +643,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param tokenIds An array of tokenIds to retrieve votes for
      * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
      */
-    function getVotesForTokenIds(
-        uint256[] calldata tokenIds
-    ) public view returns (VoteAllocation[][] memory allocations) {
-        allocations = new VoteAllocation[][](tokenIds.length);
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            allocations[i] = fs.votes[tokenIds[i]];
-        }
-        return allocations;
+    function getVotesForTokenIds(uint256[] calldata tokenIds) public view returns (VoteAllocation[][] memory) {
+        return fs.getVotesForTokenIds(tokenIds);
     }
 
     /**
@@ -801,17 +759,16 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Retrieves the current flow rate to the manager reward pool
      * @return flowRate The current flow rate to the manager reward pool
      */
-    function getManagerRewardPoolFlowRate() public view returns (int96 flowRate) {
-        flowRate = fs.superToken.getFlowRate(address(this), fs.managerRewardPool);
+    function getManagerRewardPoolFlowRate() public view returns (int96) {
+        return fs.getManagerRewardPoolFlowRate(address(this));
     }
 
     /**
      * @notice Retrieves the buffer amount required for the manager reward pool
      * @return bufferAmount The buffer amount required for the manager reward pool
      */
-    function getManagerRewardPoolBufferAmount() public view returns (uint256 bufferAmount) {
-        int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate();
-        bufferAmount = fs.superToken.getBufferAmountByFlowRate(managerRewardPoolFlowRate);
+    function getManagerRewardPoolBufferAmount() public view returns (uint256) {
+        return fs.getManagerRewardPoolBufferAmount(address(this));
     }
 
     /**
@@ -828,10 +785,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @return claimable The claimable balance from both pools
      */
     function getClaimableBalance(address member) external view returns (uint256) {
-        (int256 baselineClaimable, ) = fs.baselinePool.getClaimableNow(member);
-        (int256 bonusClaimable, ) = fs.bonusPool.getClaimableNow(member);
-
-        return uint256(baselineClaimable) + uint256(bonusClaimable);
+        return fs.getClaimableBalance(member);
     }
 
     /**

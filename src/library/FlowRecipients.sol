@@ -105,4 +105,20 @@ library FlowRecipients {
         if (bytes(metadata.description).length == 0) revert IFlow.INVALID_METADATA();
         if (bytes(metadata.image).length == 0) revert IFlow.INVALID_METADATA();
     }
+
+    /**
+     * @notice Modifier to validate the metadata for a recipient
+     * @param metadata The metadata to validate
+     * @param flowManager The address of the flow manager
+     * @param managerRewardPool The address of the manager reward pool
+     */
+    function validateFlowRecipient(
+        FlowTypes.RecipientMetadata memory metadata,
+        address flowManager,
+        address managerRewardPool
+    ) public pure {
+        validateMetadata(metadata);
+        if (flowManager == address(0)) revert IFlow.ADDRESS_ZERO();
+        if (managerRewardPool == address(0)) revert IFlow.ADDRESS_ZERO();
+    }
 }

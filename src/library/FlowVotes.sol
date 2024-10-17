@@ -81,4 +81,21 @@ library FlowVotes {
             scaledAmount := div(mul(amount, scaledPercent), percentageScale)
         }
     }
+
+    /**
+     * @notice Retrieves all vote allocations for multiple ERC721 tokenIds
+     * @param fs The storage of the Flow contract
+     * @param tokenIds An array of tokenIds to retrieve votes for
+     * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
+     */
+    function getVotesForTokenIds(
+        FlowTypes.Storage storage fs,
+        uint256[] calldata tokenIds
+    ) public view returns (FlowTypes.VoteAllocation[][] memory allocations) {
+        allocations = new FlowTypes.VoteAllocation[][](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            allocations[i] = fs.votes[tokenIds[i]];
+        }
+        return allocations;
+    }
 }
