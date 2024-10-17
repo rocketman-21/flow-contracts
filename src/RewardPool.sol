@@ -151,14 +151,6 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     }
 
     /**
-     * @notice Retrieves the address of the Superfluid reward pool
-     * @return The address of the Superfluid reward pool
-     */
-    function getRewardPool() public view returns (ISuperfluidPool) {
-        return rewardPool;
-    }
-
-    /**
      * @notice Ensures the caller is authorized to upgrade the contract
      * @param newImplementation The new implementation address
      */

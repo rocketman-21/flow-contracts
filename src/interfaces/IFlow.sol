@@ -60,8 +60,7 @@ interface IFlowEvents {
         address baselinePool,
         address bonusPool,
         uint32 baselinePoolFlowRatePercent,
-        uint32 managerRewardPoolFlowRatePercent,
-        address managerRewardSuperfluidPool
+        uint32 managerRewardPoolFlowRatePercent
     );
 
     /// @notice Emitted when the manager reward pool is updated

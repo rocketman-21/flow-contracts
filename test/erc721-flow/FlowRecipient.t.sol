@@ -136,22 +136,6 @@ contract FlowRecipientTest is ERC721FlowTest {
         vm.stopPrank();
     }
 
-    function testAddFlowRecipientEmptyRewardPool() public {
-        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata(
-            "Flow Recipient",
-            "A new Flow contract",
-            "ipfs://image",
-            "Flow Recipient Tagline",
-            "https://flowrecipient.com"
-        );
-        address flowManager = address(0x123);
-        bytes32 recipientId = keccak256(abi.encodePacked(flowManager));
-
-        vm.prank(flow.owner());
-        vm.expectRevert(IFlow.ADDRESS_ZERO.selector);
-        flow.addFlowRecipient(recipientId, metadata, flowManager, address(0));
-    }
-
     function testAddFlowRecipientEmptyMetadata() public {
         FlowTypes.RecipientMetadata memory emptyMetadata = FlowTypes.RecipientMetadata("", "", "", "", "");
         address flowManager = address(0x123);

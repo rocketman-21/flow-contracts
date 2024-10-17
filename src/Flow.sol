@@ -83,8 +83,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             address(fs.baselinePool),
             address(fs.bonusPool),
             fs.baselinePoolFlowRatePercent,
-            fs.managerRewardPoolFlowRatePercent,
-            address(IRewardPool(_managerRewardPool).getRewardPool())
+            fs.managerRewardPoolFlowRatePercent
         );
     }
 
