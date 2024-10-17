@@ -310,4 +310,46 @@ contract TCRFundFlowTest is FlowTCRTest {
     function testDisputeTieRefundFlowContract() public {
         testDisputeTieRefund(FLOW_RECIPIENT_ITEM_DATA);
     }
+
+    function testAddFlowRecipientItemAndExecute() public {
+        // Setup
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata({
+            title: "Flow Recipient",
+            description: "Test Flow Recipient",
+            image: "ipfs://image",
+            tagline: "Test Tagline",
+            url: "https://example.com"
+        });
+        bytes memory itemData = abi.encode(address(0), metadata, FlowTypes.RecipientType.FlowContract);
+
+        uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
+
+        // Approve GeneralizedTCR to spend tokens
+        vm.prank(requester);
+        erc20Token.approve(address(flowTCR), SUBMISSION_BASE_DEPOSIT + arbitratorCost);
+
+        // Add Flow recipient item
+        vm.prank(requester);
+        bytes32 itemID = flowTCR.addItem(itemData);
+
+        // Verify item is in pending state
+        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
+        assertEq(uint256(status), uint256(IGeneralizedTCR.Status.RegistrationRequested));
+
+        // Advance time past challenge period
+        vm.warp(block.timestamp + flowTCR.challengePeriodDuration() + 1);
+
+        // Execute request
+        flowTCR.executeRequest(itemID);
+
+        // Verify item is now registered
+        (data, status, numberOfRequests) = flowTCR.getItemInfo(itemID);
+        assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered));
+
+        // Verify Flow recipient is added
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(itemID);
+        assertEq(uint8(storedRecipient.recipientType), uint8(FlowTypes.RecipientType.FlowContract));
+        assertFalse(storedRecipient.removed);
+        assertNotEq(storedRecipient.recipient, address(0));
+    }
 }

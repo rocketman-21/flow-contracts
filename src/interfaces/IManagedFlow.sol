@@ -41,6 +41,11 @@ interface IManagedFlow {
     function removeRecipient(bytes32 recipientId) external;
 
     /**
+     * @notice Resets the flow rate for the Flow contract to the cached value
+     */
+    function resetFlowRate() external;
+
+    /**
      * @notice Sets a new manager for the Flow contract
      * @param _newManager The address of the new manager
      */

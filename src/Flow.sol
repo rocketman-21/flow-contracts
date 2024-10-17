@@ -127,6 +127,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             uint128 unitsDelta = allocations[i].memberUnits;
             RecipientType recipientType = fs.recipients[recipientId].recipientType;
 
+            emit VoteRemoved(recipientId, tokenId, currentUnits - unitsDelta);
+
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
             _updateBonusMemberUnits(recipientAddress, currentUnits - unitsDelta);
@@ -245,7 +247,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         address _flowManager,
         address _managerRewardPool
     ) external onlyManager returns (bytes32, address) {
-        FlowRecipients.validateFlowRecipient(_metadata, _flowManager, _managerRewardPool);
+        FlowRecipients.validateFlowRecipient(_metadata, _flowManager);
 
         address recipient = _deployFlowRecipient(_metadata, _flowManager, _managerRewardPool);
 
@@ -302,6 +304,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // Initialize member units
         _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
         // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
+        // TODO update to be > 1, because rn it's balanced with address(this)
         _updateBonusMemberUnits(recipient, 1);
     }
 
@@ -482,6 +485,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param _newManagerRewardFlowRate The new flow rate to the manager reward pool
      */
     function _setFlowToManagerRewardPool(int96 _newManagerRewardFlowRate) internal {
+        // some flows initially don't have a manager reward pool, so we don't need to set a flow to it
+        if (fs.managerRewardPool == address(0)) return;
+
         int96 rewardPoolFlowRate = getManagerRewardPoolFlowRate();
 
         if (_newManagerRewardFlowRate > 0) {

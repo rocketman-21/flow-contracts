@@ -147,7 +147,7 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                 recipientId,
                 metadata,
                 address(this),
-                address(this)
+                address(0) // set to 0 so Flow doesn't try to set the reward pool flow rate on a TCR contract
             );
 
             ITCRFactory.DeployedContracts memory deployedContracts = tcrFactory.deployFlowTCR(
@@ -180,6 +180,8 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
             // set manager on the newly created Flow contract to the new TCR and manager reward pool
             // can only be done by the manager
             IManagedFlow(flowRecipient).setManagerRewardPool(deployedContracts.rewardPoolAddress);
+            // now that the reward pool is set, we set the flow rate for it
+            IManagedFlow(flowRecipient).resetFlowRate();
             // now that the reward pool is set, we can set the actual manager
             IManagedFlow(flowRecipient).setManager(deployedContracts.tcrAddress);
         }
