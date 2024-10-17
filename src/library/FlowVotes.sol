@@ -72,7 +72,7 @@ library FlowVotes {
         uint256 amount,
         uint256 scaledPercent,
         uint256 percentageScale
-    ) internal pure returns (uint256 scaledAmount) {
+    ) public pure returns (uint256 scaledAmount) {
         // use assembly to bypass checking for overflow & division by 0
         // scaledPercent has been validated to be < PERCENTAGE_SCALE)
         // & PERCENTAGE_SCALE will never be 0
