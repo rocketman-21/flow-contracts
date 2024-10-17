@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
-import { PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
 /**
  * @title IRewardPool
@@ -30,6 +29,12 @@ interface IRewardPool {
      * @param units The new member units to assign to the recipient
      */
     function updateMemberUnits(address member, uint128 units) external;
+
+    /**
+     * @notice Retrieves the address of the Superfluid reward pool
+     * @return The address of the Superfluid reward pool
+     */
+    function getRewardPool() external view returns (ISuperfluidPool);
 
     /**
      * @notice Retrieves the units for a specific member in the pool

@@ -3,6 +3,7 @@ pragma solidity ^0.8.27;
 
 import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow } from "./interfaces/IFlow.sol";
+import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowRecipients } from "./library/FlowRecipients.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
 import { FlowRates } from "./library/FlowRates.sol";
@@ -72,7 +73,19 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             _updateBaselineMemberUnits(address(this), 1);
         }
 
-        emit FlowInitialized(msg.sender, _superToken, _flowImpl, _manager, _managerRewardPool, _parent);
+        emit FlowInitialized(
+            msg.sender,
+            _superToken,
+            _flowImpl,
+            _manager,
+            _managerRewardPool,
+            _parent,
+            address(fs.baselinePool),
+            address(fs.bonusPool),
+            fs.baselinePoolFlowRatePercent,
+            fs.managerRewardPoolFlowRatePercent,
+            address(IRewardPool(_managerRewardPool).getRewardPool())
+        );
     }
 
     /**

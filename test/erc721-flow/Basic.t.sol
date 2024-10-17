@@ -49,6 +49,11 @@ contract BasicERC721FlowTest is ERC721FlowTest {
             flowImpl,
             manager,
             address(dummyRewardPool),
+            address(0),
+            address(0),
+            address(0),
+            0,
+            0,
             address(0)
         );
 
