@@ -7,11 +7,13 @@ import { ITokenVerifier } from "./interfaces/ITokenVerifier.sol";
 import { IStateProof } from "./interfaces/IStateProof.sol";
 import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
+import { FlowRates } from "./library/FlowRates.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract NounsFlow is INounsFlow, Flow {
     using FlowVotes for Storage;
+    using FlowRates for Storage;
 
     ITokenVerifier public verifier;
 
@@ -199,12 +201,19 @@ contract NounsFlow is INounsFlow, Flow {
         address rewardPool = fs.managerRewardPool;
         if (rewardPool == address(0)) revert ADDRESS_ZERO();
 
-        int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate();
+        (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) = fs.calculateBufferAmountForRewardPool(
+            rewardPool,
+            address(this)
+        );
+
+        if (shouldTransfer) {
+            fs.superToken.transfer(rewardPool, transferAmount);
+        }
 
         // Call setFlowRate on the child contract
         // only set if buffer required is less than balance of contract
-        if (getManagerRewardPoolBufferAmount() < fs.superToken.balanceOf(rewardPool)) {
-            IRewardPool(rewardPool).setFlowRate(managerRewardPoolFlowRate);
+        if (bufferAmount <= fs.superToken.balanceOf(rewardPool)) {
+            IRewardPool(rewardPool).setFlowRate(getManagerRewardPoolFlowRate());
         }
     }
 }

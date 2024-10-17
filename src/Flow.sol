@@ -380,7 +380,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childAddress The address of the child Flow contract
      */
     function _setChildFlowRate(address childAddress) internal {
-        (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) = fs.calculateBufferAmount(
+        (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) = fs.calculateBufferAmountForChild(
             childAddress,
             address(this)
         );

@@ -241,12 +241,7 @@ contract VotingFlowTest is ERC721FlowTest {
         bytes32 recipientId = keccak256(abi.encodePacked(recipient1));
         flow.addRecipient(recipientId, recipient1, recipientMetadata);
         bytes32 flowRecipientId = keccak256(abi.encodePacked(voter));
-        (, address flowRecipient) = flow.addFlowRecipient(
-            flowRecipientId,
-            recipientMetadata,
-            manager,
-            address(dummyRewardPool)
-        );
+        (, address flowRecipient) = flow.addFlowRecipient(flowRecipientId, recipientMetadata, manager, address(0));
         vm.stopPrank();
 
         bytes32[] memory recipientIds = new bytes32[](1);
@@ -290,12 +285,7 @@ contract VotingFlowTest is ERC721FlowTest {
         bytes32 recipientId1 = keccak256(abi.encodePacked(recipient1));
         flow.addRecipient(recipientId1, recipient1, recipientMetadata);
         bytes32 flowRecipientId = keccak256(abi.encodePacked(voter));
-        (, address flowRecipient) = flow.addFlowRecipient(
-            flowRecipientId,
-            recipientMetadata,
-            manager,
-            address(dummyRewardPool)
-        );
+        (, address flowRecipient) = flow.addFlowRecipient(flowRecipientId, recipientMetadata, manager, address(0));
         vm.stopPrank();
 
         int96 incoming = flow.getMemberTotalFlowRate(flowRecipient);

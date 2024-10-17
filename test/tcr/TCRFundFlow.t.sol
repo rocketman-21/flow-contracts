@@ -8,7 +8,7 @@ import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IGeneralizedTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
-
+import { RewardPool } from "../../src/RewardPool.sol";
 contract TCRFundFlowTest is FlowTCRTest {
     // Helper function to get ERC20 balance of a contract or address
     function getERC20Balance(address _token, address _account) internal view returns (uint256) {
@@ -351,5 +351,10 @@ contract TCRFundFlowTest is FlowTCRTest {
         assertEq(uint8(storedRecipient.recipientType), uint8(FlowTypes.RecipientType.FlowContract));
         assertFalse(storedRecipient.removed);
         assertNotEq(storedRecipient.recipient, address(0));
+
+        // ensure incoming flow rate of reward pool is set correctly
+        assertGt(flow.getManagerRewardPoolFlowRate(), 0);
+        // ensure outgoing flow rate of reward pool is set correctly
+        assertGt(RewardPool(flow.managerRewardPool()).getTotalFlowRate(), 0);
     }
 }
