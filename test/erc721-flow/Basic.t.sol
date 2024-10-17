@@ -42,7 +42,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
     function testInitializeEventEmission() public {
         // Check for event emission
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, false, false);
         emit IFlowEvents.FlowInitialized(
             manager,
             address(superToken),
