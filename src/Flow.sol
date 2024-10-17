@@ -6,22 +6,23 @@ import { IFlow } from "./interfaces/IFlow.sol";
 import { FlowRecipients } from "./library/FlowRecipients.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
 import { FlowRates } from "./library/FlowRates.sol";
+import { FlowInitialization } from "./library/FlowInitialization.sol";
 
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 import { ISuperToken, ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
-import { SuperTokenV1Library, PoolConfig } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
 abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuardUpgradeable, FlowStorageV1 {
     using SuperTokenV1Library for ISuperToken;
     using FlowRecipients for Storage;
     using FlowVotes for Storage;
     using FlowRates for Storage;
+    using FlowInitialization for Storage;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /**
@@ -44,42 +45,23 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         FlowParams memory _flowParams,
         RecipientMetadata memory _metadata
     ) public {
-        if (_initialOwner == address(0)) revert ADDRESS_ZERO();
-        if (_flowImpl == address(0)) revert ADDRESS_ZERO();
-        if (_manager == address(0)) revert ADDRESS_ZERO();
-        if (_superToken == address(0)) revert ADDRESS_ZERO();
-        if (_managerRewardPool == address(0)) revert ADDRESS_ZERO();
-        if (_flowParams.tokenVoteWeight == 0) revert INVALID_VOTE_WEIGHT();
-        if (bytes(_metadata.title).length == 0) revert INVALID_METADATA();
-        if (bytes(_metadata.description).length == 0) revert INVALID_METADATA();
-        if (bytes(_metadata.image).length == 0) revert INVALID_METADATA();
-        if (_flowParams.baselinePoolFlowRatePercent > PERCENTAGE_SCALE) revert INVALID_RATE_PERCENT();
+        fs.checkAndSetInitializationParams(
+            _initialOwner,
+            _flowImpl,
+            _manager,
+            _superToken,
+            _managerRewardPool,
+            _parent,
+            address(this),
+            _flowParams,
+            _metadata,
+            PERCENTAGE_SCALE
+        );
 
         __Ownable2Step_init();
         __ReentrancyGuard_init();
 
         _transferOwnership(_initialOwner);
-
-        // Set the voting power info
-        fs.tokenVoteWeight = _flowParams.tokenVoteWeight; // scaled by 1e18
-        fs.baselinePoolFlowRatePercent = _flowParams.baselinePoolFlowRatePercent;
-        fs.managerRewardPoolFlowRatePercent = _flowParams.managerRewardPoolFlowRatePercent;
-        fs.flowImpl = _flowImpl;
-        fs.manager = _manager;
-        fs.parent = _parent;
-        fs.managerRewardPool = _managerRewardPool;
-
-        PoolConfig memory poolConfig = PoolConfig({
-            transferabilityForUnitsOwner: false,
-            distributionFromAnyAddress: false
-        });
-
-        fs.superToken = ISuperToken(_superToken);
-        fs.bonusPool = fs.superToken.createPool(address(this), poolConfig);
-        fs.baselinePool = fs.superToken.createPool(address(this), poolConfig);
-
-        // Set the metadata
-        fs.metadata = _metadata;
 
         // if total member units is 0, set 1 member unit to this contract
         // do this to prevent distribution pool from resetting flow rate to 0
