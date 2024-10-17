@@ -563,6 +563,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param metadata The metadata of the flow
      */
     function setMetadata(RecipientMetadata memory metadata) external onlyOwner {
+        FlowRecipients.validateMetadata(metadata);
         fs.metadata = metadata;
         emit MetadataSet(metadata);
     }
