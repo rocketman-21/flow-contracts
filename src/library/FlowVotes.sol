@@ -72,7 +72,7 @@ library FlowVotes {
         uint256 amount,
         uint256 scaledPercent,
         uint256 percentageScale
-    ) public pure returns (uint256 scaledAmount) {
+    ) internal pure returns (uint256 scaledAmount) {
         // use assembly to bypass checking for overflow & division by 0
         // scaledPercent has been validated to be < PERCENTAGE_SCALE)
         // & PERCENTAGE_SCALE will never be 0
@@ -97,34 +97,5 @@ library FlowVotes {
             allocations[i] = fs.votes[tokenIds[i]];
         }
         return allocations;
-    }
-
-    /**
-     * @notice Checks if a tokenId has voted before.
-     * @param fs The storage of the Flow contract
-     * @param tokenId The tokenId owned by the voter.
-     * @param percentageScale The percentage scale to be used for the vote.
-     * @param percentAllocations The basis points of the vote to be split with the recipients.
-     * @return hasTokenVotedBefore - true if the tokenId has voted before, false otherwise
-     */
-    function checkVotesAllocationForTokenId(
-        FlowTypes.Storage storage fs,
-        uint256 tokenId,
-        uint256 percentageScale,
-        uint32[] memory percentAllocations,
-        address voter
-    ) public view returns (bool hasTokenVotedBefore) {
-        uint256 sum = 0;
-        // overflow should be impossible in for-loop index
-        for (uint256 i = 0; i < percentAllocations.length; i++) {
-            sum += percentAllocations[i];
-        }
-        if (sum != percentageScale) revert IFlow.INVALID_BPS_SUM();
-        if (voter == address(0)) revert IFlow.ADDRESS_ZERO();
-
-        // if there was a voter set for this tokenId, set hasTokenVotedBefore to true
-        if (fs.voters[tokenId] != address(0)) {
-            hasTokenVotedBefore = true;
-        }
     }
 }

@@ -176,7 +176,18 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         uint32[] memory percentAllocations,
         address voter
     ) internal returns (bool hasTokenVotedBefore) {
-        hasTokenVotedBefore = fs.checkVotesAllocationForTokenId(tokenId, PERCENTAGE_SCALE, percentAllocations, voter);
+        uint256 sum = 0;
+        // overflow should be impossible in for-loop index
+        for (uint256 i = 0; i < percentAllocations.length; i++) {
+            sum += percentAllocations[i];
+        }
+        if (sum != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
+        if (voter == address(0)) revert ADDRESS_ZERO();
+
+        // if there was a voter set for this tokenId, set hasTokenVotedBefore to true
+        if (fs.voters[tokenId] != address(0)) {
+            hasTokenVotedBefore = true;
+        }
 
         // update member units for previous votes
         _clearPreviousVotes(tokenId);
