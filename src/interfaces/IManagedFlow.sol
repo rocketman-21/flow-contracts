@@ -57,4 +57,11 @@ interface IManagedFlow {
      * @return The address of the SuperToken
      */
     function getSuperToken() external view returns (address);
+
+    /**
+     * @notice Checks if a recipient exists in the Flow contract
+     * @param recipient The address of the recipient to check
+     * @return exists True if the recipient exists, false otherwise
+     */
+    function recipientExists(address recipient) external view returns (bool exists);
 }

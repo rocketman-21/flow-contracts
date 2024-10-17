@@ -72,7 +72,7 @@ library FlowVotes {
         uint256 amount,
         uint256 scaledPercent,
         uint256 percentageScale
-    ) internal pure returns (uint256 scaledAmount) {
+    ) public pure returns (uint256 scaledAmount) {
         // use assembly to bypass checking for overflow & division by 0
         // scaledPercent has been validated to be < PERCENTAGE_SCALE)
         // & PERCENTAGE_SCALE will never be 0
@@ -80,5 +80,22 @@ library FlowVotes {
             /* eg (100 * 2*1e4) / (1e6) */
             scaledAmount := div(mul(amount, scaledPercent), percentageScale)
         }
+    }
+
+    /**
+     * @notice Retrieves all vote allocations for multiple ERC721 tokenIds
+     * @param fs The storage of the Flow contract
+     * @param tokenIds An array of tokenIds to retrieve votes for
+     * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
+     */
+    function getVotesForTokenIds(
+        FlowTypes.Storage storage fs,
+        uint256[] calldata tokenIds
+    ) public view returns (FlowTypes.VoteAllocation[][] memory allocations) {
+        allocations = new FlowTypes.VoteAllocation[][](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            allocations[i] = fs.votes[tokenIds[i]];
+        }
+        return allocations;
     }
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import { FlowTypes } from "../../storage/FlowStorageV1.sol";
-import { IFlow } from "../../interfaces/IFlow.sol";
+import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
 import { FlowRecipients } from "../../library/FlowRecipients.sol";
 
 library FlowTCRItems {
@@ -10,12 +10,14 @@ library FlowTCRItems {
      * @dev Verifies the data of an item before it's added to the registry.
      * @param _item The data describing the item to be added.
      * @param _requiredRecipientType The required recipient type for the TCR.
+     * @param _flowContract The Flow contract to check for recipient existence.
      * @return valid True if the item data is valid, false otherwise.
      */
     function verifyItemData(
         bytes calldata _item,
-        FlowTypes.RecipientType _requiredRecipientType
-    ) public pure returns (bool valid) {
+        FlowTypes.RecipientType _requiredRecipientType,
+        IManagedFlow _flowContract
+    ) public view returns (bool valid) {
         (
             address recipient,
             FlowTypes.RecipientMetadata memory metadata,
@@ -48,6 +50,11 @@ library FlowTCRItems {
         // Check if recipient is the 0 address if passing flow contract - since flow contract is created when adding a flow recipient
         // it should be the 0 address
         if (recipientType == FlowTypes.RecipientType.FlowContract && recipient != address(0)) {
+            return false;
+        }
+
+        // Check if recipient already exists in the Flow contract
+        if (_flowContract.recipientExists(recipient)) {
             return false;
         }
 

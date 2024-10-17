@@ -307,8 +307,8 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
         // Verify flow rates are updated
         int96 totalFlowRate = flow.getTotalFlowRate();
-        int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(flow.managerRewardPool());
-        int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(flow.managerRewardPool());
+        int96 baselineFlowRate = flow.baselinePool().getMemberFlowRate(address(flow));
+        int96 bonusFlowRate = flow.bonusPool().getMemberFlowRate(address(flow));
 
         int256 flowScale = int256(uint256(flow.PERCENTAGE_SCALE()));
 
