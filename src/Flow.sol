@@ -254,7 +254,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.addFlowRecipient(_recipientId, recipient, _metadata);
         _childFlows.add(recipient);
 
-        _setChildFlowRate(recipient);
+        // need to do this here because we just added new member units
+        _setAllChildFlowRates();
 
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
         emit FlowRecipientCreated(_recipientId, recipient);
@@ -264,7 +265,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
     /**
      * @notice Sets all the child flow rates
-     * @dev Called when a new vote is added
+     * @dev Called when total member units change (new flow added, flow removed, new vote added)
      */
     function _setAllChildFlowRates() internal {
         // update child flows
@@ -284,6 +285,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _afterVotesCast(bool hasNewVotes) internal {
         if (hasNewVotes) {
+            // need to do this here because we just added new member units
             _setAllChildFlowRates();
         }
     }
@@ -518,6 +520,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
 
+        // changing flow rate means we need to update all child flow rates
         _setAllChildFlowRates();
     }
 
