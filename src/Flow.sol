@@ -619,6 +619,17 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
+     * @notice Resets the flow rate to the current total flow rate
+     * @dev This function is open to all and can be called to ensure the flow rate is up-to-date
+     * @dev It calls the internal _setFlowRate function with the current total flow rate
+     * @dev Useful in case parent didn't have enough to cover the buffer amount and start
+     * the flow for this contract (assuming this is a child flow)
+     */
+    function resetFlowRate() external nonReentrant {
+        _setFlowRate(getTotalFlowRate());
+    }
+
+    /**
      * @notice Retrieves the flow rate for a specific member in the pool
      * @param memberAddr The address of the member
      * @return flowRate The flow rate for the member
