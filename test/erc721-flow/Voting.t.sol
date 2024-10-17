@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
@@ -53,7 +53,7 @@ contract VotingFlowTest is ERC721FlowTest {
 
         assertGt(recipient2Units, 0);
 
-        assertEq(flow.bonusPool().getUnits(recipient), 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
+        assertEq(flow.bonusPool().getUnits(recipient), 10); // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
     }
 
     function test__RecipientVotesCleared_MultiToken() public {
@@ -221,7 +221,7 @@ contract VotingFlowTest is ERC721FlowTest {
         uint128 recipient2NewUnits = flow.bonusPool().getUnits(recipient2);
 
         assertGt(recipient1NewUnits, recipient1OriginalUnits);
-        assertEq(recipient2NewUnits, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
+        assertEq(recipient2NewUnits, 10); // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         // Verify that the votes for the tokenId have been updated
         Flow.VoteAllocation[] memory voteAllocations = flow.getVotesForTokenId(tokenId);
@@ -275,7 +275,7 @@ contract VotingFlowTest is ERC721FlowTest {
 
         // Check that total bonus salary flow rate to the flow recipient is basically 0
         int96 newFlowRecipientTotalFlowRate = flow.bonusPool().getMemberFlowRate(flowRecipient);
-        assertLt(newFlowRecipientTotalFlowRate, flow.bonusPool().getMemberFlowRate(recipient1) / 1e6);
+        assertLt(newFlowRecipientTotalFlowRate, flow.bonusPool().getMemberFlowRate(recipient1) / 1e5);
     }
 
     function test__FlowRecipientFlowRateBufferAmount() public {

@@ -5,7 +5,7 @@
 // GeneralizedTCR.sol source code Copyright Kleros licensed under the MIT license.
 // With modifications by rocketman for the Nouns Flows project.
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { IArbitrable } from "./interfaces/IArbitrable.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";

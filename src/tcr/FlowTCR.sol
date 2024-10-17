@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { GeneralizedTCR } from "./GeneralizedTCR.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";

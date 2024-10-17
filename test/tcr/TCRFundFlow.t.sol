@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowTCRTest } from "./FlowTCR.t.sol";
 import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";

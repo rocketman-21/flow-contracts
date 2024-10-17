@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow } from "./interfaces/IFlow.sol";
@@ -236,7 +236,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
         _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
-        _updateBonusMemberUnits(recipientAddress, 100); // 100 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipientAddress, 10); // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         return (_recipientId, recipientAddress);
     }
@@ -315,8 +315,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // Initialize member units
         _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
-        // 100 units for each recipient in case there are no votes yet, everyone will split the bonus salary
-        _updateBonusMemberUnits(recipient, 100);
+        // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipient, 10);
     }
 
     /**

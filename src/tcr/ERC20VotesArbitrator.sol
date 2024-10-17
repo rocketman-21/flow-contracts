@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { IArbitrable } from "./interfaces/IArbitrable.sol";
