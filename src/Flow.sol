@@ -272,15 +272,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.addFlowRecipient(_recipientId, recipient, _metadata);
         _childFlows.add(recipient);
 
-        // transfer supertoken to the new flow contract of amount buffer amount
-        // + 1 wei to ensure that the flow can be started
-        uint256 bufferAmount = fs.superToken.getBufferAmountByFlowRate(getMemberTotalFlowRate(recipient)) + 1;
-        if (bufferAmount < fs.superToken.balanceOf(address(this))) {
-            // transfer supertoken to the new flow contract so the flow can be started
-            fs.superToken.transfer(recipient, bufferAmount);
-            // set flow rate for the new flow contract
-            _setChildFlowRate(recipient);
-        }
+        _setChildFlowRate(recipient);
 
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
         emit FlowRecipientCreated(_recipientId, recipient);
@@ -394,9 +386,20 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         int96 memberFlowRate = getMemberTotalFlowRate(childAddress);
 
+        // add 1% buffer to the flow rate to account for some weird rounding errors
+        uint256 bufferAmount = (fs.superToken.getBufferAmountByFlowRate(memberFlowRate) * 101) / 100;
+
+        if (bufferAmount > fs.superToken.balanceOf(childAddress)) {
+            // ensure this contract has enough balance to transfer to the child contract
+            if (bufferAmount < fs.superToken.balanceOf(address(this))) {
+                // transfer supertoken to the new flow contract so the flow can be started
+                fs.superToken.transfer(childAddress, bufferAmount - fs.superToken.balanceOf(childAddress));
+            }
+        }
+
         // Call setFlowRate on the child contract
         // only set if balance of contract is greater than buffer required
-        if (fs.superToken.getBufferAmountByFlowRate(memberFlowRate) < fs.superToken.balanceOf(childAddress)) {
+        if (bufferAmount <= fs.superToken.balanceOf(childAddress)) {
             IFlow(childAddress).setFlowRate(memberFlowRate);
         }
     }

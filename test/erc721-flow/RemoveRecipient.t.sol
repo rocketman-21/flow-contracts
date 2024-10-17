@@ -467,6 +467,8 @@ contract RemoveRecipientsTest is ERC721FlowTest {
     function testAddAndRemoveMultipleRecipients() public {
         int96 flowRate = 400e12;
 
+        vm.pauseGasMetering();
+
         vm.prank(flow.owner());
         flow.setFlowRate(flowRate);
 
@@ -503,6 +505,11 @@ contract RemoveRecipientsTest is ERC721FlowTest {
             flow.BASELINE_MEMBER_UNITS() * numRecipients + 1,
             "Total units incorrect after adding recipients"
         );
+
+        // ensure all flow recipients have the correct flow rate
+        for (uint256 i = 0; i < numRecipients; i++) {
+            assertGt(flow.getMemberTotalFlowRate(flowRecipients[i]), 0);
+        }
 
         // Remove all added recipients
         for (uint256 i = 0; i < numRecipients; i++) {

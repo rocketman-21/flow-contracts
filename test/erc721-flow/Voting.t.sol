@@ -298,6 +298,12 @@ contract VotingFlowTest is ERC721FlowTest {
         );
         vm.stopPrank();
 
+        int96 incoming = flow.getMemberTotalFlowRate(flowRecipient);
+
+        // the total flow rate should be greater than 0 because flows are automatically started now
+        int96 outgoing = Flow(flowRecipient).getTotalFlowRate();
+        assertEq(outgoing, incoming, "Initial incoming and outgoing flow rates should match");
+
         bytes32[] memory recipientIds = new bytes32[](1);
         uint32[] memory percentAllocations = new uint32[](1);
         uint256[] memory tokenIds = new uint256[](1);
@@ -309,18 +315,9 @@ contract VotingFlowTest is ERC721FlowTest {
         vm.prank(voter);
         flow.castVotes(tokenIds, recipientIds, percentAllocations);
 
-        // the total flow rate should be 0 because the recipient does not have the buffer amount yet
-        int96 flowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
-        assertEq(flowRecipientTotalFlowRate, 0);
+        int96 incomingFlowRate = flow.getMemberTotalFlowRate(flowRecipient);
 
-        // transfer tokens to flow recipient
-        _transferTestTokenToFlow(flowRecipient, 100 * 10 ** 18);
-
-        // vote again check total flow rate is now gt 0
-        vm.prank(voter);
-        flow.castVotes(tokenIds, recipientIds, percentAllocations);
-
-        int96 newFlowRecipientTotalFlowRate = Flow(flowRecipient).getTotalFlowRate();
-        assertGt(newFlowRecipientTotalFlowRate, 0);
+        int96 outgoingFlowRate = Flow(flowRecipient).getTotalFlowRate();
+        assertEq(outgoingFlowRate, incomingFlowRate, "After voting, incoming and outgoing flow rates should match");
     }
 }
