@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
+import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
 interface IManagedFlow {
     /**
@@ -62,6 +63,18 @@ interface IManagedFlow {
      * @return The address of the SuperToken
      */
     function getSuperToken() external view returns (address);
+
+    /**
+     * @notice Returns the flow baseline pool address
+     * @return The address of the flow baseline pool
+     */
+    function baselinePool() external view returns (ISuperfluidPool);
+
+    /**
+     * @notice Returns the flow bonus pool address
+     * @return The address of the flow bonus pool
+     */
+    function bonusPool() external view returns (ISuperfluidPool);
 
     /**
      * @notice Checks if a recipient exists in the Flow contract

@@ -2,12 +2,10 @@
 pragma solidity ^0.8.28;
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { IManagedFlow } from "../interfaces/IManagedFlow.sol";
 import { IArbitrator } from "./interfaces/IArbitrator.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IFlowTCR } from "./interfaces/IGeneralizedTCR.sol";
 import { IERC20VotesMintable } from "../interfaces/IERC20VotesMintable.sol";
-import { IOwnable2Step } from "../interfaces/IOwnable2Step.sol";
 import { IERC20VotesArbitrator } from "./interfaces/IERC20VotesArbitrator.sol";
 import { Ownable2StepUpgradeable } from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -183,7 +181,9 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             erc20Address,
             rewardPoolAddress,
             tokenEmitterAddress,
-            address(params.flowContract)
+            address(params.flowContract),
+            address(params.flowContract.baselinePool()),
+            address(params.flowContract.bonusPool())
         );
 
         deployedContracts = DeployedContracts({
