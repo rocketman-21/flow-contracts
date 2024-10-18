@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { IFlow } from "../interfaces/IFlow.sol";
+import { IRewardPool } from "../interfaces/IRewardPool.sol";
 
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
@@ -47,23 +48,39 @@ library FlowRates {
      * @notice Sets the flow rate for a child Flow contract
      * @param childAddress The address of the child Flow contract
      * @param flowAddress The address of the flow contract
+     * @return shouldTransfer Indicates if a transfer is needed to meet the buffer requirement
+     * @return transferAmount The amount of tokens required to be transferred
+     * @return requiredBufferAmount The total buffer amount required
      */
     function calculateBufferAmountForChild(
         FlowTypes.Storage storage fs,
         address childAddress,
         address flowAddress
-    ) public view returns (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) {
+    ) public view returns (bool shouldTransfer, uint256 transferAmount, uint256 requiredBufferAmount) {
         if (childAddress == address(0)) revert IFlow.ADDRESS_ZERO();
-        int96 newChildFlowRate = getMemberTotalFlowRate(fs, childAddress);
+        int96 newFlowRateStreamingToChild = getMemberTotalFlowRate(fs, childAddress);
 
-        // add 25% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
-        bufferAmount = (fs.superToken.getBufferAmountByFlowRate(newChildFlowRate) * 125) / 100;
-        if (bufferAmount > fs.superToken.balanceOf(childAddress)) {
-            // ensure this contract has enough balance to transfer to the child contract
-            if (bufferAmount < fs.superToken.balanceOf(flowAddress)) {
-                // transfer supertoken to the new flow contract so the flow can be started
-                shouldTransfer = true;
-                transferAmount = bufferAmount - fs.superToken.balanceOf(childAddress);
+        int96 currentFlowRateOutgoingFromChild = IFlow(childAddress).getTotalFlowRate();
+
+        bool isFlowRateIncreasing = (newFlowRateStreamingToChild - currentFlowRateOutgoingFromChild) > 0;
+
+        if (isFlowRateIncreasing) {
+            uint256 bufferAmountForNewFlow = fs.superToken.getBufferAmountByFlowRate(newFlowRateStreamingToChild);
+            uint256 bufferAmountForCurrentFlow = fs.superToken.getBufferAmountByFlowRate(
+                currentFlowRateOutgoingFromChild
+            );
+            uint256 bufferAmountForFlowIncrease = bufferAmountForNewFlow - bufferAmountForCurrentFlow;
+
+            // add 25% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
+            requiredBufferAmount = (bufferAmountForFlowIncrease * 125) / 100;
+            if (requiredBufferAmount > fs.superToken.balanceOf(childAddress)) {
+                uint256 tempTransferAmount = requiredBufferAmount - fs.superToken.balanceOf(childAddress);
+                // ensure this contract has enough balance to transfer to the child contract
+                if (tempTransferAmount < fs.superToken.balanceOf(flowAddress)) {
+                    // transfer supertoken to the new flow contract so the flow can be started
+                    shouldTransfer = true;
+                    transferAmount = tempTransferAmount;
+                }
             }
         }
     }
@@ -72,24 +89,56 @@ library FlowRates {
      * @notice Sets the flow rate for a child Flow contract
      * @param rewardPoolAddress The address of the reward pool
      * @param flowAddress The address of the flow contract
+     * @return shouldTransfer Indicates if a transfer is needed to meet the buffer requirement
+     * @return transferAmount The amount of tokens required to be transferred
+     * @return requiredBufferAmount The total buffer amount required
      */
     function calculateBufferAmountForRewardPool(
         FlowTypes.Storage storage fs,
         address rewardPoolAddress,
         address flowAddress
-    ) public view returns (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) {
+    ) public view returns (bool shouldTransfer, uint256 transferAmount, uint256 requiredBufferAmount) {
         if (rewardPoolAddress == address(0)) return (false, 0, 0);
 
-        // add 25% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
-        bufferAmount = (getManagerRewardPoolBufferAmount(fs, flowAddress) * 125) / 100;
-        if (bufferAmount > fs.superToken.balanceOf(rewardPoolAddress)) {
-            // ensure this contract has enough balance to transfer to the child contract
-            if (bufferAmount < fs.superToken.balanceOf(flowAddress)) {
-                // transfer supertoken to the new flow contract so the flow can be started
-                shouldTransfer = true;
-                transferAmount = bufferAmount - fs.superToken.balanceOf(rewardPoolAddress);
+        int96 newFlowRateStreamingToPool = getManagerRewardPoolFlowRate(fs, flowAddress);
+
+        int96 currentFlowRateOutgoingFromPool = IRewardPool(rewardPoolAddress).getTotalFlowRate();
+
+        bool isFlowRateIncreasing = (newFlowRateStreamingToPool - currentFlowRateOutgoingFromPool) > 0;
+
+        // we only need to transfer more buffer tokens if the flow rate is increasing
+        if (isFlowRateIncreasing) {
+            uint256 bufferAmountForNewFlow = fs.superToken.getBufferAmountByFlowRate(newFlowRateStreamingToPool);
+            uint256 bufferAmountForCurrentFlow = fs.superToken.getBufferAmountByFlowRate(
+                currentFlowRateOutgoingFromPool
+            );
+            uint256 bufferAmountForFlowIncrease = bufferAmountForNewFlow - bufferAmountForCurrentFlow;
+
+            // add 25% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
+            requiredBufferAmount = (bufferAmountForFlowIncrease * 125) / 100;
+            if (requiredBufferAmount > fs.superToken.balanceOf(rewardPoolAddress)) {
+                uint256 tempTransferAmount = requiredBufferAmount - fs.superToken.balanceOf(rewardPoolAddress);
+                // ensure this contract has enough balance to transfer to the child contract
+                if (tempTransferAmount < fs.superToken.balanceOf(flowAddress)) {
+                    // transfer supertoken to the new flow contract so the flow can be started
+                    shouldTransfer = true;
+                    transferAmount = tempTransferAmount;
+                }
             }
         }
+    }
+
+    /**
+     * @notice Retrieves the current flow rate to the manager reward pool
+     * @param fs The storage of the Flow contract
+     * @param flowAddress The address of the flow contract
+     * @return flowRate The current flow rate to the manager reward pool
+     */
+    function getManagerRewardPoolFlowRate(
+        FlowTypes.Storage storage fs,
+        address flowAddress
+    ) public view returns (int96 flowRate) {
+        flowRate = fs.superToken.getFlowRate(flowAddress, fs.managerRewardPool);
     }
 
     /**
@@ -116,19 +165,6 @@ library FlowRates {
     ) public view returns (uint256 bufferAmount) {
         int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate(fs, flowAddress);
         bufferAmount = fs.superToken.getBufferAmountByFlowRate(managerRewardPoolFlowRate);
-    }
-
-    /**
-     * @notice Retrieves the current flow rate to the manager reward pool
-     * @param fs The storage of the Flow contract
-     * @param flowAddress The address of the flow contract
-     * @return flowRate The current flow rate to the manager reward pool
-     */
-    function getManagerRewardPoolFlowRate(
-        FlowTypes.Storage storage fs,
-        address flowAddress
-    ) public view returns (int96 flowRate) {
-        flowRate = fs.superToken.getFlowRate(flowAddress, fs.managerRewardPool);
     }
 
     /**

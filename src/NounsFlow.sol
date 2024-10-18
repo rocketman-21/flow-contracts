@@ -201,10 +201,8 @@ contract NounsFlow is INounsFlow, Flow {
         address rewardPool = fs.managerRewardPool;
         if (rewardPool == address(0)) revert ADDRESS_ZERO();
 
-        (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) = fs.calculateBufferAmountForRewardPool(
-            rewardPool,
-            address(this)
-        );
+        (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
+            .calculateBufferAmountForRewardPool(rewardPool, address(this));
 
         if (shouldTransfer) {
             fs.superToken.transfer(rewardPool, transferAmount);
@@ -212,7 +210,7 @@ contract NounsFlow is INounsFlow, Flow {
 
         // Call setFlowRate on the child contract
         // only set if buffer required is less than balance of contract
-        if (bufferAmount <= fs.superToken.balanceOf(rewardPool)) {
+        if (balanceRequiredToStartFlow <= fs.superToken.balanceOf(rewardPool)) {
             IRewardPool(rewardPool).setFlowRate(getManagerRewardPoolFlowRate());
         }
     }

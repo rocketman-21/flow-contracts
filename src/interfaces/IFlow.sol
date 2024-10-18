@@ -233,6 +233,12 @@ interface IFlow is IFlowEvents, IManagedFlow {
     function setFlowRate(int96 _flowRate) external;
 
     /**
+     * @notice Gets the flow rate for the Superfluid pool
+     * @return The flow rate for the Superfluid pool
+     */
+    function getTotalFlowRate() external view returns (int96);
+
+    /**
      * @notice Sets the manager reward pool for the flow contract
      * @param _managerRewardPool The address of the manager reward pool
      * @dev Only callable by the owner
