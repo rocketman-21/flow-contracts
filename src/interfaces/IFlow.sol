@@ -44,7 +44,16 @@ interface IFlowEvents {
     );
 
     /// @notice Emitted when a new child flow recipient is created
-    event FlowRecipientCreated(bytes32 indexed recipientId, address indexed recipient);
+    event FlowRecipientCreated(
+        bytes32 indexed recipientId,
+        address indexed recipient,
+        address baselinePool,
+        address bonusPool,
+        address superToken,
+        address parent,
+        uint32 managerRewardPoolFlowRatePercent,
+        uint32 baselinePoolFlowRatePercent
+    );
 
     /// @notice Emitted when the metadata is set
     event MetadataSet(FlowTypes.RecipientMetadata metadata);

@@ -263,7 +263,16 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _setAllChildFlowRates();
 
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
-        emit FlowRecipientCreated(_recipientId, recipient);
+        emit FlowRecipientCreated(
+            _recipientId,
+            recipient,
+            address(IFlow(recipient).baselinePool()),
+            address(IFlow(recipient).bonusPool()),
+            address(IFlow(recipient).getSuperToken()),
+            address(IFlow(recipient).parent()),
+            IFlow(recipient).managerRewardPoolFlowRatePercent(),
+            IFlow(recipient).baselinePoolFlowRatePercent()
+        );
 
         return (_recipientId, recipient);
     }
