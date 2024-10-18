@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
+import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 
 interface IManagedFlow {
     /**
@@ -41,6 +42,11 @@ interface IManagedFlow {
     function removeRecipient(bytes32 recipientId) external;
 
     /**
+     * @notice Resets the flow rate for the Flow contract to the cached value
+     */
+    function resetFlowRate() external;
+
+    /**
      * @notice Sets a new manager for the Flow contract
      * @param _newManager The address of the new manager
      */
@@ -57,6 +63,42 @@ interface IManagedFlow {
      * @return The address of the SuperToken
      */
     function getSuperToken() external view returns (address);
+
+    /**
+     * @notice Returns the flow baseline pool address
+     * @return The address of the flow baseline pool
+     */
+    function baselinePool() external view returns (ISuperfluidPool);
+
+    /**
+     * @notice Returns the flow manager reward pool address
+     * @return The address of the flow manager reward pool
+     */
+    function managerRewardPool() external view returns (address);
+
+    /**
+     * @notice Returns the flow parent address
+     * @return The address of the flow parent
+     */
+    function parent() external view returns (address);
+
+    /**
+     * @notice Returns the flow manager reward pool flow rate percent
+     * @return The flow rate percent of the flow manager reward pool
+     */
+    function managerRewardPoolFlowRatePercent() external view returns (uint32);
+
+    /**
+     * @notice Returns the flow baseline pool flow rate percent
+     * @return The flow rate percent of the flow baseline pool
+     */
+    function baselinePoolFlowRatePercent() external view returns (uint32);
+
+    /**
+     * @notice Returns the flow bonus pool address
+     * @return The address of the flow bonus pool
+     */
+    function bonusPool() external view returns (ISuperfluidPool);
 
     /**
      * @notice Checks if a recipient exists in the Flow contract

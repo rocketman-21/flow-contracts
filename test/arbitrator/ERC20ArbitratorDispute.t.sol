@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { ERC20VotesArbitratorTest } from "./ERC20VotesArbitrator.t.sol";
 import { ArbitratorStorageV1 } from "../../src/tcr/storage/ArbitratorStorageV1.sol";
