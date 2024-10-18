@@ -54,10 +54,10 @@ library FlowRates {
         address flowAddress
     ) public view returns (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) {
         if (childAddress == address(0)) revert IFlow.ADDRESS_ZERO();
-        int96 memberFlowRate = getMemberTotalFlowRate(fs, childAddress);
+        int96 newChildFlowRate = getMemberTotalFlowRate(fs, childAddress);
 
-        // add 1% buffer to the flow rate to account for some weird rounding errors
-        bufferAmount = (fs.superToken.getBufferAmountByFlowRate(memberFlowRate) * 101) / 100;
+        // add 25% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
+        bufferAmount = (fs.superToken.getBufferAmountByFlowRate(newChildFlowRate) * 125) / 100;
         if (bufferAmount > fs.superToken.balanceOf(childAddress)) {
             // ensure this contract has enough balance to transfer to the child contract
             if (bufferAmount < fs.superToken.balanceOf(flowAddress)) {
@@ -80,8 +80,8 @@ library FlowRates {
     ) public view returns (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) {
         if (rewardPoolAddress == address(0)) return (false, 0, 0);
 
-        // add 1% buffer to the flow rate to account for some weird rounding errors
-        bufferAmount = (getManagerRewardPoolBufferAmount(fs, flowAddress) * 101) / 100;
+        // add 25% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
+        bufferAmount = (getManagerRewardPoolBufferAmount(fs, flowAddress) * 125) / 100;
         if (bufferAmount > fs.superToken.balanceOf(rewardPoolAddress)) {
             // ensure this contract has enough balance to transfer to the child contract
             if (bufferAmount < fs.superToken.balanceOf(flowAddress)) {
