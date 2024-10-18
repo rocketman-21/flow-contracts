@@ -259,9 +259,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.addFlowRecipient(_recipientId, recipient, _metadata);
         _childFlows.add(recipient);
 
-        // need to do this here because we just added new member units
-        _setAllChildFlowRates();
-
         emit FlowRecipientCreated(
             _recipientId,
             recipient,
@@ -271,6 +268,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             IFlow(recipient).baselinePoolFlowRatePercent()
         );
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
+
+        // need to do this here because we just added new member units
+        _setAllChildFlowRates();
 
         return (_recipientId, recipient);
     }
