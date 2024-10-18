@@ -114,7 +114,6 @@ interface ITCRFactory {
         address flowProxy,
         address flowBaselinePool,
         address flowBonusPool,
-        address flowManagerRewardPool,
         address flowSuperToken,
         address flowParent,
         uint32 flowManagerRewardPoolFlowRatePercent,
