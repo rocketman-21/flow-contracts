@@ -7,7 +7,7 @@ import { FlowTCR } from "../../src/tcr/FlowTCR.sol";
 import { ERC20VotesMintable } from "../../src/ERC20VotesMintable.sol";
 import { ERC20VotesArbitrator } from "../../src/tcr/ERC20VotesArbitrator.sol";
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import { IFlowTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
+import { ERC721Flow } from "../../src/ERC721Flow.sol";
 import { ITCRFactory } from "../../src/tcr/interfaces/ITCRFactory.sol";
 import { IManagedFlow } from "../../src/interfaces/IManagedFlow.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -64,7 +64,7 @@ contract TCRFactoryTest is Test {
     function setUp() public {
         owner = address(this);
         governor = makeAddr("governor");
-        flowContract = makeAddr("flowContract");
+        flowContract = address(new ERC1967Proxy(address(new ERC721Flow()), ""));
         protocolFeeRecipient = makeAddr("protocolFeeRecipient");
         WETH = makeAddr("WETH");
 
