@@ -181,7 +181,9 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             erc20Address,
             rewardPoolAddress,
             tokenEmitterAddress,
-            address(params.flowContract)
+            address(params.flowContract),
+            address(params.flowContract.baselinePool()),
+            address(params.flowContract.bonusPool())
         );
 
         deployedContracts = DeployedContracts({
