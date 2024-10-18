@@ -90,7 +90,8 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
 
         // if total flow rate is 0, ensure there is at least 1 unit in the pool to prevent flow rate from resetting to 0
         if (rewardPool.getTotalUnits() == 0) {
-            updateMemberUnits(address(this), 1);
+            bool success = superToken.updateMemberUnits(rewardPool, address(this), 1);
+            if (!success) revert UNITS_UPDATE_FAILED();
         }
 
         superToken.distributeFlow(address(this), rewardPool, _flowRate);
