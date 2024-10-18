@@ -254,8 +254,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         address recipient = _deployFlowRecipient(_metadata, _flowManager, _managerRewardPool);
 
-        _connectAndInitializeFlowRecipient(recipient);
-
         fs.addFlowRecipient(_recipientId, recipient, _metadata);
         _childFlows.add(recipient);
 
@@ -268,6 +266,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             IFlow(recipient).baselinePoolFlowRatePercent()
         );
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
+
+        // do this after so member units based ingestion can work (need to connect tcr item to recipient before handling member units)
+        _connectAndInitializeFlowRecipient(recipient);
 
         // need to do this here because we just added new member units
         _setAllChildFlowRates();
