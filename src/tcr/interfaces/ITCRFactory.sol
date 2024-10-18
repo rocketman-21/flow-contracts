@@ -113,7 +113,12 @@ interface ITCRFactory {
         address tokenEmitterProxy,
         address flowProxy,
         address flowBaselinePool,
-        address flowBonusPool
+        address flowBonusPool,
+        address flowManagerRewardPool,
+        address flowSuperToken,
+        address flowParent,
+        uint32 flowManagerRewardPoolFlowRatePercent,
+        uint32 flowBaselinePoolFlowRatePercent
     );
 
     /// @notice Emitted when the RewardPool implementation address is updated

@@ -71,6 +71,30 @@ interface IManagedFlow {
     function baselinePool() external view returns (ISuperfluidPool);
 
     /**
+     * @notice Returns the flow manager reward pool address
+     * @return The address of the flow manager reward pool
+     */
+    function managerRewardPool() external view returns (address);
+
+    /**
+     * @notice Returns the flow parent address
+     * @return The address of the flow parent
+     */
+    function parent() external view returns (address);
+
+    /**
+     * @notice Returns the flow manager reward pool flow rate percent
+     * @return The flow rate percent of the flow manager reward pool
+     */
+    function managerRewardPoolFlowRatePercent() external view returns (uint32);
+
+    /**
+     * @notice Returns the flow baseline pool flow rate percent
+     * @return The flow rate percent of the flow baseline pool
+     */
+    function baselinePoolFlowRatePercent() external view returns (uint32);
+
+    /**
      * @notice Returns the flow bonus pool address
      * @return The address of the flow bonus pool
      */

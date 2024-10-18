@@ -183,7 +183,12 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             tokenEmitterAddress,
             address(params.flowContract),
             address(params.flowContract.baselinePool()),
-            address(params.flowContract.bonusPool())
+            address(params.flowContract.bonusPool()),
+            address(params.flowContract.managerRewardPool()),
+            address(params.flowContract.getSuperToken()),
+            address(params.flowContract.parent()),
+            params.flowContract.managerRewardPoolFlowRatePercent(),
+            params.flowContract.baselinePoolFlowRatePercent()
         );
 
         deployedContracts = DeployedContracts({
