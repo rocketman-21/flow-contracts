@@ -49,8 +49,6 @@ interface IFlowEvents {
         address indexed recipient,
         address baselinePool,
         address bonusPool,
-        address superToken,
-        address parent,
         uint32 managerRewardPoolFlowRatePercent,
         uint32 baselinePoolFlowRatePercent
     );
