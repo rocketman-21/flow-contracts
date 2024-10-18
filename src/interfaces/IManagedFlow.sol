@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 
@@ -39,6 +39,11 @@ interface IManagedFlow {
      * @param recipientId The ID of the recipient to be removed
      */
     function removeRecipient(bytes32 recipientId) external;
+
+    /**
+     * @notice Resets the flow rate for the Flow contract to the cached value
+     */
+    function resetFlowRate() external;
 
     /**
      * @notice Sets a new manager for the Flow contract

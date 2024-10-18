@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
  */
-pragma solidity 0.8.27;
+pragma solidity 0.8.28;
 
 import { Bytes } from "optimism/packages/contracts-bedrock/src/libraries/Bytes.sol";
 import { RLPReader } from "optimism/packages/contracts-bedrock/src/libraries/rlp/RLPReader.sol";

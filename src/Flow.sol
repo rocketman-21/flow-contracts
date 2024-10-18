@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow } from "./interfaces/IFlow.sol";
+import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowRecipients } from "./library/FlowRecipients.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
 import { FlowRates } from "./library/FlowRates.sol";
@@ -72,7 +73,18 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             _updateBaselineMemberUnits(address(this), 1);
         }
 
-        emit FlowInitialized(msg.sender, _superToken, _flowImpl, _manager, _managerRewardPool, _parent);
+        emit FlowInitialized(
+            msg.sender,
+            _superToken,
+            _flowImpl,
+            _manager,
+            _managerRewardPool,
+            _parent,
+            address(fs.baselinePool),
+            address(fs.bonusPool),
+            fs.baselinePoolFlowRatePercent,
+            fs.managerRewardPoolFlowRatePercent
+        );
     }
 
     /**
@@ -126,6 +138,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             uint128 currentUnits = fs.bonusPool.getUnits(recipientAddress);
             uint128 unitsDelta = allocations[i].memberUnits;
             RecipientType recipientType = fs.recipients[recipientId].recipientType;
+
+            emit VoteRemoved(recipientId, tokenId, currentUnits - unitsDelta);
 
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
@@ -222,7 +236,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
         _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
-        _updateBonusMemberUnits(recipientAddress, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipientAddress, 10); // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         return (_recipientId, recipientAddress);
     }
@@ -245,7 +259,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         address _flowManager,
         address _managerRewardPool
     ) external onlyManager returns (bytes32, address) {
-        FlowRecipients.validateFlowRecipient(_metadata, _flowManager, _managerRewardPool);
+        FlowRecipients.validateFlowRecipient(_metadata, _flowManager);
 
         address recipient = _deployFlowRecipient(_metadata, _flowManager, _managerRewardPool);
 
@@ -301,8 +315,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // Initialize member units
         _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
-        // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
-        _updateBonusMemberUnits(recipient, 1);
+        // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipient, 10);
     }
 
     /**
@@ -366,7 +380,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childAddress The address of the child Flow contract
      */
     function _setChildFlowRate(address childAddress) internal {
-        (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) = fs.calculateBufferAmount(
+        (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) = fs.calculateBufferAmountForChild(
             childAddress,
             address(this)
         );
@@ -482,6 +496,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param _newManagerRewardFlowRate The new flow rate to the manager reward pool
      */
     function _setFlowToManagerRewardPool(int96 _newManagerRewardFlowRate) internal {
+        // some flows initially don't have a manager reward pool, so we don't need to set a flow to it
+        if (fs.managerRewardPool == address(0)) return;
+
         int96 rewardPoolFlowRate = getManagerRewardPoolFlowRate();
 
         if (_newManagerRewardFlowRate > 0) {
