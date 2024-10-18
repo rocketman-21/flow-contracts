@@ -72,6 +72,7 @@ library FlowRates {
             uint256 bufferAmountForFlowIncrease = bufferAmountForNewFlow - bufferAmountForCurrentFlow;
 
             // add 25% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
+            // also assumes ~10% of the flow rate is required to be set aside for the reward pool
             requiredBufferAmount = (bufferAmountForFlowIncrease * 125) / 100;
             if (requiredBufferAmount > fs.superToken.balanceOf(childAddress)) {
                 uint256 tempTransferAmount = requiredBufferAmount - fs.superToken.balanceOf(childAddress);
@@ -114,8 +115,8 @@ library FlowRates {
             );
             uint256 bufferAmountForFlowIncrease = bufferAmountForNewFlow - bufferAmountForCurrentFlow;
 
-            // add 25% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
-            requiredBufferAmount = (bufferAmountForFlowIncrease * 125) / 100;
+            // add 10% buffer to the flow rate to account for rounding errors + estimated max reward pool buffer required
+            requiredBufferAmount = (bufferAmountForFlowIncrease * 110) / 100;
             if (requiredBufferAmount > fs.superToken.balanceOf(rewardPoolAddress)) {
                 uint256 tempTransferAmount = requiredBufferAmount - fs.superToken.balanceOf(rewardPoolAddress);
                 // ensure this contract has enough balance to transfer to the child contract
