@@ -76,15 +76,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             fs.baselinePoolFlowRatePercent,
             fs.managerRewardPoolFlowRatePercent
         );
-
-        // if total member units is 0, set 1 member unit to this contract
-        // do this to prevent distribution pool from resetting flow rate to 0
-        if (fs.bonusPool.getTotalUnits() == 0) {
-            _updateBonusMemberUnits(address(this), 1);
-        }
-        if (fs.baselinePool.getTotalUnits() == 0) {
-            _updateBaselineMemberUnits(address(this), 1);
-        }
     }
 
     /**
@@ -522,6 +513,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function _setFlowRate(int96 _flowRate) internal {
+        // if total member units is 0, set 1 member unit to this contract
+        // do this to prevent distribution pool from resetting flow rate to 0
+        if (fs.bonusPool.getTotalUnits() == 0) {
+            _updateBonusMemberUnits(address(this), 1);
+        }
+        if (fs.baselinePool.getTotalUnits() == 0) {
+            _updateBaselineMemberUnits(address(this), 1);
+        }
+
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
         int96 oldTotalFlowRate = getTotalFlowRate();
 
