@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { DeployScript } from "./DeployScript.s.sol";
 import { NounsFlow } from "../src/NounsFlow.sol";
@@ -252,6 +252,13 @@ contract DeployNounsFlow is DeployScript {
         vm.writeLine(filePath, string(abi.encodePacked("ERC20VotesMintable: ", addressToString(erc20Mintable))));
         vm.writeLine(filePath, string(abi.encodePacked("TCRFactory: ", addressToString(tcrFactory))));
         vm.writeLine(filePath, string(abi.encodePacked("TokenEmitter: ", addressToString(tokenEmitter))));
+        // Get bonus and baseline pools from NounsFlow contract
+        address bonusPool = address(IFlow(nounsFlow).bonusPool());
+        address baselinePool = address(IFlow(nounsFlow).baselinePool());
+
+        // Write bonus and baseline pool addresses to deployment details
+        vm.writeLine(filePath, string(abi.encodePacked("BonusPool: ", addressToString(address(bonusPool)))));
+        vm.writeLine(filePath, string(abi.encodePacked("BaselinePool: ", addressToString(address(baselinePool)))));
     }
 
     function getContractName() internal pure override returns (string memory) {

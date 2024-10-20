@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { stdJson } from "forge-std/StdJson.sol";
 import { NounsFlowTest } from "./NounsFlow.t.sol";

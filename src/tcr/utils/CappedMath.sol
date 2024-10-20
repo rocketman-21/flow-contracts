@@ -4,7 +4,7 @@
 //
 // CappedMath.sol source code Copyright Kleros licensed under the MIT license.
 
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 /**
  * @title CappedMath

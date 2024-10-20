@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { IFlow } from "../interfaces/IFlow.sol";
@@ -17,7 +17,7 @@ library FlowInitialization {
      * @param _flowImpl The address of the flow implementation
      * @param _manager The address of the flow manager
      * @param _superToken The address of the SuperToken to be used for the pool
-     * @param _managerRewardPool The address of the manager reward pool
+     * @param _managerRewardPool The address of the manager reward pool (optional)
      * @param _parent The address of the parent flow contract (optional)
      * @param _flowAddress The address of the flow contract
      * @param _flowParams The parameters for the flow contract
@@ -40,7 +40,6 @@ library FlowInitialization {
         if (_flowImpl == address(0)) revert IFlow.ADDRESS_ZERO();
         if (_manager == address(0)) revert IFlow.ADDRESS_ZERO();
         if (_superToken == address(0)) revert IFlow.ADDRESS_ZERO();
-        if (_managerRewardPool == address(0)) revert IFlow.ADDRESS_ZERO();
         if (_flowParams.tokenVoteWeight == 0) revert IFlow.INVALID_VOTE_WEIGHT();
         if (bytes(_metadata.title).length == 0) revert IFlow.INVALID_METADATA();
         if (bytes(_metadata.description).length == 0) revert IFlow.INVALID_METADATA();

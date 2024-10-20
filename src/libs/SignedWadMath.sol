@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 /// @notice Signed 18 decimal fixed point (wad) arithmetic library.
 /// @author Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SignedWadMath.sol)
