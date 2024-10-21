@@ -125,15 +125,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             if (fs.recipients[recipientId].removed) continue;
 
             address recipientAddress = fs.recipients[recipientId].recipient;
-            uint128 currentUnits = fs.bonusPool.getUnits(recipientAddress);
-            uint128 unitsDelta = allocations[i].memberUnits;
-            RecipientType recipientType = fs.recipients[recipientId].recipientType;
-
-            emit VoteRemoved(recipientId, tokenId, currentUnits - unitsDelta);
 
             // Calculate the new units by subtracting the delta from the current units
+            uint128 newUnits = fs.bonusPool.getUnits(recipientAddress) - allocations[i].memberUnits;
+
+            emit VoteRemoved(recipientId, tokenId, newUnits);
+
             // Update the member units in the pool
-            _updateBonusMemberUnits(recipientAddress, currentUnits - unitsDelta);
+            _updateBonusMemberUnits(recipientAddress, newUnits);
 
             /// @notice - Does not update member units for baseline pool
             /// voting is only for the bonus pool, to ensure all approved recipients get a baseline salary
