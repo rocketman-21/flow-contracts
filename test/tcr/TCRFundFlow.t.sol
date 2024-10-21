@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowTCRTest } from "./FlowTCR.t.sol";
 import { FlowTypes } from "../../src/storage/FlowStorageV1.sol";
@@ -8,6 +8,11 @@ import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IGeneralizedTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
+import { IERC721Flow } from "../../src/interfaces/IFlow.sol";
+import { RewardPool } from "../../src/RewardPool.sol";
+import { IFlow } from "../../src/interfaces/IFlow.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract TCRFundFlowTest is FlowTCRTest {
     // Helper function to get ERC20 balance of a contract or address
@@ -309,5 +314,52 @@ contract TCRFundFlowTest is FlowTCRTest {
 
     function testDisputeTieRefundFlowContract() public {
         testDisputeTieRefund(FLOW_RECIPIENT_ITEM_DATA);
+    }
+
+    function testAddFlowRecipientItemAndExecute() public {
+        // Setup
+        FlowTypes.RecipientMetadata memory metadata = FlowTypes.RecipientMetadata({
+            title: "Flow Recipient",
+            description: "Test Flow Recipient",
+            image: "ipfs://image",
+            tagline: "Test Tagline",
+            url: "https://example.com"
+        });
+        bytes memory itemData = abi.encode(address(0), metadata, FlowTypes.RecipientType.FlowContract);
+
+        uint256 arbitratorCost = arbitrator.arbitrationCost(bytes(""));
+
+        // Approve GeneralizedTCR to spend tokens
+        vm.prank(requester);
+        erc20Token.approve(address(flowTCR), SUBMISSION_BASE_DEPOSIT + arbitratorCost);
+
+        // Add Flow recipient item
+        vm.prank(requester);
+        bytes32 itemID = flowTCR.addItem(itemData);
+
+        // Verify item is in pending state
+        (bytes memory data, IGeneralizedTCR.Status status, uint256 numberOfRequests) = flowTCR.getItemInfo(itemID);
+        assertEq(uint256(status), uint256(IGeneralizedTCR.Status.RegistrationRequested));
+
+        // Advance time past challenge period
+        vm.warp(block.timestamp + flowTCR.challengePeriodDuration() + 1);
+
+        // Execute request
+        flowTCR.executeRequest(itemID);
+
+        // Verify item is now registered
+        (data, status, numberOfRequests) = flowTCR.getItemInfo(itemID);
+        assertEq(uint256(status), uint256(IGeneralizedTCR.Status.Registered));
+
+        // Verify Flow recipient is added
+        FlowTypes.FlowRecipient memory storedRecipient = flow.getRecipientById(itemID);
+        assertEq(uint8(storedRecipient.recipientType), uint8(FlowTypes.RecipientType.FlowContract));
+        assertFalse(storedRecipient.removed);
+        assertNotEq(storedRecipient.recipient, address(0));
+
+        // ensure incoming flow rate of reward pool is set correctly
+        assertGt(flow.getManagerRewardPoolFlowRate(), 0);
+        // ensure outgoing flow rate of reward pool is set correctly
+        assertGt(RewardPool(flow.managerRewardPool()).getTotalFlowRate(), 0);
     }
 }

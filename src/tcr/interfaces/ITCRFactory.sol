@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { IManagedFlow } from "../../interfaces/IManagedFlow.sol";
 import { FlowTypes } from "../../storage/FlowStorageV1.sol";
@@ -111,7 +111,9 @@ interface ITCRFactory {
         address erc20Proxy,
         address rewardPoolProxy,
         address tokenEmitterProxy,
-        address flowProxy
+        address flowProxy,
+        address flowBaselinePool,
+        address flowBonusPool
     );
 
     /// @notice Emitted when the RewardPool implementation address is updated

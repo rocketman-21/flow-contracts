@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { Flow } from "./Flow.sol";
 import { IERC721Flow } from "./interfaces/IFlow.sol";
 import { IERC721Checkpointable } from "./interfaces/IERC721Checkpointable.sol";
 import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
+import { FlowRates } from "./library/FlowRates.sol";
+import { RewardPool } from "./RewardPool.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ERC721Flow is IERC721Flow, Flow {
     using FlowVotes for Storage;
+    using FlowRates for Storage;
 
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
@@ -127,16 +130,21 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @notice Function to be called after updating the reward pool flow rate in Flow.sol
      * @dev This is used to update the rewards for ERC20 curators automatically when the flow rate changes
      */
-    function _afterRewardPoolFlowUpdate(int96) internal virtual override {
+    function _afterRewardPoolFlowUpdate(int96 newFlowRate) internal virtual override {
         address rewardPool = fs.managerRewardPool;
         if (rewardPool == address(0)) revert ADDRESS_ZERO();
 
-        int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate();
+        (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
+            .calculateBufferAmountForRewardPool(rewardPool, address(this), newFlowRate);
+
+        if (shouldTransfer) {
+            fs.superToken.transfer(rewardPool, transferAmount);
+        }
 
         // Call setFlowRate on the child contract
         // only set if buffer required is less than balance of contract
-        if (getManagerRewardPoolBufferAmount() < fs.superToken.balanceOf(rewardPool)) {
-            IRewardPool(rewardPool).setFlowRate(managerRewardPoolFlowRate);
+        if (balanceRequiredToStartFlow <= fs.superToken.balanceOf(rewardPool)) {
+            IRewardPool(rewardPool).setFlowRate(getManagerRewardPoolFlowRate());
         }
     }
 }

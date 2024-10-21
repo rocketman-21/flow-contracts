@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { ERC721FlowTest } from "./ERC721Flow.t.sol";
 import { IFlowEvents, IFlow, IERC721Flow } from "../../src/interfaces/IFlow.sol";
@@ -42,14 +42,18 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
     function testInitializeEventEmission() public {
         // Check for event emission
-        vm.expectEmit(true, true, true, true);
+        vm.expectEmit(true, true, false, false);
         emit IFlowEvents.FlowInitialized(
             manager,
             address(superToken),
             flowImpl,
             manager,
             address(dummyRewardPool),
-            address(0)
+            address(0),
+            address(0),
+            address(0),
+            0,
+            0
         );
 
         // Re-deploy the contract to emit the event
@@ -168,12 +172,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
 
         vm.prank(manager);
         bytes32 recipientId = keccak256(abi.encodePacked(flowManager));
-        (, address newFlowRecipient) = flow.addFlowRecipient(
-            recipientId,
-            metadata,
-            flowManager,
-            address(dummyRewardPool)
-        );
+        (, address newFlowRecipient) = flow.addFlowRecipient(recipientId, metadata, flowManager, address(0));
 
         assertNotEq(newFlowRecipient, address(0));
 
@@ -207,12 +206,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         // Test adding with non-manager address (should revert)
         vm.prank(address(0xdead));
         vm.expectRevert(IFlow.SENDER_NOT_MANAGER.selector);
-        flow.addFlowRecipient(
-            keccak256(abi.encodePacked(flowManager)),
-            metadata,
-            flowManager,
-            address(dummyRewardPool)
-        );
+        flow.addFlowRecipient(keccak256(abi.encodePacked(flowManager)), metadata, flowManager, address(0));
     }
 
     function testSetFlowRateAccessControl() public {
@@ -281,7 +275,7 @@ contract BasicERC721FlowTest is ERC721FlowTest {
         address flowManager = address(0x789);
         vm.prank(manager);
         bytes32 flowRecipientId = keccak256(abi.encodePacked(flowManager));
-        flow.addFlowRecipient(flowRecipientId, metadata, flowManager, address(dummyRewardPool));
+        flow.addFlowRecipient(flowRecipientId, metadata, flowManager, address(0));
         assertEq(flow.activeRecipientCount(), 1, "Active recipient count should be 1 after adding flow recipient");
 
         // Verify total recipient count

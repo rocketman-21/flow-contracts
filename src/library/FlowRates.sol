@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { IFlow } from "../interfaces/IFlow.sol";
+import { IRewardPool } from "../interfaces/IRewardPool.sol";
 
 import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
@@ -46,26 +47,135 @@ library FlowRates {
     /**
      * @notice Sets the flow rate for a child Flow contract
      * @param childAddress The address of the child Flow contract
-     * @param flowAddress The address of the flow contract
+     * @param parentFlowAddress The address of the flow contract
+     * @param desiredFlowRate The desired flow rate for the child contract
+     * @param percentageScale The percentage scale
+     * @return shouldTransfer Indicates if a transfer is needed to meet the buffer requirement
+     * @return transferAmount The amount of tokens required to be transferred
+     * @return requiredBufferAmount The total buffer amount required
      */
-    function calculateBufferAmount(
+    function calculateBufferAmountForChild(
         FlowTypes.Storage storage fs,
         address childAddress,
-        address flowAddress
-    ) public returns (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) {
+        address parentFlowAddress,
+        int96 desiredFlowRate,
+        uint32 percentageScale
+    ) external returns (bool shouldTransfer, uint256 transferAmount, uint256 requiredBufferAmount) {
         if (childAddress == address(0)) revert IFlow.ADDRESS_ZERO();
-        int96 memberFlowRate = getMemberTotalFlowRate(fs, childAddress);
+        int96 newFlowRateStreamingToChild = desiredFlowRate;
 
-        // add 1% buffer to the flow rate to account for some weird rounding errors
-        bufferAmount = (fs.superToken.getBufferAmountByFlowRate(memberFlowRate) * 101) / 100;
-        if (bufferAmount > fs.superToken.balanceOf(childAddress)) {
-            // ensure this contract has enough balance to transfer to the child contract
-            if (bufferAmount < fs.superToken.balanceOf(flowAddress)) {
-                // transfer supertoken to the new flow contract so the flow can be started
-                shouldTransfer = true;
-                transferAmount = bufferAmount - fs.superToken.balanceOf(childAddress);
+        // might be wrong if cached rate is off / stream has been deleted/liquidated?
+        int96 currentFlowRateOutgoingFromChild = IFlow(childAddress).getTotalFlowRate();
+
+        bool isFlowRateIncreasing = (newFlowRateStreamingToChild - currentFlowRateOutgoingFromChild) > 0;
+
+        if (isFlowRateIncreasing) {
+            uint256 additionalBuffer = getAdditionalBufferFromRewardPool(
+                fs,
+                childAddress,
+                desiredFlowRate,
+                percentageScale
+            );
+            uint256 newBuffer = fs.superToken.getBufferAmountByFlowRate(newFlowRateStreamingToChild) + additionalBuffer;
+            uint256 currentBuffer = fs.superToken.getBufferAmountByFlowRate(currentFlowRateOutgoingFromChild);
+            uint256 bufferIncrease = newBuffer - currentBuffer;
+
+            requiredBufferAmount = (bufferIncrease * 105) / 100;
+
+            uint256 balanceOfChild = fs.superToken.balanceOf(childAddress);
+            if (requiredBufferAmount > balanceOfChild) {
+                // careful here, do not use the transfer amount unless shouldTransfer is true
+                transferAmount = requiredBufferAmount - balanceOfChild;
+                // ensure this contract has enough balance to transfer to the child contract
+                if (transferAmount < fs.superToken.balanceOf(parentFlowAddress)) {
+                    // transfer supertoken to the new flow contract so the flow can be started
+                    shouldTransfer = true;
+                }
             }
         }
+    }
+
+    function getAdditionalBufferFromRewardPool(
+        FlowTypes.Storage storage fs,
+        address childAddress,
+        int96 desiredFlowRate,
+        uint32 percentageScale
+    ) public returns (uint256 additionalBuffer) {
+        int96 desiredManagerFlowRate = int96(
+            uint96(
+                _scaleAmountByPercentage(
+                    uint96(desiredFlowRate),
+                    IFlow(childAddress).managerRewardPoolFlowRatePercent(),
+                    percentageScale
+                )
+            )
+        );
+        (, uint256 transferAmountForRewardPool, ) = calculateBufferAmountForRewardPool(
+            fs,
+            IFlow(childAddress).managerRewardPool(),
+            childAddress,
+            desiredManagerFlowRate
+        );
+
+        additionalBuffer = transferAmountForRewardPool;
+    }
+
+    /**
+     * @notice Sets the flow rate for a child Flow contract
+     * @param rewardPoolAddress The address of the reward pool
+     * @param flowAddress The address of the flow contract
+     * @return shouldTransfer Indicates if a transfer is needed to meet the buffer requirement
+     * @return transferAmount The amount of tokens required to be transferred
+     * @return requiredBufferAmount The total buffer amount required
+     */
+    function calculateBufferAmountForRewardPool(
+        FlowTypes.Storage storage fs,
+        address rewardPoolAddress,
+        address flowAddress,
+        int96 desiredFlowRate
+    ) public returns (bool shouldTransfer, uint256 transferAmount, uint256 requiredBufferAmount) {
+        if (rewardPoolAddress == address(0)) return (false, 0, 0);
+
+        int96 newFlowRateStreamingToPool = desiredFlowRate;
+
+        int96 currentFlowRateOutgoingFromPool = IRewardPool(rewardPoolAddress).getTotalFlowRate();
+
+        bool isFlowRateIncreasing = (newFlowRateStreamingToPool - currentFlowRateOutgoingFromPool) > 0;
+
+        // we only need to transfer more buffer tokens if the flow rate is increasing
+        if (isFlowRateIncreasing) {
+            uint256 newBuffer = fs.superToken.getBufferAmountByFlowRate(newFlowRateStreamingToPool);
+            uint256 currentBuffer = fs.superToken.getBufferAmountByFlowRate(currentFlowRateOutgoingFromPool);
+            uint256 bufferIncrease = newBuffer - currentBuffer;
+
+            requiredBufferAmount = (bufferIncrease * 105) / 100;
+
+            uint256 balanceOfRewardPool = fs.superToken.balanceOf(rewardPoolAddress);
+
+            if (requiredBufferAmount > balanceOfRewardPool) {
+                // careful here, do not use the transfer amount unless shouldTransfer is true
+                // set it here for use in the above function
+                transferAmount = requiredBufferAmount - balanceOfRewardPool;
+                // ensure this contract has enough balance to transfer to the child contract
+                if (transferAmount < fs.superToken.balanceOf(flowAddress)) {
+                    // transfer supertoken to the new flow contract so the flow can be started
+                    shouldTransfer = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * @notice Retrieves the current flow rate to the manager reward pool
+     * @param fs The storage of the Flow contract
+     * @param flowAddress The address of the flow contract
+     * @return flowRate The current flow rate to the manager reward pool
+     */
+    function getManagerRewardPoolFlowRate(
+        FlowTypes.Storage storage fs,
+        address flowAddress
+    ) external view returns (int96 flowRate) {
+        flowRate = fs.superToken.getFlowRate(flowAddress, fs.managerRewardPool);
     }
 
     /**
@@ -76,7 +186,7 @@ library FlowRates {
     function getMemberTotalFlowRate(
         FlowTypes.Storage storage fs,
         address memberAddr
-    ) public view returns (int96 flowRate) {
+    ) external view returns (int96 flowRate) {
         flowRate = fs.bonusPool.getMemberFlowRate(memberAddr) + fs.baselinePool.getMemberFlowRate(memberAddr);
     }
 
@@ -89,22 +199,12 @@ library FlowRates {
     function getManagerRewardPoolBufferAmount(
         FlowTypes.Storage storage fs,
         address flowAddress
-    ) public view returns (uint256 bufferAmount) {
-        int96 managerRewardPoolFlowRate = getManagerRewardPoolFlowRate(fs, flowAddress);
+    ) external view returns (uint256 bufferAmount) {
+        int96 managerRewardPoolFlowRate = fs.superToken.getFlowRate(
+            flowAddress,
+            IFlow(flowAddress).managerRewardPool()
+        );
         bufferAmount = fs.superToken.getBufferAmountByFlowRate(managerRewardPoolFlowRate);
-    }
-
-    /**
-     * @notice Retrieves the current flow rate to the manager reward pool
-     * @param fs The storage of the Flow contract
-     * @param flowAddress The address of the flow contract
-     * @return flowRate The current flow rate to the manager reward pool
-     */
-    function getManagerRewardPoolFlowRate(
-        FlowTypes.Storage storage fs,
-        address flowAddress
-    ) public view returns (int96 flowRate) {
-        flowRate = fs.superToken.getFlowRate(flowAddress, fs.managerRewardPool);
     }
 
     /**
@@ -113,7 +213,7 @@ library FlowRates {
      * @param member The address of the member to check the claimable balance for
      * @return claimable The claimable balance from both pools
      */
-    function getClaimableBalance(FlowTypes.Storage storage fs, address member) public view returns (uint256) {
+    function getClaimableBalance(FlowTypes.Storage storage fs, address member) external view returns (uint256) {
         (int256 baselineClaimable, ) = fs.baselinePool.getClaimableNow(member);
         (int256 bonusClaimable, ) = fs.bonusPool.getClaimableNow(member);
 
@@ -129,7 +229,7 @@ library FlowRates {
     function getTotalMemberUnits(
         FlowTypes.Storage storage fs,
         address memberAddr
-    ) public view returns (uint256 totalUnits) {
+    ) external view returns (uint256 totalUnits) {
         totalUnits = fs.bonusPool.getUnits(memberAddr) + fs.baselinePool.getUnits(memberAddr);
     }
 
@@ -143,7 +243,7 @@ library FlowRates {
         uint256 amount,
         uint256 scaledPercent,
         uint256 percentageScale
-    ) public returns (uint256 scaledAmount) {
+    ) public pure returns (uint256 scaledAmount) {
         // use assembly to bypass checking for overflow & division by 0
         // scaledPercent has been validated to be < PERCENTAGE_SCALE)
         // & PERCENTAGE_SCALE will never be 0

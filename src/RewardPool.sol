@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperToken.sol";
 import { ISuperfluidPool } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/gdav1/ISuperfluidPool.sol";
@@ -67,6 +67,18 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     }
 
     /**
+     * @notice Allows the admin to update member units of pool recipients
+     * @dev Member units represent the share of each recipient in the pool
+     * @param _member The address of the pool recipient
+     * @param _units The new member units to assign to the recipient
+     * @dev Ensure _member is not address(0)
+     */
+    function updateMemberUnits(address _member, uint128 _units) public onlyManagerOrOwner nonReentrant {
+        bool success = superToken.updateMemberUnits(rewardPool, _member, _units);
+        if (!success) revert UNITS_UPDATE_FAILED();
+    }
+
+    /**
      * @notice Allows the admin or owner to update the flow rate of the pool
      * @dev The flow rate controls the distribution rate of tokens in the pool
      * @param _flowRate The new flow rate to be set
@@ -76,19 +88,13 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
 
         cachedFlowRate = _flowRate;
 
-        superToken.distributeFlow(address(this), rewardPool, _flowRate);
-    }
+        // if total member units are 0, ensure there is at least 1 unit in the pool to prevent flow rate from resetting to 0
+        if (rewardPool.getTotalUnits() == 0) {
+            bool success = superToken.updateMemberUnits(rewardPool, address(this), 1);
+            if (!success) revert UNITS_UPDATE_FAILED();
+        }
 
-    /**
-     * @notice Allows the admin to update member units of pool recipients
-     * @dev Member units represent the share of each recipient in the pool
-     * @param _member The address of the pool recipient
-     * @param _units The new member units to assign to the recipient
-     * @dev Ensure _member is not address(0)
-     */
-    function updateMemberUnits(address _member, uint128 _units) external onlyManagerOrOwner nonReentrant {
-        bool success = superToken.updateMemberUnits(rewardPool, _member, _units);
-        if (!success) revert UNITS_UPDATE_FAILED();
+        superToken.distributeFlow(address(this), rewardPool, _flowRate);
     }
 
     /**

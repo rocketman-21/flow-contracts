@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowTypes } from "../storage/FlowStorageV1.sol";
 import { IManagedFlow } from "./IManagedFlow.sol";
@@ -26,6 +26,14 @@ interface IFlowEvents {
     );
 
     /**
+     * @dev Emitted when a vote is removed for a grant application.
+     * @param recipientId Id of the recipient of the grant.
+     * @param tokenId TokenId owned by the voter.
+     * @param memberUnits New member units as a result of the vote removal.
+     */
+    event VoteRemoved(bytes32 indexed recipientId, uint256 indexed tokenId, uint256 memberUnits);
+
+    /**
      * @dev Emitted when the manager reward flow rate percentage is updated
      * @param oldManagerRewardFlowRatePercent The old manager reward flow rate percentage
      * @param newManagerRewardFlowRatePercent The new manager reward flow rate percentage
@@ -36,7 +44,14 @@ interface IFlowEvents {
     );
 
     /// @notice Emitted when a new child flow recipient is created
-    event FlowRecipientCreated(bytes32 indexed recipientId, address indexed recipient);
+    event FlowRecipientCreated(
+        bytes32 indexed recipientId,
+        address indexed recipient,
+        address baselinePool,
+        address bonusPool,
+        uint32 managerRewardPoolFlowRatePercent,
+        uint32 baselinePoolFlowRatePercent
+    );
 
     /// @notice Emitted when the metadata is set
     event MetadataSet(FlowTypes.RecipientMetadata metadata);
@@ -48,7 +63,11 @@ interface IFlowEvents {
         address indexed flowImpl,
         address manager,
         address managerRewardPool,
-        address parent
+        address parent,
+        address baselinePool,
+        address bonusPool,
+        uint32 baselinePoolFlowRatePercent,
+        uint32 managerRewardPoolFlowRatePercent
     );
 
     /// @notice Emitted when the manager reward pool is updated
@@ -212,6 +231,12 @@ interface IFlow is IFlowEvents, IManagedFlow {
      * @dev Should emit a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) external;
+
+    /**
+     * @notice Gets the flow rate for the Superfluid pool
+     * @return The flow rate for the Superfluid pool
+     */
+    function getTotalFlowRate() external view returns (int96);
 
     /**
      * @notice Sets the manager reward pool for the flow contract

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.27;
+pragma solidity ^0.8.28;
 
 import { FlowStorageV1 } from "./storage/FlowStorageV1.sol";
 import { IFlow } from "./interfaces/IFlow.sol";
+import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowRecipients } from "./library/FlowRecipients.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
 import { FlowRates } from "./library/FlowRates.sol";
@@ -63,16 +64,18 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         _transferOwnership(_initialOwner);
 
-        // if total member units is 0, set 1 member unit to this contract
-        // do this to prevent distribution pool from resetting flow rate to 0
-        if (fs.bonusPool.getTotalUnits() == 0) {
-            _updateBonusMemberUnits(address(this), 1);
-        }
-        if (fs.baselinePool.getTotalUnits() == 0) {
-            _updateBaselineMemberUnits(address(this), 1);
-        }
-
-        emit FlowInitialized(msg.sender, _superToken, _flowImpl, _manager, _managerRewardPool, _parent);
+        emit FlowInitialized(
+            msg.sender,
+            _superToken,
+            _flowImpl,
+            _manager,
+            _managerRewardPool,
+            _parent,
+            address(fs.baselinePool),
+            address(fs.bonusPool),
+            fs.baselinePoolFlowRatePercent,
+            fs.managerRewardPoolFlowRatePercent
+        );
     }
 
     /**
@@ -127,6 +130,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             uint128 unitsDelta = allocations[i].memberUnits;
             RecipientType recipientType = fs.recipients[recipientId].recipientType;
 
+            emit VoteRemoved(recipientId, tokenId, currentUnits - unitsDelta);
+
             // Calculate the new units by subtracting the delta from the current units
             // Update the member units in the pool
             _updateBonusMemberUnits(recipientAddress, currentUnits - unitsDelta);
@@ -167,7 +172,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         if (voter == address(0)) revert ADDRESS_ZERO();
 
         // if there was a voter set for this tokenId, set hasTokenVotedBefore to true
-        if (fs.voters[tokenId] != address(0)) {
+        if (fs.votes[tokenId].length > 0) {
             hasTokenVotedBefore = true;
         }
 
@@ -222,7 +227,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
         _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
-        _updateBonusMemberUnits(recipientAddress, 1); // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipientAddress, 10); // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
 
         return (_recipientId, recipientAddress);
     }
@@ -245,20 +250,28 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         address _flowManager,
         address _managerRewardPool
     ) external onlyManager returns (bytes32, address) {
-        FlowRecipients.validateFlowRecipient(_metadata, _flowManager, _managerRewardPool);
+        FlowRecipients.validateFlowRecipient(_metadata, _flowManager);
 
         address recipient = _deployFlowRecipient(_metadata, _flowManager, _managerRewardPool);
-
-        _connectAndInitializeFlowRecipient(recipient);
 
         fs.addFlowRecipient(_recipientId, recipient, _metadata);
         _childFlows.add(recipient);
 
+        emit FlowRecipientCreated(
+            _recipientId,
+            recipient,
+            address(IFlow(recipient).baselinePool()),
+            address(IFlow(recipient).bonusPool()),
+            IFlow(recipient).managerRewardPoolFlowRatePercent(),
+            IFlow(recipient).baselinePoolFlowRatePercent()
+        );
+        emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
+
+        // do this after so member units based ingestion can work (need to connect tcr item to recipient before handling member units)
+        _connectAndInitializeFlowRecipient(recipient);
+
         // need to do this here because we just added new member units
         _setAllChildFlowRates();
-
-        emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
-        emit FlowRecipientCreated(_recipientId, recipient);
 
         return (_recipientId, recipient);
     }
@@ -301,8 +314,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // Initialize member units
         _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
-        // 1 unit for each recipient in case there are no votes yet, everyone will split the bonus salary
-        _updateBonusMemberUnits(recipient, 1);
+        // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipient, 10);
     }
 
     /**
@@ -366,10 +379,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childAddress The address of the child Flow contract
      */
     function _setChildFlowRate(address childAddress) internal {
-        (bool shouldTransfer, uint256 transferAmount, uint256 bufferAmount) = fs.calculateBufferAmount(
-            childAddress,
-            address(this)
-        );
+        int96 desiredFlowRate = getMemberTotalFlowRate(childAddress);
+        (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
+            .calculateBufferAmountForChild(childAddress, address(this), desiredFlowRate, PERCENTAGE_SCALE);
 
         if (shouldTransfer) {
             fs.superToken.transfer(childAddress, transferAmount);
@@ -377,8 +389,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // Call setFlowRate on the child contract
         // only set if balance of contract is greater than buffer required
-        if (bufferAmount <= fs.superToken.balanceOf(childAddress)) {
-            IFlow(childAddress).setFlowRate(getMemberTotalFlowRate(childAddress));
+        if (balanceRequiredToStartFlow <= fs.superToken.balanceOf(childAddress)) {
+            IFlow(childAddress).setFlowRate(desiredFlowRate);
         }
     }
 
@@ -482,6 +494,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param _newManagerRewardFlowRate The new flow rate to the manager reward pool
      */
     function _setFlowToManagerRewardPool(int96 _newManagerRewardFlowRate) internal {
+        // some flows initially don't have a manager reward pool, so we don't need to set a flow to it
+        if (fs.managerRewardPool == address(0)) return;
+
         int96 rewardPoolFlowRate = getManagerRewardPoolFlowRate();
 
         if (_newManagerRewardFlowRate > 0) {
@@ -505,6 +520,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function _setFlowRate(int96 _flowRate) internal {
+        // if total member units is 0, set 1 member unit to this contract
+        // do this to prevent distribution pool from resetting flow rate to 0
+        if (fs.bonusPool.getTotalUnits() == 0) {
+            _updateBonusMemberUnits(address(this), 1);
+        }
+        if (fs.baselinePool.getTotalUnits() == 0) {
+            _updateBaselineMemberUnits(address(this), 1);
+        }
+
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
         int96 oldTotalFlowRate = getTotalFlowRate();
 
