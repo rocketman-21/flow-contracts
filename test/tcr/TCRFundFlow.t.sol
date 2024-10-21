@@ -8,7 +8,12 @@ import { IArbitrable } from "../../src/tcr/interfaces/IArbitrable.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 import { IGeneralizedTCR } from "../../src/tcr/interfaces/IGeneralizedTCR.sol";
+import { IERC721Flow } from "../../src/interfaces/IFlow.sol";
 import { RewardPool } from "../../src/RewardPool.sol";
+import { IFlow } from "../../src/interfaces/IFlow.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+
 contract TCRFundFlowTest is FlowTCRTest {
     // Helper function to get ERC20 balance of a contract or address
     function getERC20Balance(address _token, address _account) internal view returns (uint256) {

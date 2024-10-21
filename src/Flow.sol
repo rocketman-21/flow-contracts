@@ -379,8 +379,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childAddress The address of the child Flow contract
      */
     function _setChildFlowRate(address childAddress) internal {
+        int96 desiredFlowRate = getMemberTotalFlowRate(childAddress);
         (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
-            .calculateBufferAmountForChild(childAddress, address(this));
+            .calculateBufferAmountForChild(childAddress, address(this), desiredFlowRate, PERCENTAGE_SCALE);
 
         if (shouldTransfer) {
             fs.superToken.transfer(childAddress, transferAmount);
@@ -389,7 +390,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // Call setFlowRate on the child contract
         // only set if balance of contract is greater than buffer required
         if (balanceRequiredToStartFlow <= fs.superToken.balanceOf(childAddress)) {
-            IFlow(childAddress).setFlowRate(getMemberTotalFlowRate(childAddress));
+            IFlow(childAddress).setFlowRate(desiredFlowRate);
         }
     }
 

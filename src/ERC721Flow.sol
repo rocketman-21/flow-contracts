@@ -130,12 +130,12 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @notice Function to be called after updating the reward pool flow rate in Flow.sol
      * @dev This is used to update the rewards for ERC20 curators automatically when the flow rate changes
      */
-    function _afterRewardPoolFlowUpdate(int96) internal virtual override {
+    function _afterRewardPoolFlowUpdate(int96 newFlowRate) internal virtual override {
         address rewardPool = fs.managerRewardPool;
         if (rewardPool == address(0)) revert ADDRESS_ZERO();
 
         (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
-            .calculateBufferAmountForRewardPool(rewardPool, address(this));
+            .calculateBufferAmountForRewardPool(rewardPool, address(this), newFlowRate);
 
         if (shouldTransfer) {
             fs.superToken.transfer(rewardPool, transferAmount);

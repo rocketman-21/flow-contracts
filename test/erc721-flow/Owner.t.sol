@@ -80,8 +80,8 @@ contract OwnerFlowTest is ERC721FlowTest {
 
     function testUpdateFlowRateAndManagerRewardPercentage() public {
         uint32 initialManagerRewardPercent = flow.managerRewardPoolFlowRatePercent();
-        vm.prank(manager);
-        ERC721Flow(flow).setManagerRewardFlowRatePercent(initialManagerRewardPercent);
+        // vm.prank(manager);
+        // ERC721Flow(flow).setManagerRewardFlowRatePercent(initialManagerRewardPercent);
 
         // Update flow rate and manager reward percentage
         int96 newFlowRate = ERC721Flow(flow).getTotalFlowRate();

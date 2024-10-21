@@ -202,7 +202,7 @@ contract NounsFlow is INounsFlow, Flow {
         if (rewardPool == address(0)) revert ADDRESS_ZERO();
 
         (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
-            .calculateBufferAmountForRewardPool(rewardPool, address(this));
+            .calculateBufferAmountForRewardPool(rewardPool, address(this), newFlowRate);
 
         if (shouldTransfer) {
             fs.superToken.transfer(rewardPool, transferAmount);
