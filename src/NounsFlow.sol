@@ -63,7 +63,7 @@ contract NounsFlow is INounsFlow, Flow {
         bytes[][][] calldata ownershipStorageProofs,
         bytes[][] calldata delegateStorageProofs
     ) external nonReentrant {
-        fs.validateVotes(recipientIds, percentAllocations);
+        fs.validateVotes(recipientIds, percentAllocations, PERCENTAGE_SCALE);
 
         // if the timestamp is more than 5 minutes old, it is invalid
         if (baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
