@@ -90,7 +90,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _vote(bytes32 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight, address voter) internal {
         // calculate new member units for recipient and create vote
-        (uint128 memberUnits, address recipientAddress, RecipientType recipientType) = fs.createVote(
+        (uint128 memberUnits, address recipientAddress, ) = fs.createVote(
             recipientId,
             bps,
             tokenId,
@@ -210,7 +210,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
         _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
-        _updateBonusMemberUnits(recipientAddress, 10); // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipientAddress, 10);
 
         return (_recipientId, recipientAddress);
     }
@@ -250,7 +251,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         );
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
-        // do this after so member units based ingestion can work (need to connect tcr item to recipient before handling member units)
+        // do this after so member units based indexer can work
+        // for indexer, need to connect tcr item in database to recipient BEFORE handling member units
         _connectAndInitializeFlowRecipient(recipient);
 
         // need to do this here because we just added new member units
