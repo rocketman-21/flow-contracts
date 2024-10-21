@@ -82,7 +82,7 @@ contract NounsFlow is INounsFlow, Flow {
             if (hasNewVotesForOwner) hasNewVotes = true;
         }
 
-        _afterVotesCast(hasNewVotes);
+        _afterVotesCast(hasNewVotes, recipientIds);
     }
 
     /**

@@ -103,9 +103,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _updateBonusMemberUnits(recipientAddress, memberUnits);
 
         // if recipient is a flow contract, set the flow rate for the child contract
-        if (recipientType == RecipientType.FlowContract) {
-            _setChildFlowRate(recipientAddress);
-        }
+        // note - we now do this post-voting to avoid redundant setFlowRate calls on children
+        // in _afterVotesCast
 
         emit VoteCast(recipientId, tokenId, memberUnits, bps, totalWeight);
     }
@@ -141,9 +140,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
             // after updating member units, set the flow rate for the child contract
             // if recipient is a flow contract, set the flow rate for the child contract
-            if (recipientType == RecipientType.FlowContract) {
-                _setChildFlowRate(recipientAddress);
-            }
+            // note - we now do this post-voting to avoid redundant setFlowRate calls on children
+            // in _afterVotesCast
         }
 
         // Clear out the votes for the tokenId
@@ -285,7 +283,17 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // warning - values() copies entire array into memory, could run out of gas for huge arrays
         // must keep child flows below ~500 per o1 estimates
         address[] memory childFlows = _childFlows.values();
+        setChildFlowRates(childFlows);
+    }
+
+    /**
+     * @notice Sets the flow rate for a specific child Flow contract
+     * @param childFlows The addresses of the child Flow contracts
+     * @dev This function is public to allow external calls, but it's protected by the onlyManager modifier
+     */
+    function setChildFlowRates(address[] memory childFlows) public {
         for (uint256 i = 0; i < childFlows.length; i++) {
+            if (!_childFlows.contains(childFlows[i])) revert NOT_A_VALID_CHILD_FLOW();
             _setChildFlowRate(childFlows[i]);
         }
     }
@@ -293,13 +301,21 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     /**
      * @notice Internal function to be called after votes are cast
      * @param hasNewVotes - true if there are new votes (new member units being added), false otherwise
+     * @param recipientIds - the recipientIds that were voted for
      * Useful for saving gas when there are no new votes. If there are new member units being added however,
      * we want to update all child flow rates to ensure that the correct flow rates are set
      */
-    function _afterVotesCast(bool hasNewVotes) internal {
+    function _afterVotesCast(bool hasNewVotes, bytes32[] memory recipientIds) internal {
         if (hasNewVotes) {
             // need to do this here because we just added new member units
             _setAllChildFlowRates();
+        }
+
+        // set the flow rate for the child contracts that were voted for
+        for (uint256 i = 0; i < recipientIds.length; i++) {
+            address recipientAddress = fs.recipients[recipientIds[i]].recipient;
+            if (!_childFlows.contains(recipientAddress)) continue;
+            _setChildFlowRate(recipientAddress);
         }
     }
 

@@ -73,7 +73,7 @@ contract ERC721Flow is IERC721Flow, Flow {
             if (!hasTokenVotedBefore) hasNewVotes = true;
         }
 
-        _afterVotesCast(hasNewVotes);
+        _afterVotesCast(hasNewVotes, recipientIds);
     }
 
     /**
