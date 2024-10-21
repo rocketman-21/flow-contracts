@@ -172,7 +172,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         if (voter == address(0)) revert ADDRESS_ZERO();
 
         // if there was a voter set for this tokenId, set hasTokenVotedBefore to true
-        if (fs.voters[tokenId] != address(0)) {
+        if (fs.votes[tokenId].length > 0) {
             hasTokenVotedBefore = true;
         }
 
