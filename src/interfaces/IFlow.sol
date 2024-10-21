@@ -43,6 +43,9 @@ interface IFlowEvents {
         uint32 newManagerRewardFlowRatePercent
     );
 
+    /// @notice Emitted when the child flow rate updates must be done by a worker
+    event ChildFlowRatesToUpdate(address[] childFlows);
+
     /// @notice Emitted when a new child flow recipient is created
     event FlowRecipientCreated(
         bytes32 indexed recipientId,

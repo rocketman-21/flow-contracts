@@ -255,8 +255,11 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // for indexer, need to connect tcr item in database to recipient BEFORE handling member units
         _connectAndInitializeFlowRecipient(recipient);
 
+        // set the flow rate for the child contract
+        _setChildFlowRate(recipient);
+
         // need to do this here because we just added new member units
-        _setAllChildFlowRates();
+        _setCappedChildFlowRates();
 
         return (_recipientId, recipient);
     }
@@ -264,13 +267,29 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     /**
      * @notice Sets all the child flow rates
      * @dev Called when total member units change (new flow added, flow removed, new vote added)
+     * @dev This function will run out of gas eventually, so we cap it at 10
+     * and expect a worker to call setChildFlowRates with the remaining child flows
      */
-    function _setAllChildFlowRates() internal {
-        // update child flows
+    function _setCappedChildFlowRates() internal {
+        uint256 cap = 10;
+
         // warning - values() copies entire array into memory, could run out of gas for huge arrays
         // must keep child flows below ~500 per o1 estimates
         address[] memory childFlows = _childFlows.values();
-        setChildFlowRates(childFlows);
+        address[] memory childrenToUpdateInWorker = new address[](
+            cap > _childFlows.length() ? 0 : _childFlows.length() - cap
+        );
+        for (uint256 i = 0; i < childFlows.length; i++) {
+            if (i < cap) {
+                _setChildFlowRate(childFlows[i]);
+            } else {
+                childrenToUpdateInWorker[i - cap] = childFlows[i];
+            }
+        }
+
+        if (childrenToUpdateInWorker.length > 0) {
+            emit ChildFlowRatesToUpdate(childrenToUpdateInWorker);
+        }
     }
 
     /**
@@ -278,9 +297,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childFlows The addresses of the child Flow contracts
      * @dev This function is public to allow external calls, but it's protected by the onlyManager modifier
      */
-    function setChildFlowRates(address[] memory childFlows) public nonReentrant {
+    function setChildFlowRates(address[] memory childFlows) external nonReentrant {
         for (uint256 i = 0; i < childFlows.length; i++) {
-            if (!_childFlows.contains(childFlows[i])) revert NOT_A_VALID_CHILD_FLOW();
             _setChildFlowRate(childFlows[i]);
         }
     }
@@ -377,6 +395,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childAddress The address of the child Flow contract
      */
     function _setChildFlowRate(address childAddress) internal {
+        if (!_childFlows.contains(childAddress)) revert NOT_A_VALID_CHILD_FLOW();
+
         int96 desiredFlowRate = getMemberTotalFlowRate(childAddress);
         (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
             .calculateBufferAmountForChild(childAddress, address(this), desiredFlowRate, PERCENTAGE_SCALE);
@@ -543,7 +563,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
 
         // changing flow rate means we need to update all child flow rates
-        _setAllChildFlowRates();
+        _setCappedChildFlowRates();
     }
 
     /**
