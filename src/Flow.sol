@@ -397,9 +397,13 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     function _setChildFlowRate(address childAddress) internal {
         if (!_childFlows.contains(childAddress)) revert NOT_A_VALID_CHILD_FLOW();
 
-        int96 desiredFlowRate = getMemberTotalFlowRate(childAddress);
         (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
-            .calculateBufferAmountForChild(childAddress, address(this), desiredFlowRate, PERCENTAGE_SCALE);
+            .calculateBufferAmountForChild(
+                childAddress,
+                address(this),
+                getMemberTotalFlowRate(childAddress),
+                PERCENTAGE_SCALE
+            );
 
         if (shouldTransfer) {
             fs.superToken.transfer(childAddress, transferAmount);
@@ -408,7 +412,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // Call setFlowRate on the child contract
         // only set if balance of contract is greater than buffer required
         if (balanceRequiredToStartFlow <= fs.superToken.balanceOf(childAddress)) {
-            IFlow(childAddress).setFlowRate(desiredFlowRate);
+            IFlow(childAddress).setFlowRate(getMemberTotalFlowRate(childAddress));
         }
     }
 
@@ -789,14 +793,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function getManagerRewardPoolFlowRate() public view returns (int96) {
         return fs.getManagerRewardPoolFlowRate(address(this));
-    }
-
-    /**
-     * @notice Retrieves the buffer amount required for the manager reward pool
-     * @return bufferAmount The buffer amount required for the manager reward pool
-     */
-    function getManagerRewardPoolBufferAmount() public view returns (uint256) {
-        return fs.getManagerRewardPoolBufferAmount(address(this));
     }
 
     /**

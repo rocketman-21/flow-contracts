@@ -191,23 +191,6 @@ library FlowRates {
     }
 
     /**
-     * @notice Retrieves the buffer amount required for the manager reward pool
-     * @param fs The storage of the Flow contract
-     * @param flowAddress The address of the flow contract
-     * @return bufferAmount The buffer amount required for the manager reward pool
-     */
-    function getManagerRewardPoolBufferAmount(
-        FlowTypes.Storage storage fs,
-        address flowAddress
-    ) external view returns (uint256 bufferAmount) {
-        int96 managerRewardPoolFlowRate = fs.superToken.getFlowRate(
-            flowAddress,
-            IFlow(flowAddress).managerRewardPool()
-        );
-        bufferAmount = fs.superToken.getBufferAmountByFlowRate(managerRewardPoolFlowRate);
-    }
-
-    /**
      * @notice Retrieves the claimable balance from both pools for a member address
      * @param fs The storage of the Flow contract
      * @param member The address of the member to check the claimable balance for
