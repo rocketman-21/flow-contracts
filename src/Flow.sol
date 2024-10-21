@@ -153,14 +153,13 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param tokenId The tokenId owned by the voter.
      * @param recipientIds The recipientIds of the grant recipients to vote for.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
-     * @return hasTokenVotedBefore - true if the tokenId has voted before, false otherwise
      */
     function _setVotesAllocationForTokenId(
         uint256 tokenId,
         bytes32[] memory recipientIds,
         uint32[] memory percentAllocations,
         address voter
-    ) internal returns (bool hasTokenVotedBefore) {
+    ) internal {
         uint256 sum = 0;
         // overflow should be impossible in for-loop index
         for (uint256 i = 0; i < percentAllocations.length; i++) {
@@ -168,11 +167,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         }
         if (sum != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
         if (voter == address(0)) revert ADDRESS_ZERO();
-
-        // if there was a voter set for this tokenId, set hasTokenVotedBefore to true
-        if (fs.votes[tokenId].length > 0) {
-            hasTokenVotedBefore = true;
-        }
 
         // update member units for previous votes
         _clearPreviousVotes(tokenId);
@@ -300,17 +294,11 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
     /**
      * @notice Internal function to be called after votes are cast
-     * @param hasNewVotes - true if there are new votes (new member units being added), false otherwise
      * @param recipientIds - the recipientIds that were voted for
      * Useful for saving gas when there are no new votes. If there are new member units being added however,
      * we want to update all child flow rates to ensure that the correct flow rates are set
      */
-    function _afterVotesCast(bool hasNewVotes, bytes32[] memory recipientIds) internal {
-        if (hasNewVotes) {
-            // need to do this here because we just added new member units
-            _setAllChildFlowRates();
-        }
-
+    function _afterVotesCast(bytes32[] memory recipientIds) internal {
         // set the flow rate for the child contracts that were voted for
         for (uint256 i = 0; i < recipientIds.length; i++) {
             bytes32 recipientId = recipientIds[i];

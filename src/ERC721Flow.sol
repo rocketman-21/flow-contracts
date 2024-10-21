@@ -60,20 +60,12 @@ contract ERC721Flow is IERC721Flow, Flow {
     ) external nonReentrant {
         fs.validateVotes(recipientIds, percentAllocations);
 
-        bool hasNewVotes = false;
-
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
-            bool hasTokenVotedBefore = _setVotesAllocationForTokenId(
-                tokenIds[i],
-                recipientIds,
-                percentAllocations,
-                msg.sender
-            );
-            if (!hasTokenVotedBefore) hasNewVotes = true;
+            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
         }
 
-        _afterVotesCast(hasNewVotes, recipientIds);
+        _afterVotesCast(recipientIds);
     }
 
     /**
