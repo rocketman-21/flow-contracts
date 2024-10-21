@@ -313,8 +313,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // set the flow rate for the child contracts that were voted for
         for (uint256 i = 0; i < recipientIds.length; i++) {
-            address recipientAddress = fs.recipients[recipientIds[i]].recipient;
-            if (!_childFlows.contains(recipientAddress)) continue;
+            bytes32 recipientId = recipientIds[i];
+            address recipientAddress = fs.recipients[recipientId].recipient;
+            if (!_childFlows.contains(recipientAddress) || fs.recipients[recipientId].removed) continue;
             _setChildFlowRate(recipientAddress);
         }
     }
