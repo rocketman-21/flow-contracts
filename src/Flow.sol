@@ -278,7 +278,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childFlows The addresses of the child Flow contracts
      * @dev This function is public to allow external calls, but it's protected by the onlyManager modifier
      */
-    function setChildFlowRates(address[] memory childFlows) public {
+    function setChildFlowRates(address[] memory childFlows) public nonReentrant {
         for (uint256 i = 0; i < childFlows.length; i++) {
             if (!_childFlows.contains(childFlows[i])) revert NOT_A_VALID_CHILD_FLOW();
             _setChildFlowRate(childFlows[i]);
