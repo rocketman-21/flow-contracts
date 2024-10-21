@@ -647,14 +647,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Retrieves all child Flow contracts
-     * @return childFlows An array of addresses representing all child Flow contracts
-     */
-    function getAllChildFlows() external view returns (address[] memory) {
-        return _childFlows.values();
-    }
-
-    /**
      * @notice Retrieves all vote allocations for multiple ERC721 tokenIds
      * @param tokenIds An array of tokenIds to retrieve votes for
      * @return allocations An array of arrays, where each inner array contains VoteAllocation structs for a tokenId
