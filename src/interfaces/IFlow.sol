@@ -107,6 +107,9 @@ interface IFlow is IFlowEvents, IManagedFlow {
     ///                           ERRORS                         ///
     ///                                                          ///
 
+    /// @dev Reverts if the provided address is not a valid child flow
+    error NOT_A_VALID_CHILD_FLOW();
+
     /// @dev Reverts if the lengths of the provided arrays do not match.
     error ARRAY_LENGTH_MISMATCH();
 

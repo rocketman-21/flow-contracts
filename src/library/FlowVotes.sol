@@ -41,7 +41,8 @@ library FlowVotes {
     function validateVotes(
         FlowTypes.Storage storage fs,
         bytes32[] memory recipientIds,
-        uint32[] memory percentAllocations
+        uint32[] memory percentAllocations,
+        uint32 percentageScale
     ) public view {
         // must have recipientIds
         if (recipientIds.length < 1) {
@@ -53,13 +54,18 @@ library FlowVotes {
             revert IFlow.RECIPIENTS_ALLOCATIONS_MISMATCH(recipientIds.length, percentAllocations.length);
         }
 
+        uint256 sum = 0;
+
         // ensure recipients are not 0 address and allocations are > 0
         for (uint256 i = 0; i < recipientIds.length; i++) {
             bytes32 recipientId = recipientIds[i];
             if (fs.recipients[recipientId].recipient == address(0)) revert IFlow.INVALID_RECIPIENT_ID();
             if (fs.recipients[recipientId].removed == true) revert IFlow.NOT_APPROVED_RECIPIENT();
             if (percentAllocations[i] == 0) revert IFlow.ALLOCATION_MUST_BE_POSITIVE();
+            sum += percentAllocations[i];
         }
+
+        if (sum != percentageScale) revert IFlow.INVALID_BPS_SUM();
     }
 
     /**

@@ -63,15 +63,13 @@ contract NounsFlow is INounsFlow, Flow {
         bytes[][][] calldata ownershipStorageProofs,
         bytes[][] calldata delegateStorageProofs
     ) external nonReentrant {
-        fs.validateVotes(recipientIds, percentAllocations);
-
-        bool hasNewVotes = false;
+        fs.validateVotes(recipientIds, percentAllocations, PERCENTAGE_SCALE);
 
         // if the timestamp is more than 5 minutes old, it is invalid
         if (baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
 
         for (uint256 i = 0; i < owners.length; i++) {
-            bool hasNewVotesForOwner = _castVotesForOwner(
+            _castVotesForOwner(
                 owners[i],
                 tokenIds[i],
                 recipientIds,
@@ -79,10 +77,9 @@ contract NounsFlow is INounsFlow, Flow {
                 _generateOwnershipProofs(baseProofParams, ownershipStorageProofs[i]),
                 _generateStateProofParams(baseProofParams, delegateStorageProofs[i])
             );
-            if (hasNewVotesForOwner) hasNewVotes = true;
         }
 
-        _afterVotesCast(hasNewVotes);
+        _afterVotesCast(recipientIds);
     }
 
     /**
@@ -144,17 +141,12 @@ contract NounsFlow is INounsFlow, Flow {
         uint32[] calldata percentAllocations,
         IStateProof.Parameters[] memory ownershipProofs,
         IStateProof.Parameters memory delegateProof
-    ) internal returns (bool hasNewVotes) {
+    ) internal {
         for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof))
+            if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof)) {
                 revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
-            bool tokenVotedBefore = _setVotesAllocationForTokenId(
-                tokenIds[i],
-                recipientIds,
-                percentAllocations,
-                msg.sender
-            );
-            if (!tokenVotedBefore) hasNewVotes = true;
+            }
+            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
         }
     }
 

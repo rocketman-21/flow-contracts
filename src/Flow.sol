@@ -90,7 +90,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _vote(bytes32 recipientId, uint32 bps, uint256 tokenId, uint256 totalWeight, address voter) internal {
         // calculate new member units for recipient and create vote
-        (uint128 memberUnits, address recipientAddress, RecipientType recipientType) = fs.createVote(
+        (uint128 memberUnits, address recipientAddress, ) = fs.createVote(
             recipientId,
             bps,
             tokenId,
@@ -103,9 +103,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _updateBonusMemberUnits(recipientAddress, memberUnits);
 
         // if recipient is a flow contract, set the flow rate for the child contract
-        if (recipientType == RecipientType.FlowContract) {
-            _setChildFlowRate(recipientAddress);
-        }
+        // note - we now do this post-voting to avoid redundant setFlowRate calls on children
+        // in _afterVotesCast
 
         emit VoteCast(recipientId, tokenId, memberUnits, bps, totalWeight);
     }
@@ -126,24 +125,22 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             if (fs.recipients[recipientId].removed) continue;
 
             address recipientAddress = fs.recipients[recipientId].recipient;
-            uint128 currentUnits = fs.bonusPool.getUnits(recipientAddress);
-            uint128 unitsDelta = allocations[i].memberUnits;
-            RecipientType recipientType = fs.recipients[recipientId].recipientType;
-
-            emit VoteRemoved(recipientId, tokenId, currentUnits - unitsDelta);
 
             // Calculate the new units by subtracting the delta from the current units
+            uint128 newUnits = fs.bonusPool.getUnits(recipientAddress) - allocations[i].memberUnits;
+
+            emit VoteRemoved(recipientId, tokenId, newUnits);
+
             // Update the member units in the pool
-            _updateBonusMemberUnits(recipientAddress, currentUnits - unitsDelta);
+            _updateBonusMemberUnits(recipientAddress, newUnits);
 
             /// @notice - Does not update member units for baseline pool
             /// voting is only for the bonus pool, to ensure all approved recipients get a baseline salary
 
             // after updating member units, set the flow rate for the child contract
             // if recipient is a flow contract, set the flow rate for the child contract
-            if (recipientType == RecipientType.FlowContract) {
-                _setChildFlowRate(recipientAddress);
-            }
+            // note - we now do this post-voting to avoid redundant setFlowRate calls on children
+            // in _afterVotesCast
         }
 
         // Clear out the votes for the tokenId
@@ -155,27 +152,13 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param tokenId The tokenId owned by the voter.
      * @param recipientIds The recipientIds of the grant recipients to vote for.
      * @param percentAllocations The basis points of the vote to be split with the recipients.
-     * @return hasTokenVotedBefore - true if the tokenId has voted before, false otherwise
      */
     function _setVotesAllocationForTokenId(
         uint256 tokenId,
         bytes32[] memory recipientIds,
         uint32[] memory percentAllocations,
         address voter
-    ) internal returns (bool hasTokenVotedBefore) {
-        uint256 sum = 0;
-        // overflow should be impossible in for-loop index
-        for (uint256 i = 0; i < percentAllocations.length; i++) {
-            sum += percentAllocations[i];
-        }
-        if (sum != PERCENTAGE_SCALE) revert INVALID_BPS_SUM();
-        if (voter == address(0)) revert ADDRESS_ZERO();
-
-        // if there was a voter set for this tokenId, set hasTokenVotedBefore to true
-        if (fs.votes[tokenId].length > 0) {
-            hasTokenVotedBefore = true;
-        }
-
+    ) internal {
         // update member units for previous votes
         _clearPreviousVotes(tokenId);
 
@@ -227,7 +210,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
         _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
-        _updateBonusMemberUnits(recipientAddress, 10); // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        _updateBonusMemberUnits(recipientAddress, 10);
 
         return (_recipientId, recipientAddress);
     }
@@ -267,7 +251,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         );
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
-        // do this after so member units based ingestion can work (need to connect tcr item to recipient before handling member units)
+        // do this after so member units based indexer can work
+        // for indexer, need to connect tcr item in database to recipient BEFORE handling member units
         _connectAndInitializeFlowRecipient(recipient);
 
         // need to do this here because we just added new member units
@@ -285,21 +270,34 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // warning - values() copies entire array into memory, could run out of gas for huge arrays
         // must keep child flows below ~500 per o1 estimates
         address[] memory childFlows = _childFlows.values();
+        setChildFlowRates(childFlows);
+    }
+
+    /**
+     * @notice Sets the flow rate for a specific child Flow contract
+     * @param childFlows The addresses of the child Flow contracts
+     * @dev This function is public to allow external calls, but it's protected by the onlyManager modifier
+     */
+    function setChildFlowRates(address[] memory childFlows) public {
         for (uint256 i = 0; i < childFlows.length; i++) {
+            if (!_childFlows.contains(childFlows[i])) revert NOT_A_VALID_CHILD_FLOW();
             _setChildFlowRate(childFlows[i]);
         }
     }
 
     /**
      * @notice Internal function to be called after votes are cast
-     * @param hasNewVotes - true if there are new votes (new member units being added), false otherwise
+     * @param recipientIds - the recipientIds that were voted for
      * Useful for saving gas when there are no new votes. If there are new member units being added however,
      * we want to update all child flow rates to ensure that the correct flow rates are set
      */
-    function _afterVotesCast(bool hasNewVotes) internal {
-        if (hasNewVotes) {
-            // need to do this here because we just added new member units
-            _setAllChildFlowRates();
+    function _afterVotesCast(bytes32[] memory recipientIds) internal {
+        // set the flow rate for the child contracts that were voted for
+        for (uint256 i = 0; i < recipientIds.length; i++) {
+            bytes32 recipientId = recipientIds[i];
+            address recipientAddress = fs.recipients[recipientId].recipient;
+            if (!_childFlows.contains(recipientAddress) || fs.recipients[recipientId].removed) continue;
+            _setChildFlowRate(recipientAddress);
         }
     }
 
