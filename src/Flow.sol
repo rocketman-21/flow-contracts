@@ -130,8 +130,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             // Calculate the new units by subtracting the delta from the current units
             uint128 newUnits = fs.bonusPool.getUnits(recipientAddress) - allocations[i].memberUnits;
 
-            emit VoteRemoved(recipientId, tokenId, newUnits);
-
             // Update the member units in the pool
             _updateBonusMemberUnits(recipientAddress, newUnits);
 
@@ -264,7 +262,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _setChildFlowRate(recipient);
 
         // need to do this here because we just added new member units
-        _setCappedChildFlowRates(recipient);
+        _setChildrenAsNeedingUpdates(recipient);
+        _workOnChildFlowsToUpdate(10);
 
         return (_recipientId, recipient);
     }
@@ -273,39 +272,16 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Sets all the child flow rates
      * @param ignoredAddress The address of the child flow to ignore. Useful when adding a new flow recipient
      * @dev Called when total member units change (new flow added, flow removed, new vote added)
-     * @dev This function will run out of gas eventually, so we cap it at 10
-     * and expect a worker to call setChildFlowRates with the remaining child flows
      */
-    function _setCappedChildFlowRates(address ignoredAddress) internal {
-        uint256 cap = 10;
-        address[] memory childFlows = _childFlows.values();
-
-        // First, count the number of children to update in the worker
-        uint256 workerUpdatesLength = 0;
-        for (uint256 i = cap; i < childFlows.length; i++) {
-            if (childFlows[i] != ignoredAddress) {
-                workerUpdatesLength++;
-            }
-        }
-
+    function _setChildrenAsNeedingUpdates(address ignoredAddress) internal {
         // warning - values() copies entire array into memory, could run out of gas for huge arrays
         // must keep child flows below ~500 per o1 estimates
-        address[] memory childrenToUpdateInWorker = new address[](workerUpdatesLength);
+        address[] memory childFlows = _childFlows.values();
 
-        uint256 workerInsertIndex = 0;
         for (uint256 i = 0; i < childFlows.length; i++) {
             if (childFlows[i] == ignoredAddress) continue;
 
-            if (i < cap) {
-                _setChildFlowRate(childFlows[i]);
-            } else {
-                childrenToUpdateInWorker[workerInsertIndex] = childFlows[i];
-                workerInsertIndex++;
-            }
-        }
-
-        if (childrenToUpdateInWorker.length > 0) {
-            emit ChildFlowRatesToUpdate(childrenToUpdateInWorker);
+            _childFlowsToUpdateFlowRate.add(childFlows[i]);
         }
     }
 
@@ -352,6 +328,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             _setChildFlowRate(childFlow);
             _childFlowsToUpdateFlowRate.remove(childFlow);
         }
+    }
+
+    /**
+     * @notice Public function to work on the child flows that need their flow rate updated
+     * @param updateCount The number of child flows to update
+     */
+    function workOnChildFlowsToUpdate(uint256 updateCount) external nonReentrant {
+        _workOnChildFlowsToUpdate(updateCount);
     }
 
     /**
@@ -602,7 +586,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
 
         // changing flow rate means we need to update all child flow rates
-        _setCappedChildFlowRates(address(0));
+        _setChildrenAsNeedingUpdates(address(0));
+        _workOnChildFlowsToUpdate(10);
     }
 
     /**
