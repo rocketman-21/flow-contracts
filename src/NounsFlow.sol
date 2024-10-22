@@ -9,13 +9,11 @@ import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
 import { FlowRates } from "./library/FlowRates.sol";
 import { NounsFlowLibrary } from "./library/NounsFlowLibrary.sol";
-import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract NounsFlow is INounsFlow, Flow {
     using FlowVotes for Storage;
     using FlowRates for Storage;
     using NounsFlowLibrary for Storage;
-    using EnumerableSet for EnumerableSet.AddressSet;
 
     ITokenVerifier public verifier;
 
