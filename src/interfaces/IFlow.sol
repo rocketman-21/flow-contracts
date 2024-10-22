@@ -245,6 +245,12 @@ interface IFlow is IFlowEvents, IManagedFlow {
     function getTotalFlowRate() external view returns (int96);
 
     /**
+     * @notice Gets the actual flow rate for the Superfluid pool
+     * @return The actual flow rate for the Superfluid pool
+     */
+    function getActualFlowRate() external view returns (int96);
+
+    /**
      * @notice Sets the manager reward pool for the flow contract
      * @param _managerRewardPool The address of the manager reward pool
      * @dev Only callable by the owner

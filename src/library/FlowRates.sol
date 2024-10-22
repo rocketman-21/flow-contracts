@@ -64,7 +64,7 @@ library FlowRates {
         if (childAddress == address(0)) revert IFlow.ADDRESS_ZERO();
         int96 newFlowRateStreamingToChild = desiredFlowRate;
 
-        int96 currentFlowRateOutgoingFromChild = IFlow(childAddress).getTotalFlowRate();
+        int96 currentFlowRateOutgoingFromChild = IFlow(childAddress).getActualFlowRate();
 
         bool isFlowRateIncreasing = (newFlowRateStreamingToChild - currentFlowRateOutgoingFromChild) > 0;
 
@@ -158,7 +158,7 @@ library FlowRates {
 
         int96 newFlowRateStreamingToPool = desiredFlowRate;
 
-        int96 currentFlowRateOutgoingFromPool = IRewardPool(rewardPoolAddress).getTotalFlowRate();
+        int96 currentFlowRateOutgoingFromPool = IRewardPool(rewardPoolAddress).getActualFlowRate();
 
         bool isFlowRateIncreasing = (newFlowRateStreamingToPool - currentFlowRateOutgoingFromPool) > 0;
 

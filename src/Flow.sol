@@ -665,6 +665,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
+     * @notice Retrieves the actual flow rate for the contract
+     * @return int96 The actual flow rate
+     */
+    function getActualFlowRate() public view returns (int96) {
+        return fs.getActualFlowRate(address(this));
+    }
+
+    /**
      * @notice Retrieves all vote allocations for a given ERC721 tokenId
      * @param tokenId The tokenId of the account to retrieve votes for
      * @return allocations An array of VoteAllocation structs representing each vote made by the token
@@ -819,5 +827,5 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Ensures the caller is authorized to upgrade the contract
      * @param _newImpl The new implementation address
      */
-    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
+    function _authorizeUpgrade(address _newImpl) internal view override onlyOwnerOrParent {}
 }

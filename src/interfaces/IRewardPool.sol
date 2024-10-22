@@ -49,6 +49,12 @@ interface IRewardPool {
     function getTotalFlowRate() external view returns (int96 totalFlowRate);
 
     /**
+     * @notice Retrieves the actual flow rate of the pool, not the cached value.
+     * @return actualFlowRate The actual flow rate of the pool
+     */
+    function getActualFlowRate() external view returns (int96 actualFlowRate);
+
+    /**
      * @notice Helper function to get the claimable balance for a member at the current time
      * @param member The address of the member
      * @return claimableBalance The claimable balance for the member
