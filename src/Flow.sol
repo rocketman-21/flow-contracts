@@ -827,5 +827,5 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Ensures the caller is authorized to upgrade the contract
      * @param _newImpl The new implementation address
      */
-    function _authorizeUpgrade(address _newImpl) internal view override onlyOwnerOrParent {}
+    function _authorizeUpgrade(address _newImpl) internal view override onlyOwner {}
 }
