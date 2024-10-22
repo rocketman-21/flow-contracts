@@ -64,7 +64,6 @@ library FlowRates {
         if (childAddress == address(0)) revert IFlow.ADDRESS_ZERO();
         int96 newFlowRateStreamingToChild = desiredFlowRate;
 
-        // might be wrong if cached rate is off / stream has been deleted/liquidated?
         int96 currentFlowRateOutgoingFromChild = IFlow(childAddress).getTotalFlowRate();
 
         bool isFlowRateIncreasing = (newFlowRateStreamingToChild - currentFlowRateOutgoingFromChild) > 0;
@@ -95,6 +94,14 @@ library FlowRates {
         }
     }
 
+    /**
+     * @notice Retrieves the additional buffer from the reward pool
+     * @param fs The storage of the Flow contract
+     * @param childAddress The address of the child Flow contract
+     * @param desiredFlowRate The desired flow rate for the child contract
+     * @param percentageScale The percentage scale
+     * @return additionalBuffer The additional buffer from the reward pool
+     */
     function getAdditionalBufferFromRewardPool(
         FlowTypes.Storage storage fs,
         address childAddress,
@@ -118,6 +125,19 @@ library FlowRates {
         );
 
         additionalBuffer = transferAmountForRewardPool;
+    }
+
+    /**
+     * @notice Retrieves the actual flow rate for the Flow contract
+     * @param fs The storage of the Flow contract
+     * @param flowAddress The address of the flow contract
+     * @return actualFlowRate The actual flow rate for the Flow contract
+     */
+    function getActualFlowRate(FlowTypes.Storage storage fs, address flowAddress) external view returns (int96) {
+        return
+            fs.superToken.getFlowRate(flowAddress, fs.managerRewardPool) +
+            fs.superToken.getFlowRate(flowAddress, address(fs.baselinePool)) +
+            fs.superToken.getFlowRate(flowAddress, address(fs.bonusPool));
     }
 
     /**

@@ -8,12 +8,12 @@ import { IStateProof } from "./interfaces/IStateProof.sol";
 import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
 import { FlowRates } from "./library/FlowRates.sol";
-
-import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { NounsFlowLibrary } from "./library/NounsFlowLibrary.sol";
 
 contract NounsFlow is INounsFlow, Flow {
     using FlowVotes for Storage;
     using FlowRates for Storage;
+    using NounsFlowLibrary for Storage;
 
     ITokenVerifier public verifier;
 
@@ -83,6 +83,47 @@ contract NounsFlow is INounsFlow, Flow {
     }
 
     /**
+     * @notice Cast votes for a set of grant addresses on behalf of a token owner
+     * @param owner The address of the token owner
+     * @param tokenIds The token IDs that the owner is using to vote
+     * @param recipientIds The recipient IDs of the grant recipients
+     * @param percentAllocations The basis points of the vote to be split among the recipients
+     * @param ownershipProofs The state proofs for token ownership
+     * @param delegateProof The state proof for delegation
+     */
+    function _castVotesForOwner(
+        address owner,
+        uint256[] calldata tokenIds,
+        bytes32[] calldata recipientIds,
+        uint32[] calldata percentAllocations,
+        IStateProof.Parameters[] memory ownershipProofs,
+        IStateProof.Parameters memory delegateProof
+    ) internal {
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof)) {
+                revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
+            }
+            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
+        }
+    }
+
+    /**
+     * @notice Deploys a new Flow contract as a recipient
+     * @dev This function overrides the base _deployFlowRecipient to use NounsFlow-specific initialization
+     * @param metadata The recipient's metadata like title, description, etc.
+     * @param flowManager The address of the flow manager for the new contract
+     * @return address The address of the newly created Flow contract
+     */
+    function _deployFlowRecipient(
+        RecipientMetadata calldata metadata,
+        address flowManager,
+        address managerRewardPool
+    ) internal override returns (address) {
+        return
+            fs.deployFlowRecipient(metadata, flowManager, managerRewardPool, address(verifier), owner(), address(this));
+    }
+
+    /**
      * @notice Generates an array of ownership proofs for multiple token IDs
      * @dev This function creates state proof parameters for each token ID using the base parameters and storage proofs
      * @param baseProofParams The base state proof parameters common to all proofs
@@ -123,65 +164,6 @@ contract NounsFlow is INounsFlow, Flow {
                 accountProof: baseProofParams.accountProof,
                 storageProof: storageProof
             });
-    }
-
-    /**
-     * @notice Cast votes for a set of grant addresses on behalf of a token owner
-     * @param owner The address of the token owner
-     * @param tokenIds The token IDs that the owner is using to vote
-     * @param recipientIds The recipient IDs of the grant recipients
-     * @param percentAllocations The basis points of the vote to be split among the recipients
-     * @param ownershipProofs The state proofs for token ownership
-     * @param delegateProof The state proof for delegation
-     */
-    function _castVotesForOwner(
-        address owner,
-        uint256[] calldata tokenIds,
-        bytes32[] calldata recipientIds,
-        uint32[] calldata percentAllocations,
-        IStateProof.Parameters[] memory ownershipProofs,
-        IStateProof.Parameters memory delegateProof
-    ) internal {
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof)) {
-                revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
-            }
-            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
-        }
-    }
-
-    /**
-     * @notice Deploys a new Flow contract as a recipient
-     * @dev This function overrides the base _deployFlowRecipient to use NounsFlow-specific initialization
-     * @param metadata The recipient's metadata like title, description, etc.
-     * @param flowManager The address of the flow manager for the new contract
-     * @return address The address of the newly created Flow contract
-     */
-    function _deployFlowRecipient(
-        RecipientMetadata calldata metadata,
-        address flowManager,
-        address managerRewardPool
-    ) internal override returns (address) {
-        address recipient = address(new ERC1967Proxy(fs.flowImpl, ""));
-        if (recipient == address(0)) revert ADDRESS_ZERO();
-
-        INounsFlow(recipient).initialize({
-            initialOwner: owner(),
-            verifier: address(verifier),
-            superToken: address(fs.superToken),
-            flowImpl: fs.flowImpl,
-            manager: flowManager,
-            managerRewardPool: managerRewardPool,
-            parent: address(this),
-            flowParams: FlowParams({
-                tokenVoteWeight: fs.tokenVoteWeight,
-                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent,
-                managerRewardPoolFlowRatePercent: fs.managerRewardPoolFlowRatePercent
-            }),
-            metadata: metadata
-        });
-
-        return recipient;
     }
 
     /**

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.27;
 
 import { IFlowEvents, IFlow } from "../../src/interfaces/IFlow.sol";
 import { Flow } from "../../src/Flow.sol";
@@ -164,7 +164,7 @@ contract AddRecipientsTest is ERC721FlowTest {
                 "https://flow.com"
             ),
             address(0x456), // flowManager address
-            address(0)
+            address(dummyRewardPool)
         );
 
         // Check baseline member units for external recipient

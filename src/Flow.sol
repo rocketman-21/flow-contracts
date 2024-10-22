@@ -259,18 +259,19 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         _setChildFlowRate(recipient);
 
         // need to do this here because we just added new member units
-        _setCappedChildFlowRates();
+        _setCappedChildFlowRates(recipient);
 
         return (_recipientId, recipient);
     }
 
     /**
      * @notice Sets all the child flow rates
+     * @param ignoredAddress The address of the child flow to ignore. Useful when adding a new flow recipient
      * @dev Called when total member units change (new flow added, flow removed, new vote added)
      * @dev This function will run out of gas eventually, so we cap it at 10
      * and expect a worker to call setChildFlowRates with the remaining child flows
      */
-    function _setCappedChildFlowRates() internal {
+    function _setCappedChildFlowRates(address ignoredAddress) internal {
         uint256 cap = 10;
 
         // warning - values() copies entire array into memory, could run out of gas for huge arrays
@@ -280,6 +281,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             cap > _childFlows.length() ? 0 : _childFlows.length() - cap
         );
         for (uint256 i = 0; i < childFlows.length; i++) {
+            if (childFlows[i] == ignoredAddress) continue;
+
             if (i < cap) {
                 _setChildFlowRate(childFlows[i]);
             } else {
@@ -567,7 +570,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
 
         // changing flow rate means we need to update all child flow rates
-        _setCappedChildFlowRates();
+        _setCappedChildFlowRates(address(0));
     }
 
     /**
