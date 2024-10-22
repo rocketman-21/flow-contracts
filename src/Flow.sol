@@ -273,20 +273,29 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _setCappedChildFlowRates(address ignoredAddress) internal {
         uint256 cap = 10;
+        address[] memory childFlows = _childFlows.values();
+
+        // First, count the number of children to update in the worker
+        uint256 workerUpdatesLength = 0;
+        for (uint256 i = cap; i < childFlows.length; i++) {
+            if (childFlows[i] != ignoredAddress) {
+                workerUpdatesLength++;
+            }
+        }
 
         // warning - values() copies entire array into memory, could run out of gas for huge arrays
         // must keep child flows below ~500 per o1 estimates
-        address[] memory childFlows = _childFlows.values();
-        address[] memory childrenToUpdateInWorker = new address[](
-            cap > _childFlows.length() ? 0 : _childFlows.length() - cap
-        );
+        address[] memory childrenToUpdateInWorker = new address[](workerUpdatesLength);
+
+        uint256 workerInsertIndex = 0;
         for (uint256 i = 0; i < childFlows.length; i++) {
             if (childFlows[i] == ignoredAddress) continue;
 
             if (i < cap) {
                 _setChildFlowRate(childFlows[i]);
             } else {
-                childrenToUpdateInWorker[i - cap] = childFlows[i];
+                childrenToUpdateInWorker[workerInsertIndex] = childFlows[i];
+                workerInsertIndex++;
             }
         }
 
