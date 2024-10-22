@@ -44,7 +44,7 @@ contract OwnerFlowTest is ERC721FlowTest {
 
     function testUpgrade() public {
         address newImplementation = address(new ERC721Flow());
-        vm.prank(address(0)); // Non-owner address
+        vm.prank(address(1)); // Non-owner address
         vm.expectRevert();
         Flow(flow).upgradeTo(newImplementation);
 
