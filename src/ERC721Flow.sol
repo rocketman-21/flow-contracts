@@ -7,6 +7,7 @@ import { IERC721Checkpointable } from "./interfaces/IERC721Checkpointable.sol";
 import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
 import { FlowRates } from "./library/FlowRates.sol";
+import { ERC721FlowLibrary } from "./library/ERC721FlowLibrary.sol";
 import { RewardPool } from "./RewardPool.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -15,6 +16,7 @@ import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableS
 contract ERC721Flow is IERC721Flow, Flow {
     using FlowVotes for Storage;
     using FlowRates for Storage;
+    using ERC721FlowLibrary for Storage;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     // The ERC721 voting token contract used to get the voting power of an account
@@ -62,14 +64,12 @@ contract ERC721Flow is IERC721Flow, Flow {
     ) external nonReentrant {
         fs.validateVotes(recipientIds, percentAllocations, PERCENTAGE_SCALE);
 
-        uint256 flowsToUpdateBefore = _childFlowsToUpdateFlowRate.length();
+        uint256 flowsToUpdate = 0;
 
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
-            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
+            flowsToUpdate += _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
         }
-
-        uint256 flowsToUpdate = _childFlowsToUpdateFlowRate.length() - flowsToUpdateBefore;
 
         _afterVotesCast(recipientIds, flowsToUpdate);
     }
@@ -95,33 +95,21 @@ contract ERC721Flow is IERC721Flow, Flow {
      * @param metadata The recipient's metadata like title, description, etc.
      * @param flowManager The address of the flow manager for the new contract
      * @param managerRewardPool The address of the manager reward pool for the new contract
-     * @return address The address of the newly created Flow contract
+     * @return recipient address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
         RecipientMetadata calldata metadata,
         address flowManager,
         address managerRewardPool
-    ) internal override returns (address) {
-        address recipient = address(new ERC1967Proxy(fs.flowImpl, ""));
-        if (recipient == address(0)) revert ADDRESS_ZERO();
-
-        IERC721Flow(recipient).initialize({
-            initialOwner: owner(),
-            nounsToken: address(erc721Votes),
-            superToken: address(fs.superToken),
-            flowImpl: fs.flowImpl,
-            manager: flowManager,
-            managerRewardPool: managerRewardPool,
-            parent: address(this),
-            flowParams: FlowParams({
-                tokenVoteWeight: fs.tokenVoteWeight,
-                baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent,
-                managerRewardPoolFlowRatePercent: fs.managerRewardPoolFlowRatePercent
-            }),
-            metadata: metadata
-        });
-
-        return recipient;
+    ) internal override returns (address recipient) {
+        recipient = fs.deployFlowRecipient(
+            metadata,
+            flowManager,
+            managerRewardPool,
+            owner(),
+            address(this),
+            address(erc721Votes)
+        );
     }
 
     /**

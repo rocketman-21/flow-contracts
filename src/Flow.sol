@@ -115,7 +115,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev This function resets the member units for all recipients that the tokenId has previously voted for.
      * It should be called before setting new votes to ensure accurate vote allocations.
      */
-    function _clearPreviousVotes(uint256 tokenId) internal {
+    function _clearPreviousVotes(uint256 tokenId) internal returns (uint256 childFlowsToUpdate) {
         VoteAllocation[] memory allocations = fs.votes[tokenId];
 
         for (uint256 i = 0; i < allocations.length; i++) {
@@ -143,6 +143,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
                 !_childFlowsToUpdateFlowRate.contains(recipientAddress)
             ) {
                 _childFlowsToUpdateFlowRate.add(recipientAddress);
+                childFlowsToUpdate++;
             }
         }
 
@@ -161,9 +162,20 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         bytes32[] memory recipientIds,
         uint32[] memory percentAllocations,
         address voter
-    ) internal {
+    ) internal returns (uint256 childFlowsToUpdate) {
+        if (fs.votes[tokenId].length == 0) {
+            // this is a new vote, which means we're adding new member units
+            // so we need to reset child flow rates
+            childFlowsToUpdate = 10;
+            _setChildrenAsNeedingUpdates(address(0));
+        }
+
         // update member units for previous votes
-        _clearPreviousVotes(tokenId);
+        uint256 childFlowsAlteredViaRemoval = _clearPreviousVotes(tokenId);
+
+        if (childFlowsAlteredViaRemoval > childFlowsToUpdate) {
+            childFlowsToUpdate = childFlowsAlteredViaRemoval;
+        }
 
         // set new votes
         for (uint256 i = 0; i < recipientIds.length; i++) {
@@ -286,17 +298,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Sets the flow rate for a specific child Flow contract
-     * @param childFlows The addresses of the child Flow contracts
-     * @dev This function is public to allow external calls, but it's protected by the onlyManager modifier
-     */
-    function setChildFlowRates(address[] memory childFlows) external nonReentrant {
-        for (uint256 i = 0; i < childFlows.length; i++) {
-            _setChildFlowRate(childFlows[i]);
-        }
-    }
-
-    /**
      * @notice Internal function to be called after votes are cast
      * @param recipientIds - the recipientIds that were voted for
      * @param childFlowsToUpdate - the number of child flows to update
@@ -319,9 +320,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param updateCount The number of child flows to update
      */
     function _workOnChildFlowsToUpdate(uint256 updateCount) internal {
+        uint256 absoluteMax = 12;
         address[] memory flowsToUpdate = _childFlowsToUpdateFlowRate.values();
 
         uint256 max = updateCount < flowsToUpdate.length ? updateCount : flowsToUpdate.length;
+
+        if (max > absoluteMax) {
+            max = absoluteMax;
+        }
 
         for (uint256 i = 0; i < max; i++) {
             address childFlow = flowsToUpdate[i];
@@ -336,6 +342,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function workOnChildFlowsToUpdate(uint256 updateCount) external nonReentrant {
         _workOnChildFlowsToUpdate(updateCount);
+    }
+
+    /**
+     * @notice Public function to get the number of child flows that need their flow rate updated
+     * @return The number of child flows that need their flow rate updated
+     */
+    function childFlowRatesOutOfSync() external view returns (uint256) {
+        return _childFlowsToUpdateFlowRate.length();
     }
 
     /**
@@ -388,6 +402,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         if (recipientType == RecipientType.FlowContract) {
             _childFlows.remove(recipientAddress);
+            _childFlowsToUpdateFlowRate.remove(recipientAddress);
         }
 
         emit RecipientRemoved(recipientAddress, recipientId);

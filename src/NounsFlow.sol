@@ -67,13 +67,13 @@ contract NounsFlow is INounsFlow, Flow {
     ) external nonReentrant {
         fs.validateVotes(recipientIds, percentAllocations, PERCENTAGE_SCALE);
 
-        uint256 flowsToUpdateBefore = _childFlowsToUpdateFlowRate.length();
+        uint256 flowsToUpdate = 0;
 
         // if the timestamp is more than 5 minutes old, it is invalid
         if (baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
 
         for (uint256 i = 0; i < owners.length; i++) {
-            _castVotesForOwner(
+            flowsToUpdate += _castVotesForOwner(
                 owners[i],
                 tokenIds[i],
                 recipientIds,
@@ -82,8 +82,6 @@ contract NounsFlow is INounsFlow, Flow {
                 _generateStateProofParams(baseProofParams, delegateStorageProofs[i])
             );
         }
-
-        uint256 flowsToUpdate = _childFlowsToUpdateFlowRate.length() - flowsToUpdateBefore;
 
         _afterVotesCast(recipientIds, flowsToUpdate);
     }
@@ -104,12 +102,12 @@ contract NounsFlow is INounsFlow, Flow {
         uint32[] calldata percentAllocations,
         IStateProof.Parameters[] memory ownershipProofs,
         IStateProof.Parameters memory delegateProof
-    ) internal {
+    ) internal returns (uint256 flowsToUpdate) {
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!verifier.canVoteWithToken(tokenIds[i], owner, msg.sender, ownershipProofs[i], delegateProof)) {
                 revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
             }
-            _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
+            flowsToUpdate += _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
         }
     }
 
