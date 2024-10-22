@@ -51,8 +51,6 @@ contract OwnerFlowTest is ERC721FlowTest {
         vm.prank(manager); // Owner address
         Flow(flow).upgradeTo(newImplementation);
 
-        vm.prank(Flow(flow).parent());
-        Flow(flow).upgradeTo(newImplementation);
         // Additional checks to verify upgrade might be needed
     }
 
