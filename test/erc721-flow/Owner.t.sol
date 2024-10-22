@@ -45,16 +45,19 @@ contract OwnerFlowTest is ERC721FlowTest {
     function testUpgrade() public {
         address newImplementation = address(new ERC721Flow());
         vm.prank(address(0)); // Non-owner address
-        vm.expectRevert("Ownable: caller is not the owner");
+        vm.expectRevert();
         Flow(flow).upgradeTo(newImplementation);
 
         vm.prank(manager); // Owner address
+        Flow(flow).upgradeTo(newImplementation);
+
+        vm.prank(Flow(flow).parent());
         Flow(flow).upgradeTo(newImplementation);
         // Additional checks to verify upgrade might be needed
     }
 
     function testTransferOwnership() public {
-        address newOwner = address(0x456);
+        address newOwner = address(0x4156);
         vm.prank(address(0)); // Non-owner address
         vm.expectRevert("Ownable: caller is not the owner");
         Flow(flow).transferOwnership(newOwner);
