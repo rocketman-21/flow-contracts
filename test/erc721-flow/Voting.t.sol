@@ -310,4 +310,68 @@ contract VotingFlowTest is ERC721FlowTest {
         int96 outgoingFlowRate = Flow(flowRecipient).getTotalFlowRate();
         assertEq(outgoingFlowRate, incomingFlowRate, "After voting, incoming and outgoing flow rates should match");
     }
+
+    function testClearVotesAllocationsForFlows() public {
+        address voter = address(1);
+        uint256 tokenId = 0;
+
+        nounsToken.mint(voter, tokenId);
+
+        vm.startPrank(manager);
+        bytes32 recipientId1 = keccak256(abi.encodePacked(address(3)));
+        bytes32 recipientId2 = keccak256(abi.encodePacked(address(4)));
+        (, address recipient1) = flow.addFlowRecipient(recipientId1, recipientMetadata, manager, address(0));
+        (, address recipient2) = flow.addFlowRecipient(recipientId2, recipientMetadata, manager, address(0));
+        vm.stopPrank();
+
+        bytes32[] memory recipientIds = new bytes32[](2);
+        uint32[] memory percentAllocations = new uint32[](2);
+        uint256[] memory tokenIds = new uint256[](1);
+
+        recipientIds[0] = recipientId1;
+        recipientIds[1] = recipientId2;
+        percentAllocations[0] = 5e5; // 50%
+        percentAllocations[1] = 5e5; // 50%
+        tokenIds[0] = tokenId;
+
+        vm.prank(voter);
+        flow.castVotes(tokenIds, recipientIds, percentAllocations);
+
+        uint128 recipient1OriginalUnits = flow.bonusPool().getUnits(recipient1);
+        uint128 recipient2OriginalUnits = flow.bonusPool().getUnits(recipient2);
+
+        assertGt(recipient1OriginalUnits, 0);
+        assertGt(recipient2OriginalUnits, 0);
+
+        // track flow rates
+        int96 recipient1FlowRate = Flow(recipient1).getTotalFlowRate();
+        int96 recipient2FlowRate = Flow(recipient2).getTotalFlowRate();
+
+        // Change vote to only recipient1
+        bytes32[] memory newRecipientIds = new bytes32[](1);
+        uint32[] memory newPercentAllocations = new uint32[](1);
+        newRecipientIds[0] = recipientId1;
+        newPercentAllocations[0] = 1e6; // 100%
+
+        vm.prank(voter);
+        flow.castVotes(tokenIds, newRecipientIds, newPercentAllocations);
+
+        uint128 recipient1NewUnits = flow.bonusPool().getUnits(recipient1);
+        uint128 recipient2NewUnits = flow.bonusPool().getUnits(recipient2);
+
+        assertGt(recipient1NewUnits, recipient1OriginalUnits);
+        assertEq(recipient2NewUnits, 10); // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
+
+        // Verify that the votes for the tokenId have been updated
+        Flow.VoteAllocation[] memory voteAllocations = flow.getVotesForTokenId(tokenId);
+        assertEq(voteAllocations.length, 1);
+        assertEq(voteAllocations[0].recipientId, recipientId1);
+        assertEq(voteAllocations[0].bps, 1e6);
+
+        // check that recipient1 flow rate has gone up
+        assertGt(Flow(recipient1).getTotalFlowRate(), recipient1FlowRate);
+
+        // check that recipient2 flow rate has gone down
+        assertLt(Flow(recipient2).getTotalFlowRate(), recipient2FlowRate);
+    }
 }

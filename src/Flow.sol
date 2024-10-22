@@ -117,6 +117,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function _clearPreviousVotes(uint256 tokenId) internal {
         VoteAllocation[] memory allocations = fs.votes[tokenId];
+
         for (uint256 i = 0; i < allocations.length; i++) {
             bytes32 recipientId = allocations[i].recipientId;
 
@@ -138,9 +139,13 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             /// voting is only for the bonus pool, to ensure all approved recipients get a baseline salary
 
             // after updating member units, set the flow rate for the child contract
-            // if recipient is a flow contract, set the flow rate for the child contract
-            // note - we now do this post-voting to avoid redundant setFlowRate calls on children
-            // in _afterVotesCast
+            // if recipient is a flow contract, queue the contract for flow rate reset!
+            if (
+                fs.recipients[recipientId].recipientType == RecipientType.FlowContract &&
+                !_childFlowsToUpdateFlowRate.contains(recipientAddress)
+            ) {
+                _childFlowsToUpdateFlowRate.add(recipientAddress);
+            }
         }
 
         // Clear out the votes for the tokenId
@@ -318,16 +323,34 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     /**
      * @notice Internal function to be called after votes are cast
      * @param recipientIds - the recipientIds that were voted for
+     * @param childFlowsToUpdate - the number of child flows to update
      * Useful for saving gas when there are no new votes. If there are new member units being added however,
      * we want to update all child flow rates to ensure that the correct flow rates are set
      */
-    function _afterVotesCast(bytes32[] memory recipientIds) internal {
+    function _afterVotesCast(bytes32[] memory recipientIds, uint256 childFlowsToUpdate) internal {
         // set the flow rate for the child contracts that were voted for
         for (uint256 i = 0; i < recipientIds.length; i++) {
             bytes32 recipientId = recipientIds[i];
             address recipientAddress = fs.recipients[recipientId].recipient;
             if (!_childFlows.contains(recipientAddress) || fs.recipients[recipientId].removed) continue;
             _setChildFlowRate(recipientAddress);
+        }
+        _workOnChildFlowsToUpdate(childFlowsToUpdate);
+    }
+
+    /**
+     * @notice Internal function to work on the child flows that need their flow rate updated
+     * @param updateCount The number of child flows to update
+     */
+    function _workOnChildFlowsToUpdate(uint256 updateCount) internal {
+        address[] memory flowsToUpdate = _childFlowsToUpdateFlowRate.values();
+
+        uint256 max = updateCount < flowsToUpdate.length ? updateCount : flowsToUpdate.length;
+
+        for (uint256 i = 0; i < max; i++) {
+            address childFlow = flowsToUpdate[i];
+            _setChildFlowRate(childFlow);
+            _childFlowsToUpdateFlowRate.remove(childFlow);
         }
     }
 

@@ -9,11 +9,13 @@ import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
 import { FlowRates } from "./library/FlowRates.sol";
 import { NounsFlowLibrary } from "./library/NounsFlowLibrary.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract NounsFlow is INounsFlow, Flow {
     using FlowVotes for Storage;
     using FlowRates for Storage;
     using NounsFlowLibrary for Storage;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     ITokenVerifier public verifier;
 
@@ -65,6 +67,8 @@ contract NounsFlow is INounsFlow, Flow {
     ) external nonReentrant {
         fs.validateVotes(recipientIds, percentAllocations, PERCENTAGE_SCALE);
 
+        uint256 flowsToUpdateBefore = _childFlowsToUpdateFlowRate.length();
+
         // if the timestamp is more than 5 minutes old, it is invalid
         if (baseProofParams.beaconOracleTimestamp < block.timestamp - 5 minutes) revert PAST_PROOF();
 
@@ -79,7 +83,9 @@ contract NounsFlow is INounsFlow, Flow {
             );
         }
 
-        _afterVotesCast(recipientIds);
+        uint256 flowsToUpdate = _childFlowsToUpdateFlowRate.length() - flowsToUpdateBefore;
+
+        _afterVotesCast(recipientIds, flowsToUpdate);
     }
 
     /**

@@ -10,10 +10,12 @@ import { FlowRates } from "./library/FlowRates.sol";
 import { RewardPool } from "./RewardPool.sol";
 
 import { ERC1967Proxy } from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import { EnumerableSet } from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract ERC721Flow is IERC721Flow, Flow {
     using FlowVotes for Storage;
     using FlowRates for Storage;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     // The ERC721 voting token contract used to get the voting power of an account
     IERC721Checkpointable public erc721Votes;
@@ -60,12 +62,16 @@ contract ERC721Flow is IERC721Flow, Flow {
     ) external nonReentrant {
         fs.validateVotes(recipientIds, percentAllocations, PERCENTAGE_SCALE);
 
+        uint256 flowsToUpdateBefore = _childFlowsToUpdateFlowRate.length();
+
         for (uint256 i = 0; i < tokenIds.length; i++) {
             if (!canVoteWithToken(tokenIds[i], msg.sender)) revert NOT_ABLE_TO_VOTE_WITH_TOKEN();
             _setVotesAllocationForTokenId(tokenIds[i], recipientIds, percentAllocations, msg.sender);
         }
 
-        _afterVotesCast(recipientIds);
+        uint256 flowsToUpdate = _childFlowsToUpdateFlowRate.length() - flowsToUpdateBefore;
+
+        _afterVotesCast(recipientIds, flowsToUpdate);
     }
 
     /**
