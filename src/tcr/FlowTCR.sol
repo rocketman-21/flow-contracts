@@ -169,8 +169,10 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                 ITCRFactory.RewardPoolParams({ superToken: ISuperToken(flowContract.getSuperToken()) }),
                 ITCRFactory.TokenEmitterParams({
                     curveSteepness: curveSteepness,
-                    basePrice: basePrice,
-                    maxPriceIncrease: maxPriceIncrease,
+                    // scale down by 10 so children don't have the same economic expectations as their parent
+                    // so eg: tokens are 10x cheaper but follow same curve for children
+                    basePrice: basePrice / 10,
+                    maxPriceIncrease: maxPriceIncrease / 10,
                     supplyOffset: supplyOffset,
                     priceDecayPercent: priceDecayPercent,
                     perTimeUnit: perTimeUnit

@@ -45,6 +45,7 @@ library FlowInitialization {
         if (bytes(_metadata.description).length == 0) revert IFlow.INVALID_METADATA();
         if (bytes(_metadata.image).length == 0) revert IFlow.INVALID_METADATA();
         if (_flowParams.baselinePoolFlowRatePercent > percentageScale) revert IFlow.INVALID_RATE_PERCENT();
+        if (_flowParams.managerRewardPoolFlowRatePercent > percentageScale) revert IFlow.INVALID_RATE_PERCENT();
 
         // Set the voting power info
         fs.tokenVoteWeight = _flowParams.tokenVoteWeight; // scaled by 1e18

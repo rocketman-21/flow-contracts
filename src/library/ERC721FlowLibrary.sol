@@ -17,6 +17,7 @@ library ERC721FlowLibrary {
      * @param initialOwner The address of the owner for the new contract
      * @param parent The address of the parent flow contract (optional)
      * @param erc721Votes The address of the ERC721Votes contract
+     * @param percentageScale The scale for the percentage of the manager reward pool
      * @return address The address of the newly created Flow contract
      */
     function deployFlowRecipient(
@@ -26,10 +27,18 @@ library ERC721FlowLibrary {
         address managerRewardPool,
         address initialOwner,
         address parent,
-        address erc721Votes
+        address erc721Votes,
+        uint32 percentageScale
     ) public returns (address) {
         address recipient = address(new ERC1967Proxy(fs.flowImpl, ""));
         if (recipient == address(0)) revert IFlow.ADDRESS_ZERO();
+
+        // Calculate new manager reward rate, ensuring it doesn't exceed PERCENTAGE_SCALE
+        uint32 newManagerRewardRate = fs.managerRewardPoolFlowRatePercent * 2;
+        // If doubling would exceed max percentage (percentageScale), cap at max
+        if (newManagerRewardRate > percentageScale) {
+            newManagerRewardRate = percentageScale;
+        }
 
         IERC721Flow(recipient).initialize({
             initialOwner: initialOwner,
@@ -42,7 +51,7 @@ library ERC721FlowLibrary {
             flowParams: IFlow.FlowParams({
                 tokenVoteWeight: fs.tokenVoteWeight,
                 baselinePoolFlowRatePercent: fs.baselinePoolFlowRatePercent,
-                managerRewardPoolFlowRatePercent: fs.managerRewardPoolFlowRatePercent
+                managerRewardPoolFlowRatePercent: newManagerRewardRate
             }),
             metadata: metadata
         });
