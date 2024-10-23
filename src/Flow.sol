@@ -491,7 +491,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Sets the flow rate for the Superfluid pool
      * @param _flowRate The new flow rate to be set
      * @dev Only callable by the owner or parent of the contract
-     * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) external onlyOwnerOrParent nonReentrant {
         fs.cachedFlowRate = _flowRate;
@@ -573,7 +572,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     /**
      * @notice Internal function to set the flow rate for the Superfluid pools and the manager reward pool
      * @param _flowRate The new flow rate to be set
-     * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function _setFlowRate(int96 _flowRate) internal {
         // if total member units is 0, set 1 member unit to this contract
@@ -594,8 +592,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         );
 
         _setFlowToManagerRewardPool(managerRewardFlowRate);
-
-        emit FlowRateUpdated(oldTotalFlowRate, _flowRate, baselineFlowRate, bonusFlowRate, managerRewardFlowRate);
 
         fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
