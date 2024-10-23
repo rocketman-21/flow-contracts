@@ -141,6 +141,14 @@ contract RewardPool is UUPSUpgradeable, Ownable2StepUpgradeable, ReentrancyGuard
     }
 
     /**
+     * @notice Helper function to get the actual flow rate of the pool, not the cached value.
+     * @return actualFlowRate The actual flow rate of the pool
+     */
+    function getActualFlowRate() public view returns (int96) {
+        return rewardPool.getTotalFlowRate();
+    }
+
+    /**
      * @notice Modifier to restrict access to only the manager or owner
      */
     modifier onlyManagerOrOwner() {

@@ -115,4 +115,19 @@ library FlowRecipients {
         validateMetadata(metadata);
         if (flowManager == address(0)) revert IFlow.ADDRESS_ZERO();
     }
+
+    /**
+     * @notice Gets the total amount received by a member across both baseline and bonus pools
+     * @param fs The storage of the Flow contract
+     * @param memberAddr The address of the member to check
+     * @return uint256 The total amount received by the member
+     */
+    function getTotalAmountReceivedByMember(
+        FlowTypes.Storage storage fs,
+        address memberAddr
+    ) external view returns (uint256) {
+        return
+            fs.bonusPool.getTotalAmountReceivedByMember(memberAddr) +
+            fs.baselinePool.getTotalAmountReceivedByMember(memberAddr);
+    }
 }

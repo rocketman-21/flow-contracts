@@ -26,14 +26,6 @@ interface IFlowEvents {
     );
 
     /**
-     * @dev Emitted when a vote is removed for a grant application.
-     * @param recipientId Id of the recipient of the grant.
-     * @param tokenId TokenId owned by the voter.
-     * @param memberUnits New member units as a result of the vote removal.
-     */
-    event VoteRemoved(bytes32 indexed recipientId, uint256 indexed tokenId, uint256 memberUnits);
-
-    /**
      * @dev Emitted when the manager reward flow rate percentage is updated
      * @param oldManagerRewardFlowRatePercent The old manager reward flow rate percentage
      * @param newManagerRewardFlowRatePercent The new manager reward flow rate percentage
@@ -75,15 +67,6 @@ interface IFlowEvents {
 
     /// @notice Emitted when a new grants recipient is set
     event RecipientCreated(bytes32 indexed recipientId, FlowTypes.FlowRecipient recipient, address indexed approvedBy);
-
-    /// @notice Emitted when the flow rate is updated
-    event FlowRateUpdated(
-        int96 oldTotalFlowRate,
-        int96 newTotalFlowRate,
-        int96 baselinePoolFlowRate,
-        int96 bonusPoolFlowRate,
-        int96 managerRewardFlowRate
-    );
 
     /// @notice Emitted when a new flow implementation is set
     event FlowImplementationSet(address indexed flowImpl);
@@ -231,7 +214,6 @@ interface IFlow is IFlowEvents, IManagedFlow {
      * @notice Sets the flow rate for the Superfluid pool
      * @param _flowRate The new flow rate to be set
      * @dev Only callable by the owner or parent of the contract
-     * @dev Should emit a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) external;
 
@@ -240,6 +222,12 @@ interface IFlow is IFlowEvents, IManagedFlow {
      * @return The flow rate for the Superfluid pool
      */
     function getTotalFlowRate() external view returns (int96);
+
+    /**
+     * @notice Gets the actual flow rate for the Superfluid pool
+     * @return The actual flow rate for the Superfluid pool
+     */
+    function getActualFlowRate() external view returns (int96);
 
     /**
      * @notice Sets the manager reward pool for the flow contract

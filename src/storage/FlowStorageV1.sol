@@ -106,4 +106,8 @@ contract FlowStorageV1 is FlowTypes {
     /// The enumerable list of child flow contracts
     /// @dev Heed warning above
     EnumerableSet.AddressSet internal _childFlows;
+
+    // The enumerable list of child flow contracts needing flow rate updates
+    /// @dev Heed warning above
+    EnumerableSet.AddressSet internal _childFlowsToUpdateFlowRate;
 }

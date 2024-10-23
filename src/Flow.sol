@@ -115,8 +115,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @dev This function resets the member units for all recipients that the tokenId has previously voted for.
      * It should be called before setting new votes to ensure accurate vote allocations.
      */
-    function _clearPreviousVotes(uint256 tokenId) internal {
+    function _clearPreviousVotes(uint256 tokenId) internal returns (uint256 childFlowsToUpdate) {
         VoteAllocation[] memory allocations = fs.votes[tokenId];
+
         for (uint256 i = 0; i < allocations.length; i++) {
             bytes32 recipientId = allocations[i].recipientId;
 
@@ -129,8 +130,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             // Calculate the new units by subtracting the delta from the current units
             uint128 newUnits = fs.bonusPool.getUnits(recipientAddress) - allocations[i].memberUnits;
 
-            emit VoteRemoved(recipientId, tokenId, newUnits);
-
             // Update the member units in the pool
             _updateBonusMemberUnits(recipientAddress, newUnits);
 
@@ -138,9 +137,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             /// voting is only for the bonus pool, to ensure all approved recipients get a baseline salary
 
             // after updating member units, set the flow rate for the child contract
-            // if recipient is a flow contract, set the flow rate for the child contract
-            // note - we now do this post-voting to avoid redundant setFlowRate calls on children
-            // in _afterVotesCast
+            // if recipient is a flow contract, queue the contract for flow rate reset!
+            if (
+                fs.recipients[recipientId].recipientType == RecipientType.FlowContract &&
+                !_childFlowsToUpdateFlowRate.contains(recipientAddress)
+            ) {
+                _childFlowsToUpdateFlowRate.add(recipientAddress);
+                childFlowsToUpdate++;
+            }
         }
 
         // Clear out the votes for the tokenId
@@ -158,9 +162,16 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         bytes32[] memory recipientIds,
         uint32[] memory percentAllocations,
         address voter
-    ) internal {
+    ) internal returns (uint256 childFlowsToUpdate) {
+        if (fs.votes[tokenId].length == 0) {
+            // this is a new vote, which means we're adding new member units
+            // so we need to reset child flow rates
+            childFlowsToUpdate = 10;
+            _setChildrenAsNeedingUpdates(address(0));
+        }
+
         // update member units for previous votes
-        _clearPreviousVotes(tokenId);
+        childFlowsToUpdate += _clearPreviousVotes(tokenId);
 
         // set new votes
         for (uint256 i = 0; i < recipientIds.length; i++) {
@@ -255,43 +266,41 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // for indexer, need to connect tcr item in database to recipient BEFORE handling member units
         _connectAndInitializeFlowRecipient(recipient);
 
+        // set the flow rate for the child contract
+        _setChildFlowRate(recipient);
+
         // need to do this here because we just added new member units
-        _setAllChildFlowRates();
+        _setChildrenAsNeedingUpdates(recipient);
+        _workOnChildFlowsToUpdate(10);
 
         return (_recipientId, recipient);
     }
 
     /**
      * @notice Sets all the child flow rates
+     * @param ignoredAddress The address of the child flow to ignore. Useful when adding a new flow recipient
      * @dev Called when total member units change (new flow added, flow removed, new vote added)
      */
-    function _setAllChildFlowRates() internal {
-        // update child flows
+    function _setChildrenAsNeedingUpdates(address ignoredAddress) internal {
         // warning - values() copies entire array into memory, could run out of gas for huge arrays
         // must keep child flows below ~500 per o1 estimates
         address[] memory childFlows = _childFlows.values();
-        setChildFlowRates(childFlows);
-    }
 
-    /**
-     * @notice Sets the flow rate for a specific child Flow contract
-     * @param childFlows The addresses of the child Flow contracts
-     * @dev This function is public to allow external calls, but it's protected by the onlyManager modifier
-     */
-    function setChildFlowRates(address[] memory childFlows) public {
         for (uint256 i = 0; i < childFlows.length; i++) {
-            if (!_childFlows.contains(childFlows[i])) revert NOT_A_VALID_CHILD_FLOW();
-            _setChildFlowRate(childFlows[i]);
+            if (childFlows[i] == ignoredAddress) continue;
+
+            _childFlowsToUpdateFlowRate.add(childFlows[i]);
         }
     }
 
     /**
      * @notice Internal function to be called after votes are cast
      * @param recipientIds - the recipientIds that were voted for
+     * @param childFlowsToUpdate - the number of child flows to update
      * Useful for saving gas when there are no new votes. If there are new member units being added however,
      * we want to update all child flow rates to ensure that the correct flow rates are set
      */
-    function _afterVotesCast(bytes32[] memory recipientIds) internal {
+    function _afterVotesCast(bytes32[] memory recipientIds, uint256 childFlowsToUpdate) internal {
         // set the flow rate for the child contracts that were voted for
         for (uint256 i = 0; i < recipientIds.length; i++) {
             bytes32 recipientId = recipientIds[i];
@@ -299,6 +308,44 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             if (!_childFlows.contains(recipientAddress) || fs.recipients[recipientId].removed) continue;
             _setChildFlowRate(recipientAddress);
         }
+        _workOnChildFlowsToUpdate(childFlowsToUpdate);
+    }
+
+    /**
+     * @notice Internal function to work on the child flows that need their flow rate updated
+     * @param updateCount The number of child flows to update
+     */
+    function _workOnChildFlowsToUpdate(uint256 updateCount) internal {
+        uint256 absoluteMax = 12;
+        address[] memory flowsToUpdate = _childFlowsToUpdateFlowRate.values();
+
+        uint256 max = updateCount < flowsToUpdate.length ? updateCount : flowsToUpdate.length;
+
+        if (max > absoluteMax) {
+            max = absoluteMax;
+        }
+
+        for (uint256 i = 0; i < max; i++) {
+            address childFlow = flowsToUpdate[i];
+            _setChildFlowRate(childFlow);
+            _childFlowsToUpdateFlowRate.remove(childFlow);
+        }
+    }
+
+    /**
+     * @notice Public function to work on the child flows that need their flow rate updated
+     * @param updateCount The number of child flows to update
+     */
+    function workOnChildFlowsToUpdate(uint256 updateCount) external nonReentrant {
+        _workOnChildFlowsToUpdate(updateCount);
+    }
+
+    /**
+     * @notice Public function to get the number of child flows that need their flow rate updated
+     * @return The number of child flows that need their flow rate updated
+     */
+    function childFlowRatesOutOfSync() external view returns (uint256) {
+        return _childFlowsToUpdateFlowRate.length();
     }
 
     /**
@@ -351,6 +398,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         if (recipientType == RecipientType.FlowContract) {
             _childFlows.remove(recipientAddress);
+            _childFlowsToUpdateFlowRate.remove(recipientAddress);
         }
 
         emit RecipientRemoved(recipientAddress, recipientId);
@@ -377,9 +425,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param childAddress The address of the child Flow contract
      */
     function _setChildFlowRate(address childAddress) internal {
-        int96 desiredFlowRate = getMemberTotalFlowRate(childAddress);
+        if (!_childFlows.contains(childAddress)) revert NOT_A_VALID_CHILD_FLOW();
+
         (bool shouldTransfer, uint256 transferAmount, uint256 balanceRequiredToStartFlow) = fs
-            .calculateBufferAmountForChild(childAddress, address(this), desiredFlowRate, PERCENTAGE_SCALE);
+            .calculateBufferAmountForChild(
+                childAddress,
+                address(this),
+                getMemberTotalFlowRate(childAddress),
+                PERCENTAGE_SCALE
+            );
 
         if (shouldTransfer) {
             fs.superToken.transfer(childAddress, transferAmount);
@@ -388,7 +442,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // Call setFlowRate on the child contract
         // only set if balance of contract is greater than buffer required
         if (balanceRequiredToStartFlow <= fs.superToken.balanceOf(childAddress)) {
-            IFlow(childAddress).setFlowRate(desiredFlowRate);
+            IFlow(childAddress).setFlowRate(getMemberTotalFlowRate(childAddress));
         }
     }
 
@@ -433,7 +487,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @notice Sets the flow rate for the Superfluid pool
      * @param _flowRate The new flow rate to be set
      * @dev Only callable by the owner or parent of the contract
-     * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function setFlowRate(int96 _flowRate) external onlyOwnerOrParent nonReentrant {
         fs.cachedFlowRate = _flowRate;
@@ -515,7 +568,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     /**
      * @notice Internal function to set the flow rate for the Superfluid pools and the manager reward pool
      * @param _flowRate The new flow rate to be set
-     * @dev Emits a FlowRateUpdated event with the old and new flow rates
      */
     function _setFlowRate(int96 _flowRate) internal {
         // if total member units is 0, set 1 member unit to this contract
@@ -528,7 +580,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         }
 
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
-        int96 oldTotalFlowRate = getTotalFlowRate();
 
         (int96 baselineFlowRate, int96 bonusFlowRate, int96 managerRewardFlowRate) = fs.calculateFlowRates(
             _flowRate,
@@ -537,13 +588,12 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         _setFlowToManagerRewardPool(managerRewardFlowRate);
 
-        emit FlowRateUpdated(oldTotalFlowRate, _flowRate, baselineFlowRate, bonusFlowRate, managerRewardFlowRate);
-
         fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
         fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
 
         // changing flow rate means we need to update all child flow rates
-        _setAllChildFlowRates();
+        _setChildrenAsNeedingUpdates(address(0));
+        _workOnChildFlowsToUpdate(10);
     }
 
     /**
@@ -591,6 +641,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
+     * @notice Sets the description for the flow
+     * @param description The new description for the flow
+     */
+    function setDescription(string calldata description) external onlyOwner {
+        fs.metadata.description = description;
+        emit MetadataSet(fs.metadata);
+    }
+
+    /**
      * @notice Resets the flow rate to the current total flow rate
      * @dev This function is open to all and can be called to ensure the flow rate is up-to-date
      * @dev It calls the internal _setFlowRate function with the current total flow rate
@@ -624,10 +683,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param memberAddr The address of the member
      * @return totalAmountReceived The total amount received by the member
      */
-    function getTotalReceivedByMember(address memberAddr) external view returns (uint256 totalAmountReceived) {
-        totalAmountReceived =
-            fs.bonusPool.getTotalAmountReceivedByMember(memberAddr) +
-            fs.baselinePool.getTotalAmountReceivedByMember(memberAddr);
+    function getTotalReceivedByMember(address memberAddr) external view returns (uint256) {
+        return fs.getTotalAmountReceivedByMember(memberAddr);
     }
 
     /**
@@ -635,6 +692,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function getTotalFlowRate() public view returns (int96) {
         return fs.cachedFlowRate;
+    }
+
+    /**
+     * @notice Retrieves the actual flow rate for the contract
+     * @return int96 The actual flow rate
+     */
+    function getActualFlowRate() public view returns (int96) {
+        return fs.getActualFlowRate(address(this));
     }
 
     /**
@@ -769,14 +834,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      */
     function getManagerRewardPoolFlowRate() public view returns (int96) {
         return fs.getManagerRewardPoolFlowRate(address(this));
-    }
-
-    /**
-     * @notice Retrieves the buffer amount required for the manager reward pool
-     * @return bufferAmount The buffer amount required for the manager reward pool
-     */
-    function getManagerRewardPoolBufferAmount() public view returns (uint256) {
-        return fs.getManagerRewardPoolBufferAmount(address(this));
     }
 
     /**
