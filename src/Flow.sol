@@ -584,7 +584,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         }
 
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
-        int96 oldTotalFlowRate = getTotalFlowRate();
 
         (int96 baselineFlowRate, int96 bonusFlowRate, int96 managerRewardFlowRate) = fs.calculateFlowRates(
             _flowRate,
@@ -688,10 +687,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param memberAddr The address of the member
      * @return totalAmountReceived The total amount received by the member
      */
-    function getTotalReceivedByMember(address memberAddr) external view returns (uint256 totalAmountReceived) {
-        totalAmountReceived =
-            fs.bonusPool.getTotalAmountReceivedByMember(memberAddr) +
-            fs.baselinePool.getTotalAmountReceivedByMember(memberAddr);
+    function getTotalReceivedByMember(address memberAddr) external view returns (uint256) {
+        return fs.getTotalAmountReceivedByMember(memberAddr);
     }
 
     /**
