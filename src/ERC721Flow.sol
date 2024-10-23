@@ -104,7 +104,8 @@ contract ERC721Flow is IERC721Flow, Flow {
             managerRewardPool,
             owner(),
             address(this),
-            address(erc721Votes)
+            address(erc721Votes),
+            PERCENTAGE_SCALE
         );
     }
 

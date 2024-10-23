@@ -122,7 +122,15 @@ contract NounsFlow is INounsFlow, Flow {
         address managerRewardPool
     ) internal override returns (address) {
         return
-            fs.deployFlowRecipient(metadata, flowManager, managerRewardPool, address(verifier), owner(), address(this));
+            fs.deployFlowRecipient(
+                metadata,
+                flowManager,
+                managerRewardPool,
+                address(verifier),
+                owner(),
+                address(this),
+                PERCENTAGE_SCALE
+            );
     }
 
     /**
