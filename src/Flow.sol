@@ -646,6 +646,15 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
+     * @notice Sets the description for the flow
+     * @param description The new description for the flow
+     */
+    function setDescription(string calldata description) external onlyOwner {
+        fs.metadata.description = description;
+        emit MetadataSet(fs.metadata);
+    }
+
+    /**
      * @notice Resets the flow rate to the current total flow rate
      * @dev This function is open to all and can be called to ensure the flow rate is up-to-date
      * @dev It calls the internal _setFlowRate function with the current total flow rate
