@@ -36,7 +36,7 @@ library ERC721FlowLibrary {
         // Calculate new manager reward rate, ensuring it doesn't exceed PERCENTAGE_SCALE
         uint32 newManagerRewardRate = fs.managerRewardPoolFlowRatePercent * 2;
         // If doubling would exceed max percentage (percentageScale), cap at max
-        if (newManagerRewardRate > percentageScale || newManagerRewardRate < fs.managerRewardPoolFlowRatePercent) {
+        if (newManagerRewardRate > percentageScale) {
             newManagerRewardRate = percentageScale;
         }
 
