@@ -171,11 +171,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         }
 
         // update member units for previous votes
-        uint256 childFlowsAlteredViaRemoval = _clearPreviousVotes(tokenId);
-
-        if (childFlowsAlteredViaRemoval > childFlowsToUpdate) {
-            childFlowsToUpdate = childFlowsAlteredViaRemoval;
-        }
+        childFlowsToUpdate += _clearPreviousVotes(tokenId);
 
         // set new votes
         for (uint256 i = 0; i < recipientIds.length; i++) {
