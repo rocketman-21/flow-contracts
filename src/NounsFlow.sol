@@ -128,7 +128,7 @@ contract NounsFlow is INounsFlow, Flow {
             address(verifier),
             owner(),
             address(this),
-            PERCENTAGE_SCALE
+            1e6 // idk what is going on here but i cannot verify contract on etherscan if this is PERCENTAGE_SCALE
         );
     }
 
