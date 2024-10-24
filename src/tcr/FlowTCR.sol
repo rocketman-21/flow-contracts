@@ -175,7 +175,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                     maxPriceIncrease: maxPriceIncrease / 10,
                     supplyOffset: supplyOffset,
                     priceDecayPercent: priceDecayPercent,
-                    perTimeUnit: perTimeUnit
+                    // since children will likely have many more applications
+                    // we want to raise the ceiling
+                    perTimeUnit: perTimeUnit * 2
                 })
             );
 
