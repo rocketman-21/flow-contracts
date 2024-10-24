@@ -114,23 +114,22 @@ contract NounsFlow is INounsFlow, Flow {
      * @dev This function overrides the base _deployFlowRecipient to use NounsFlow-specific initialization
      * @param metadata The recipient's metadata like title, description, etc.
      * @param flowManager The address of the flow manager for the new contract
-     * @return address The address of the newly created Flow contract
+     * @return recipient address The address of the newly created Flow contract
      */
     function _deployFlowRecipient(
         RecipientMetadata calldata metadata,
         address flowManager,
         address managerRewardPool
-    ) internal override returns (address) {
-        return
-            fs.deployFlowRecipient(
-                metadata,
-                flowManager,
-                managerRewardPool,
-                address(verifier),
-                owner(),
-                address(this),
-                PERCENTAGE_SCALE
-            );
+    ) internal override returns (address recipient) {
+        recipient = fs.deployFlowRecipient(
+            metadata,
+            flowManager,
+            managerRewardPool,
+            address(verifier),
+            owner(),
+            address(this),
+            PERCENTAGE_SCALE
+        );
     }
 
     /**
