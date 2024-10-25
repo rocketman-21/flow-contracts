@@ -32,6 +32,12 @@ contract TokenEmitter is
     /// @notice The WETH token
     IWETH public WETH;
 
+    /// @notice The address for the founder reward
+    address public founderRewardAddress;
+
+    /// @notice The timestamp at which the founder reward expires
+    uint256 public founderRewardExpiration;
+
     // The start time of token emission for the VRGDACap
     uint256 public vrgdaCapStartTime;
 
@@ -62,27 +68,34 @@ contract TokenEmitter is
      * @param _initialOwner The address of the initial owner of the contract
      * @param _erc20 The address of the ERC20 token to be emitted
      * @param _weth The address of the WETH token
+     * @param _founderRewardAddress The address of the founder reward
      * @param _curveSteepness The steepness of the bonding curve
      * @param _basePrice The base price for token emission
      * @param _maxPriceIncrease The maximum price increase for token emission
      * @param _supplyOffset The supply offset for the bonding curve
      * @param _priceDecayPercent The price decay percent for the VRGDACap
      * @param _perTimeUnit The per time unit for the VRGDACap
+     * @param _founderRewardDuration The duration of seconds for the founder reward to be active in seconds
      */
     function initialize(
         address _initialOwner,
         address _erc20,
         address _weth,
+        address _founderRewardAddress,
         int256 _curveSteepness,
         int256 _basePrice,
         int256 _maxPriceIncrease,
         int256 _supplyOffset,
         int256 _priceDecayPercent,
-        int256 _perTimeUnit
+        int256 _perTimeUnit,
+        uint256 _founderRewardDuration
     ) public initializer {
         if (_erc20 == address(0)) revert INVALID_ADDRESS_ZERO();
         if (_weth == address(0)) revert INVALID_ADDRESS_ZERO();
         if (_initialOwner == address(0)) revert INVALID_ADDRESS_ZERO();
+
+        founderRewardAddress = _founderRewardAddress;
+        founderRewardExpiration = block.timestamp + _founderRewardDuration;
 
         erc20 = ERC20VotesMintable(_erc20);
         WETH = IWETH(_weth);
@@ -111,9 +124,14 @@ contract TokenEmitter is
     function buyTokenQuote(uint256 amount) public view returns (int256 totalCost, uint256 addedSurgeCost) {
         if (amount == 0) revert INVALID_AMOUNT();
 
-        int256 bondingCurveCost = costForToken(int256(erc20.totalSupply()), int256(amount));
+        uint256 founderReward = calculateFounderReward(amount);
+        bool isFounderRewardActive = isFounderRewardActive();
 
-        int256 avgTargetPrice = wadDiv(bondingCurveCost, int256(amount));
+        uint256 totalMintAmount = amount + (isFounderRewardActive ? founderReward : 0);
+
+        int256 bondingCurveCost = costForToken(int256(erc20.totalSupply()), int256(totalMintAmount));
+
+        int256 avgTargetPrice = wadDiv(bondingCurveCost, int256(totalMintAmount));
 
         if (avgTargetPrice < 0) {
             avgTargetPrice = 1; // ensure target price is positive
@@ -124,7 +142,7 @@ contract TokenEmitter is
         int256 vrgdaCapCost = xToY({
             timeSinceStart: toDaysWadUnsafe(block.timestamp - vrgdaCapStartTime),
             sold: int256(erc20.totalSupply()),
-            amount: int256(amount),
+            amount: int256(totalMintAmount),
             avgTargetPrice: avgTargetPrice
         });
 
@@ -211,7 +229,30 @@ contract TokenEmitter is
 
         erc20.mint(user, amount);
 
-        emit TokensBought(_msgSender(), user, amount, costForTokens, protocolRewardsFee);
+        uint256 founderReward = calculateFounderReward(amount);
+
+        if (isFounderRewardActive()) {
+            erc20.mint(founderRewardAddress, founderReward);
+        }
+
+        emit TokensBought(_msgSender(), user, amount, costForTokens, protocolRewardsFee, founderReward);
+    }
+
+    /**
+     * @notice Calculates the founder reward for a given amount of tokens
+     * @param amount The number of tokens to buy
+     * @return The amount of founder reward tokens to mint
+     */
+    function calculateFounderReward(uint256 amount) public view returns (uint256) {
+        return amount >= 10 ? (amount * 10) / 100 : 1;
+    }
+
+    /**
+     * @notice Checks if the founder reward is active
+     * @return True if the founder reward is active, false otherwise
+     */
+    function isFounderRewardActive() public view returns (bool) {
+        return founderRewardAddress != address(0) && block.timestamp < founderRewardExpiration;
     }
 
     /**

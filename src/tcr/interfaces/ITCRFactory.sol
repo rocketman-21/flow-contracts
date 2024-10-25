@@ -19,6 +19,8 @@ interface ITCRFactory {
      * @param supplyOffset The supply offset for the bonding curve
      * @param priceDecayPercent The price decay percent for the VRGDACap
      * @param perTimeUnit The per time unit for the VRGDACap
+     * @param founderRewardAddress The address of the founder reward
+     * @param founderRewardDuration The duration for the founder reward
      */
     struct TokenEmitterParams {
         int256 curveSteepness;
@@ -27,6 +29,8 @@ interface ITCRFactory {
         int256 supplyOffset;
         int256 priceDecayPercent;
         int256 perTimeUnit;
+        address founderRewardAddress;
+        uint256 founderRewardDuration;
     }
 
     /**

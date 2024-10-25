@@ -41,6 +41,7 @@ contract FlowTCRTest is ERC721FlowTest {
     address public recipient;
     address public WETH;
     address public protocolFeeRecipient;
+    address public founderRewardAddress;
 
     // Test Parameters
     uint256 public constant SUBMISSION_BASE_DEPOSIT = 100 ether;
@@ -51,6 +52,7 @@ contract FlowTCRTest is ERC721FlowTest {
     uint256 public constant STAKE_MULTIPLIER_SHARED = 10000; // 100%
     uint256 public constant STAKE_MULTIPLIER_WINNER = 10000; // 100%
     uint256 public constant STAKE_MULTIPLIER_LOSER = 10000; // 100%
+    uint256 public constant FOUNDER_REWARD_DURATION = (365 days) * 5; // 5 years by default
 
     // FlowTCR Parameters
     bytes public constant ARBITRATOR_EXTRA_DATA = "";
@@ -80,6 +82,7 @@ contract FlowTCRTest is ERC721FlowTest {
         owner = makeAddr("owner");
         swingVoter = makeAddr("swingVoter");
         recipient = makeAddr("recipient");
+        founderRewardAddress = makeAddr("founderRewardAddress");
         WETH = makeAddr("weth");
         protocolFeeRecipient = makeAddr("protocolFeeRecipient");
 
@@ -140,7 +143,9 @@ contract FlowTCRTest is ERC721FlowTest {
                 maxPriceIncrease: int256(1e18) / 300,
                 supplyOffset: int256(1e18) * 1000,
                 priceDecayPercent: int256(1e18) / 4, // 25%
-                perTimeUnit: int256(1e18) * 500 // 500 tokens per day
+                perTimeUnit: int256(1e18) * 500, // 500 tokens per day
+                founderRewardAddress: founderRewardAddress,
+                founderRewardDuration: FOUNDER_REWARD_DURATION
             })
         );
 
