@@ -37,6 +37,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
     // TokenEmitter VRGDACap parameters
     int256 public priceDecayPercent;
     int256 public perTimeUnit;
+    // The founder reward params
+    address public founderRewardAddress;
+    uint256 public founderRewardDuration;
 
     // Error emitted when the curve steepness is invalid
     error INVALID_CURVE_STEEPNESS();
@@ -48,7 +51,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
         int256 maxPriceIncrease,
         int256 supplyOffset,
         int256 priceDecayPercent,
-        int256 perTimeUnit
+        int256 perTimeUnit,
+        address founderRewardAddress,
+        uint256 founderRewardDuration
     );
 
     // Event emitted when the required recipient type is set
@@ -76,7 +81,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
             _tokenEmitterParams.maxPriceIncrease,
             _tokenEmitterParams.supplyOffset,
             _tokenEmitterParams.priceDecayPercent,
-            _tokenEmitterParams.perTimeUnit
+            _tokenEmitterParams.perTimeUnit,
+            _tokenEmitterParams.founderRewardAddress,
+            _tokenEmitterParams.founderRewardDuration
         );
 
         __GeneralizedTCR_init(
@@ -177,7 +184,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
                     priceDecayPercent: priceDecayPercent,
                     // since children will likely have many more applications
                     // we want to raise the ceiling
-                    perTimeUnit: perTimeUnit * 2
+                    perTimeUnit: perTimeUnit * 2,
+                    founderRewardAddress: founderRewardAddress,
+                    founderRewardDuration: founderRewardDuration
                 })
             );
 
@@ -209,6 +218,8 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
      * @param _supplyOffset The supply offset for a token if sold on pace
      * @param _priceDecayPercent The price decay percent for the VRGDACap
      * @param _perTimeUnit The per time unit for the VRGDACap
+     * @param _founderRewardAddress The address of the founder reward
+     * @param _founderRewardDuration The expiration of the founder reward
      */
     function setTokenEmitterParams(
         int256 _curveSteepness,
@@ -216,7 +227,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
         int256 _maxPriceIncrease,
         int256 _supplyOffset,
         int256 _priceDecayPercent,
-        int256 _perTimeUnit
+        int256 _perTimeUnit,
+        address _founderRewardAddress,
+        uint256 _founderRewardDuration
     ) external onlyOwner {
         _setTokenEmitterParams(
             _curveSteepness,
@@ -224,7 +237,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
             _maxPriceIncrease,
             _supplyOffset,
             _priceDecayPercent,
-            _perTimeUnit
+            _perTimeUnit,
+            _founderRewardAddress,
+            _founderRewardDuration
         );
     }
 
@@ -234,6 +249,10 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
      * @param _basePrice The base price for a token if sold on pace
      * @param _maxPriceIncrease The maximum price increase for a token if sold on pace
      * @param _supplyOffset The supply offset for a token if sold on pace
+     * @param _priceDecayPercent The price decay percent for the VRGDACap
+     * @param _perTimeUnit The per time unit for the VRGDACap
+     * @param _founderRewardAddress The address of the founder reward
+     * @param _founderRewardDuration The expiration of the founder reward
      */
     function _setTokenEmitterParams(
         int256 _curveSteepness,
@@ -241,7 +260,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
         int256 _maxPriceIncrease,
         int256 _supplyOffset,
         int256 _priceDecayPercent,
-        int256 _perTimeUnit
+        int256 _perTimeUnit,
+        address _founderRewardAddress,
+        uint256 _founderRewardDuration
     ) internal {
         if (_curveSteepness <= 0) revert INVALID_CURVE_STEEPNESS();
 
@@ -251,6 +272,8 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
         supplyOffset = _supplyOffset;
         priceDecayPercent = _priceDecayPercent;
         perTimeUnit = _perTimeUnit;
+        founderRewardAddress = _founderRewardAddress;
+        founderRewardDuration = _founderRewardDuration;
 
         emit TokenEmitterParamsSet(
             _curveSteepness,
@@ -258,7 +281,9 @@ contract FlowTCR is GeneralizedTCR, IFlowTCR {
             _maxPriceIncrease,
             _supplyOffset,
             _priceDecayPercent,
-            _perTimeUnit
+            _perTimeUnit,
+            _founderRewardAddress,
+            _founderRewardDuration
         );
     }
 }

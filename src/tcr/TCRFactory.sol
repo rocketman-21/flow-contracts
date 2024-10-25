@@ -122,7 +122,9 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
             curveSteepness: tokenEmitterParams.curveSteepness,
             maxPriceIncrease: tokenEmitterParams.maxPriceIncrease,
             priceDecayPercent: tokenEmitterParams.priceDecayPercent,
-            perTimeUnit: tokenEmitterParams.perTimeUnit
+            perTimeUnit: tokenEmitterParams.perTimeUnit,
+            founderRewardAddress: tokenEmitterParams.founderRewardAddress,
+            founderRewardDuration: tokenEmitterParams.founderRewardDuration
         });
 
         // Initialize the arbitrator
@@ -163,7 +165,9 @@ contract TCRFactory is ITCRFactory, Ownable2StepUpgradeable, UUPSUpgradeable {
                 maxPriceIncrease: tokenEmitterParams.maxPriceIncrease,
                 supplyOffset: tokenEmitterParams.supplyOffset,
                 priceDecayPercent: tokenEmitterParams.priceDecayPercent,
-                perTimeUnit: tokenEmitterParams.perTimeUnit
+                perTimeUnit: tokenEmitterParams.perTimeUnit,
+                founderRewardAddress: tokenEmitterParams.founderRewardAddress,
+                founderRewardDuration: tokenEmitterParams.founderRewardDuration
             })
         );
 

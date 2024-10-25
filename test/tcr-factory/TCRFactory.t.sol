@@ -37,6 +37,7 @@ contract TCRFactoryTest is Test {
 
     // Addresses
     address public owner;
+    address public founderRewardAddress;
     address public governor;
     address public flowContract;
     address public protocolFeeRecipient;
@@ -48,6 +49,7 @@ contract TCRFactoryTest is Test {
     uint256 public constant REMOVAL_CHALLENGE_BASE_DEPOSIT = 100 ether;
     uint256 public constant CHALLENGE_PERIOD = 3 days;
     uint256 public constant STAKE_MULTIPLIER = 10000; // 100%
+    uint256 public constant FOUNDER_REWARD_DURATION = 5 * (365 days);
 
     // Arbitrator Parameters
     uint256 public constant VOTING_PERIOD = 86_400;
@@ -67,6 +69,7 @@ contract TCRFactoryTest is Test {
         flowContract = address(new ERC1967Proxy(address(new ERC721Flow()), ""));
         protocolFeeRecipient = makeAddr("protocolFeeRecipient");
         WETH = makeAddr("WETH");
+        founderRewardAddress = makeAddr("founderRewardAddress");
 
         // Deploy implementation contracts
         protocolRewardsImpl = new ProtocolRewards();
@@ -149,7 +152,9 @@ contract TCRFactoryTest is Test {
             maxPriceIncrease: int256(1e18) / 300,
             supplyOffset: int256(1e18) * 1000,
             priceDecayPercent: int256(1e18) / 4, // 25%
-            perTimeUnit: int256(1e18) * 500 // 500 tokens per day
+            perTimeUnit: int256(1e18) * 500, // 500 tokens per day
+            founderRewardAddress: founderRewardAddress,
+            founderRewardDuration: FOUNDER_REWARD_DURATION
         });
 
         // Deploy FlowTCR ecosystem

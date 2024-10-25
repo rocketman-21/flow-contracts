@@ -36,6 +36,7 @@ contract TokenEmitterTest is Test {
     address public owner;
     address public user1;
     address public user2;
+    address public founderRewardAddress;
     address public protocolFeeRecipient;
 
     // Test Parameters
@@ -45,12 +46,14 @@ contract TokenEmitterTest is Test {
     int256 public constant SUPPLY_OFFSET = int256(1e18) * 1000;
     int256 public constant PRICE_DECAY_PERCENT = int256(1e18) / 2; // 50%
     int256 public constant PER_TIME_UNIT = int256(1e18) * 500; // 500 tokens per day
+    uint256 public constant FOUNDER_REWARD_DURATION = 365 days * 5; // 5 years
 
     function setUp() public {
         owner = makeAddr("owner");
         vm.startPrank(owner);
         user1 = makeAddr("user1");
         user2 = makeAddr("user2");
+        founderRewardAddress = makeAddr("founderRewardAddress");
         protocolFeeRecipient = makeAddr("protocolFeeRecipient");
 
         // Setup Superfluid
@@ -105,7 +108,9 @@ contract TokenEmitterTest is Test {
             _maxPriceIncrease: MAX_PRICE_INCREASE,
             _supplyOffset: SUPPLY_OFFSET,
             _priceDecayPercent: PRICE_DECAY_PERCENT,
-            _perTimeUnit: PER_TIME_UNIT
+            _perTimeUnit: PER_TIME_UNIT,
+            _founderRewardAddress: founderRewardAddress,
+            _founderRewardDuration: FOUNDER_REWARD_DURATION
         });
 
         // Set minter for ERC20
@@ -161,8 +166,10 @@ contract TokenEmitterTest is Test {
         // Send excess ETH to test overpayment refund
         uint256 sentValue = totalPayment + 0.5 ether;
 
+        uint256 founderReward = amountToBuy >= 10 ? (amountToBuy * 10) / 100 : 1;
+
         vm.expectEmit(true, true, true, true);
-        emit ITokenEmitter.TokensBought(user, user, amountToBuy, costWithoutRewards, protocolRewardsFee);
+        emit ITokenEmitter.TokensBought(user, user, amountToBuy, costWithoutRewards, protocolRewardsFee, founderReward);
 
         tokenEmitter.buyToken{ value: sentValue }(user, amountToBuy, maxCost, rewardAddresses);
 
@@ -435,9 +442,11 @@ contract TokenEmitterTest is Test {
             purchaseReferral: address(0)
         });
 
+        uint256 founderReward = (amountToBuy * 10) / 100;
+
         // Expect the TokensBought event
         vm.expectEmit(true, true, true, true);
-        emit ITokenEmitter.TokensBought(user, user, amountToBuy, cost, protocolRewardsFee);
+        emit ITokenEmitter.TokensBought(user, user, amountToBuy, cost, protocolRewardsFee, founderReward);
 
         tokenEmitter.buyToken{ value: totalPayment }(user, amountToBuy, totalPayment, rewardAddresses);
     }
@@ -446,9 +455,12 @@ contract TokenEmitterTest is Test {
         vm.warp(block.timestamp + 1 days);
         address user = user1;
 
+        vm.deal(user, 10000 ether);
+
         // Assume initial supply is less than SUPPLY_OFFSET
         uint256 initialSupply = erc20.totalSupply();
-        uint256 tokensToReachVrgdaCap = uint256(PER_TIME_UNIT) - initialSupply;
+        // Account for 10% founder reward by dividing by 1.1 (since founder reward is 10% on top)
+        uint256 tokensToReachVrgdaCap = ((uint256(PER_TIME_UNIT) - initialSupply) * 10) / 11;
 
         // Start pranking as user
         vm.startPrank(user);
@@ -465,13 +477,16 @@ contract TokenEmitterTest is Test {
 
         assertEq(addedSurgeCostBeforeCap, 0, "Added VRGDACap surge cost should be 0");
 
+        uint256 founderRewardBefore = (tokensToReachVrgdaCap * 10) / 100;
+
         vm.expectEmit(true, true, true, true);
         emit ITokenEmitter.TokensBought(
             user,
             user,
             tokensToReachVrgdaCap,
             uint256(costBeforeCap),
-            protocolRewardsFeeBefore
+            protocolRewardsFeeBefore,
+            founderRewardBefore
         );
 
         tokenEmitter.buyToken{ value: totalPaymentBefore }(
@@ -491,8 +506,17 @@ contract TokenEmitterTest is Test {
         // Assert that cost at offset is greater than cost before offset
         assertTrue(costAtCap > costBeforeCap, "Cost should increase at supply offset due to VRGDACap");
 
+        uint256 founderRewardAt = (tokensToReachVrgdaCap * 10) / 100;
+
         vm.expectEmit(true, true, true, true);
-        emit ITokenEmitter.TokensBought(user, user, tokensToReachVrgdaCap, uint256(costAtCap), protocolRewardsFeeAt);
+        emit ITokenEmitter.TokensBought(
+            user,
+            user,
+            tokensToReachVrgdaCap,
+            uint256(costAtCap),
+            protocolRewardsFeeAt,
+            founderRewardAt
+        );
 
         tokenEmitter.buyToken{ value: totalPaymentAt }(user, tokensToReachVrgdaCap, totalPaymentAt, rewardAddresses);
 
@@ -515,13 +539,16 @@ contract TokenEmitterTest is Test {
 
         assertEq(surgeCostAfterWait, 0, "Added VRGDACap surge cost should be = 0");
 
+        uint256 founderRewardAfterWait = (tokensToReachVrgdaCap * 10) / 100;
+
         vm.expectEmit(true, true, true, true);
         emit ITokenEmitter.TokensBought(
             user,
             user,
             tokensToReachVrgdaCap,
             uint256(costAfterWait),
-            protocolRewardsFeeAfterWait
+            protocolRewardsFeeAfterWait,
+            founderRewardAfterWait
         );
 
         vm.prank(user);
@@ -551,19 +578,33 @@ contract TokenEmitterTest is Test {
         uint256 protocolRewardsFeeMore = tokenEmitter.computeTotalReward(uint256(costMore));
         uint256 totalPaymentMore = uint256(costMore) + protocolRewardsFeeMore;
 
+        uint256 founderRewardMore = (largePurchase * 10) / 100;
+
         vm.expectEmit(true, true, true, true);
-        emit ITokenEmitter.TokensBought(user, user, largePurchase, uint256(costMore), protocolRewardsFeeMore);
+        emit ITokenEmitter.TokensBought(
+            user,
+            user,
+            largePurchase,
+            uint256(costMore),
+            protocolRewardsFeeMore,
+            founderRewardMore
+        );
 
         vm.prank(user);
         tokenEmitter.buyToken{ value: totalPaymentMore }(user, largePurchase, totalPaymentMore, rewardAddresses);
 
         // Sell all tokens back
-        uint256 totalTokens = tokenEmitter.erc20().totalSupply();
+        uint256 totalTokens = tokenEmitter.erc20().balanceOf(user);
         uint256 minPayment = 1; // Set appropriate minimum payment
         vm.prank(user);
         tokenEmitter.sellToken(totalTokens, minPayment);
 
         balanceBeforeWithdraw = address(tokenEmitter.owner()).balance;
+
+        // have the founder sell back their tokens
+        vm.startPrank(founderRewardAddress);
+        tokenEmitter.sellToken(erc20.balanceOf(founderRewardAddress), 0);
+        vm.stopPrank();
 
         // Withdraw the final VRGDA ETH
         vm.prank(owner);
@@ -575,5 +616,130 @@ contract TokenEmitterTest is Test {
 
         // some left over is expected due to overcharging on purchases by 1 wei to avoid precision loss
         assertApproxEqAbs(address(tokenEmitter).balance, 0, 10, "ETH balance should be basically 0");
+    }
+
+    function testFounderRewards() public {
+        uint256 amountToBuy = 100 * 1e18;
+        address user = user1;
+        vm.startPrank(user);
+
+        // Get quote and prepare purchase
+        (int256 costInt, uint256 addedSurgeCost) = tokenEmitter.buyTokenQuote(amountToBuy);
+        uint256 cost = uint256(costInt);
+        uint256 protocolRewardsFee = tokenEmitter.computeTotalReward(cost);
+        uint256 totalPayment = cost + protocolRewardsFee;
+
+        ITokenEmitter.ProtocolRewardAddresses memory rewardAddresses = ITokenEmitter.ProtocolRewardAddresses({
+            builder: address(0),
+            purchaseReferral: address(0)
+        });
+
+        // Check initial balances
+        uint256 initialFounderBalance = erc20.balanceOf(founderRewardAddress);
+        uint256 initialUserBalance = erc20.balanceOf(user);
+
+        // Buy tokens
+        tokenEmitter.buyToken{ value: totalPayment }(user, amountToBuy, totalPayment, rewardAddresses);
+
+        // Check balances after purchase
+        uint256 expectedFounderReward = amountToBuy / 10; // 10% founder reward
+        uint256 finalFounderBalance = erc20.balanceOf(founderRewardAddress);
+        uint256 finalUserBalance = erc20.balanceOf(user);
+
+        // Verify balances
+        assertEq(finalFounderBalance - initialFounderBalance, expectedFounderReward, "Incorrect founder reward amount");
+        assertEq(finalUserBalance - initialUserBalance, amountToBuy, "Incorrect user token amount");
+
+        // Test small purchase (less than 10 wei in tokens)
+        uint256 smallAmount = 5;
+        (costInt, addedSurgeCost) = tokenEmitter.buyTokenQuote(smallAmount);
+        cost = uint256(costInt);
+        protocolRewardsFee = tokenEmitter.computeTotalReward(cost);
+        totalPayment = cost + protocolRewardsFee;
+
+        initialFounderBalance = erc20.balanceOf(founderRewardAddress);
+        initialUserBalance = erc20.balanceOf(user);
+
+        // Buy small amount of tokens
+        tokenEmitter.buyToken{ value: totalPayment }(user, smallAmount, totalPayment, rewardAddresses);
+
+        // For small purchases (< 10 tokens), founder reward should be 1
+        finalFounderBalance = erc20.balanceOf(founderRewardAddress);
+        finalUserBalance = erc20.balanceOf(user);
+
+        assertEq(finalFounderBalance - initialFounderBalance, 1, "Incorrect founder reward for small purchase");
+        assertEq(finalUserBalance - initialUserBalance, smallAmount, "Incorrect user token amount for small purchase");
+
+        vm.stopPrank();
+
+        // Test after founder reward expiration
+        vm.warp(block.timestamp + FOUNDER_REWARD_DURATION + 1);
+
+        vm.prank(user);
+        (costInt, addedSurgeCost) = tokenEmitter.buyTokenQuote(amountToBuy);
+        cost = uint256(costInt);
+        protocolRewardsFee = tokenEmitter.computeTotalReward(cost);
+        totalPayment = cost + protocolRewardsFee;
+
+        initialFounderBalance = erc20.balanceOf(founderRewardAddress);
+
+        vm.prank(user);
+        tokenEmitter.buyToken{ value: totalPayment }(user, amountToBuy, totalPayment, rewardAddresses);
+
+        finalFounderBalance = erc20.balanceOf(founderRewardAddress);
+
+        // No founder reward should be minted after expiration
+        assertEq(finalFounderBalance, initialFounderBalance, "Founder should not receive rewards after expiration");
+    }
+
+    function testFounderRewardWithZeroAddress() public {
+        // Deploy new token emitter with zero founder reward address
+        TokenEmitter tokenEmitterImpl = new TokenEmitter(address(protocolRewards), protocolFeeRecipient);
+        ERC1967Proxy proxy = new ERC1967Proxy(address(tokenEmitterImpl), "");
+        TokenEmitter newTokenEmitter = TokenEmitter(address(proxy));
+
+        // Initialize with zero address for founder rewards
+        vm.startPrank(owner);
+        newTokenEmitter.initialize({
+            _initialOwner: owner,
+            _erc20: address(erc20),
+            _weth: address(weth),
+            _curveSteepness: CURVE_STEEPNESS,
+            _basePrice: BASE_PRICE,
+            _maxPriceIncrease: MAX_PRICE_INCREASE,
+            _supplyOffset: SUPPLY_OFFSET,
+            _priceDecayPercent: PRICE_DECAY_PERCENT,
+            _perTimeUnit: PER_TIME_UNIT,
+            _founderRewardAddress: address(0),
+            _founderRewardDuration: FOUNDER_REWARD_DURATION
+        });
+        vm.stopPrank();
+
+        // Set minter
+        vm.prank(owner);
+        erc20.setMinter(address(newTokenEmitter));
+
+        uint256 amountToBuy = 100 * 1e18;
+        address user = user1;
+        vm.startPrank(user);
+
+        // Get quote and prepare purchase
+        (int256 costInt, uint256 addedSurgeCost) = newTokenEmitter.buyTokenQuote(amountToBuy);
+        uint256 cost = uint256(costInt);
+        uint256 protocolRewardsFee = newTokenEmitter.computeTotalReward(cost);
+        uint256 totalPayment = cost + protocolRewardsFee;
+
+        ITokenEmitter.ProtocolRewardAddresses memory rewardAddresses = ITokenEmitter.ProtocolRewardAddresses({
+            builder: address(0),
+            purchaseReferral: address(0)
+        });
+
+        uint256 initialSupply = erc20.totalSupply();
+
+        // Buy tokens
+        newTokenEmitter.buyToken{ value: totalPayment }(user, amountToBuy, totalPayment, rewardAddresses);
+
+        // Verify only user tokens were minted (no founder rewards)
+        assertEq(erc20.totalSupply() - initialSupply, amountToBuy, "Only user tokens should be minted");
     }
 }
