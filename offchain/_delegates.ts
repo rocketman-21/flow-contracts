@@ -36,7 +36,7 @@ const block = await getBeaconBlock(beaconInfo.beaconRoot);
 const stateRootInclusion = getExecutionStateRootProof(block);
 
 // Example: Generating a storage proof for a specific token in a contract
-const delegator = "0x77D920b4d1163DbC516E7Ce70596225D17819dC5";
+const delegator = "0x289715fFBB2f4b482e2917D2f183FeAb564ec84F";
 const delegateMappingSlot = BigInt(11);
 const slot = keccak256(
   encodeAbiParameters(
@@ -52,7 +52,8 @@ const storageProof = await l1Client.getProof({
   blockNumber: BigInt(block.body.executionPayload.blockNumber),
 });
 
-console.log(storageProof.storageProof[0]);
+console.log(storageProof.storageProof[0].value);
+console.log(storageProof.storageProof[0].value);
 
 // Construct the final proof object
 const proofObj = {
