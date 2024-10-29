@@ -430,6 +430,6 @@ library MerkleTrie {
         }
 
         // Ran out of proof elements without finding the key
-        return (GetResult.InvalidProof, bytes(""));
+        return (GetResult.NotFound, bytes(""));
     }
 }

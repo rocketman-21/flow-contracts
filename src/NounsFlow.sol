@@ -197,4 +197,14 @@ contract NounsFlow is INounsFlow, Flow {
             IRewardPool(rewardPool).setFlowRate(getManagerRewardPoolFlowRate());
         }
     }
+
+    /**
+     * @notice Updates the token verifier address
+     * @dev Can only be called by the contract owner
+     * @param _verifier The new verifier address
+     */
+    function updateVerifier(address _verifier) external onlyOwner {
+        if (_verifier == address(0)) revert ADDRESS_ZERO();
+        verifier = ITokenVerifier(_verifier);
+    }
 }
