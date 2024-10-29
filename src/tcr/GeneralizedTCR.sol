@@ -299,7 +299,6 @@ abstract contract GeneralizedTCR is
      */
     function changeTimeToChallenge(uint _challengePeriodDuration) external onlyGovernor {
         challengePeriodDuration = _challengePeriodDuration;
-        // todo add event here
     }
 
     /** @dev Change the base amount required as a deposit to submit an item.
@@ -307,7 +306,6 @@ abstract contract GeneralizedTCR is
      */
     function changeSubmissionBaseDeposit(uint _submissionBaseDeposit) external onlyGovernor {
         submissionBaseDeposit = _submissionBaseDeposit;
-        // todo add event here
     }
 
     /** @dev Change the base amount required as a deposit to remove an item.
@@ -315,7 +313,6 @@ abstract contract GeneralizedTCR is
      */
     function changeRemovalBaseDeposit(uint _removalBaseDeposit) external onlyGovernor {
         removalBaseDeposit = _removalBaseDeposit;
-        // todo add event here
     }
 
     /** @dev Change the base amount required as a deposit to challenge a submission.
@@ -323,7 +320,6 @@ abstract contract GeneralizedTCR is
      */
     function changeSubmissionChallengeBaseDeposit(uint _submissionChallengeBaseDeposit) external onlyGovernor {
         submissionChallengeBaseDeposit = _submissionChallengeBaseDeposit;
-        // todo add event here
     }
 
     /** @dev Change the base amount required as a deposit to challenge a removal request.
@@ -331,7 +327,6 @@ abstract contract GeneralizedTCR is
      */
     function changeRemovalChallengeBaseDeposit(uint _removalChallengeBaseDeposit) external onlyGovernor {
         removalChallengeBaseDeposit = _removalChallengeBaseDeposit;
-        // todo add event here
     }
 
     /** @dev Change the governor of the curated registry.
@@ -339,7 +334,6 @@ abstract contract GeneralizedTCR is
      */
     function changeGovernor(address _governor) external onlyGovernor {
         governor = _governor;
-        // todo add event here
     }
 
     /** @dev Change the arbitrator to be used for disputes that may be raised.
@@ -349,7 +343,6 @@ abstract contract GeneralizedTCR is
     function changeArbitrator(IArbitrator _arbitrator, bytes calldata _arbitratorExtraData) external onlyGovernor {
         arbitrator = _arbitrator;
         arbitratorExtraData = _arbitratorExtraData;
-        // todo add event here
     }
 
     /** @dev Update the meta evidence used for disputes.
