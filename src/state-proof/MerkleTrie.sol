@@ -404,8 +404,8 @@ library MerkleTrie {
 
                     value_ = RLPReader.readBytes(currentNode.decoded[1]);
                     if (value_.length == 0) {
-                        // Value length is zero, key does not exist
-                        return (GetResult.NotFound, bytes(""));
+                        // Value length is zero, this is an invalid scenario because a leaf node cannot have an empty value
+                        return (GetResult.InvalidProof, bytes(""));
                     }
 
                     // Extra proof elements are not allowed.
