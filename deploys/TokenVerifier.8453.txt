@@ -1,1 +1,1 @@
-TokenVerifier: 0x69245a8ccdcd76a3e20bad9a5ec9f6cd138dd0b8
+TokenVerifier: 0x08009fcf85af4724589706a22ddf2844607b8853
