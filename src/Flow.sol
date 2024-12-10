@@ -520,8 +520,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         _setFlowToManagerRewardPool(managerRewardFlowRate);
 
-        fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
-        fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
+        fs.distributeFlowToPools(address(this), bonusFlowRate, baselineFlowRate);
 
         // changing flow rate means we need to update all child flow rates
         _setChildrenAsNeedingUpdates(address(0));

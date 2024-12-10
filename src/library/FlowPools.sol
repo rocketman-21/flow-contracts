@@ -111,4 +111,21 @@ library FlowPools {
             updateBaselineMemberUnits(fs, self, 1);
         }
     }
+
+    /**
+     * @notice Distributes flow rates to both bonus and baseline pools
+     * @param fs The storage of the Flow contract
+     * @param self The address of the Flow contract
+     * @param bonusFlowRate The flow rate for the bonus pool
+     * @param baselineFlowRate The flow rate for the baseline pool
+     */
+    function distributeFlowToPools(
+        FlowTypes.Storage storage fs,
+        address self,
+        int96 bonusFlowRate,
+        int96 baselineFlowRate
+    ) public {
+        fs.superToken.distributeFlow(self, fs.bonusPool, bonusFlowRate);
+        fs.superToken.distributeFlow(self, fs.baselinePool, baselineFlowRate);
+    }
 }
