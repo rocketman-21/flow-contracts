@@ -391,20 +391,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         emit RecipientRemoved(recipientAddress, recipientId);
 
-        _removeFromPools(recipientAddress);
-    }
-
-    /**
-     * @notice Resets the flow distribution after removing a recipient
-     * @dev This function should be called after removing a recipient to ensure proper flow rate distribution
-     * @param recipientAddress The address of the removed recipient
-     */
-    function _removeFromPools(address recipientAddress) internal {
         int96 totalFlowRate = getTotalFlowRate();
-        fs.updateBonusMemberUnits(recipientAddress, 0);
-        fs.updateBaselineMemberUnits(recipientAddress, 0);
-
-        // limitation of superfluid means that when total member units decrease, you must call `distributeFlow` again
+        fs.removeFromPools(recipientAddress);
         _setFlowRate(totalFlowRate);
     }
 

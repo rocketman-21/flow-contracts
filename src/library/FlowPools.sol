@@ -35,6 +35,17 @@ library FlowPools {
     }
 
     /**
+     * @notice Resets the flow distribution after removing a recipient
+     * @dev This function should be called after removing a recipient to ensure proper flow rate distribution
+     * @param fs The storage of the Flow contract
+     * @param recipientAddress The address of the removed recipient
+     */
+    function removeFromPools(FlowTypes.Storage storage fs, address recipientAddress) public {
+        updateBonusMemberUnits(fs, recipientAddress, 0);
+        updateBaselineMemberUnits(fs, recipientAddress, 0);
+    }
+
+    /**
      * @notice Updates the member units in the Superfluid pool
      * @param fs The storage of the Flow contract
      * @param member The address of the member whose units are being updated
