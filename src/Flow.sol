@@ -500,20 +500,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // some flows initially don't have a manager reward pool, so we don't need to set a flow to it
         if (fs.managerRewardPool == address(0)) return;
 
-        int96 rewardPoolFlowRate = getManagerRewardPoolFlowRate();
-
-        if (_newManagerRewardFlowRate > 0) {
-            // if flow to reward pool is 0, create a flow, otherwise update the flow
-            if (rewardPoolFlowRate == 0) {
-                // todo need to check this - could it go to 0, then back to > 0 without needing to create a new flow?
-                fs.superToken.createFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
-            } else {
-                fs.superToken.updateFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
-            }
-        } else if (rewardPoolFlowRate > 0 && _newManagerRewardFlowRate == 0) {
-            // only delete if the flow rate is going to 0 and reward pool flow rate is currently > 0
-            fs.superToken.deleteFlow(address(this), fs.managerRewardPool);
-        }
+        fs.setFlowToManagerRewardPool(address(this), getManagerRewardPoolFlowRate(), _newManagerRewardFlowRate);
         _afterRewardPoolFlowUpdate(_newManagerRewardFlowRate);
     }
 

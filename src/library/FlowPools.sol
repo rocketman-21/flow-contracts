@@ -35,6 +35,33 @@ library FlowPools {
     }
 
     /**
+     * @notice Sets the flow to the manager reward pool
+     * @param fs The storage of the Flow contract
+     * @param self The address of the Flow contract
+     * @param _currentManagerRewardFlowRate The current flow rate to the manager reward pool
+     * @param _newManagerRewardFlowRate The new flow rate to the manager reward pool
+     */
+    function setFlowToManagerRewardPool(
+        FlowTypes.Storage storage fs,
+        address self,
+        int96 _currentManagerRewardFlowRate,
+        int96 _newManagerRewardFlowRate
+    ) public {
+        if (_newManagerRewardFlowRate > 0) {
+            // if flow to reward pool is 0, create a flow, otherwise update the flow
+            if (_currentManagerRewardFlowRate == 0) {
+                // todo need to check this - could it go to 0, then back to > 0 without needing to create a new flow?
+                fs.superToken.createFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
+            } else {
+                fs.superToken.updateFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
+            }
+        } else if (_currentManagerRewardFlowRate > 0 && _newManagerRewardFlowRate == 0) {
+            // only delete if the flow rate is going to 0 and reward pool flow rate is currently > 0
+            fs.superToken.deleteFlow(self, fs.managerRewardPool);
+        }
+    }
+
+    /**
      * @notice Resets the flow distribution after removing a recipient
      * @dev This function should be called after removing a recipient to ensure proper flow rate distribution
      * @param fs The storage of the Flow contract
