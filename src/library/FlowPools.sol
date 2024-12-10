@@ -97,4 +97,18 @@ library FlowPools {
 
         if (!success) revert IFlow.UNITS_UPDATE_FAILED();
     }
+
+    /**
+     * @notice Ensures both pools have at least 1 unit to prevent flow rate from resetting to 0
+     * @param fs The storage of the Flow contract
+     * @param self The address of the Flow contract
+     */
+    function ensureMinimumPoolUnits(FlowTypes.Storage storage fs, address self) public {
+        if (fs.bonusPool.getTotalUnits() == 0) {
+            updateBonusMemberUnits(fs, self, 1);
+        }
+        if (fs.baselinePool.getTotalUnits() == 0) {
+            updateBaselineMemberUnits(fs, self, 1);
+        }
+    }
 }

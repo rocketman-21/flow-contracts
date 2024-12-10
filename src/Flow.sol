@@ -509,14 +509,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param _flowRate The new flow rate to be set
      */
     function _setFlowRate(int96 _flowRate) internal {
-        // if total member units is 0, set 1 member unit to this contract
-        // do this to prevent distribution pool from resetting flow rate to 0
-        if (fs.bonusPool.getTotalUnits() == 0) {
-            fs.updateBonusMemberUnits(address(this), 1);
-        }
-        if (fs.baselinePool.getTotalUnits() == 0) {
-            fs.updateBaselineMemberUnits(address(this), 1);
-        }
+        fs.ensureMinimumPoolUnits(address(this));
 
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
