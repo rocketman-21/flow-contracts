@@ -529,6 +529,7 @@ contract ERC20VotesArbitrator is
             if (votesForChoice > highestVotes) {
                 highestVotes = votesForChoice;
                 winningChoice = i;
+                tie = false; // reset tie since we have a new outright leader
             } else if (votesForChoice == highestVotes && votesForChoice != 0) {
                 tie = true;
             }

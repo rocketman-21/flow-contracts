@@ -6,6 +6,7 @@ import { IFlow } from "./interfaces/IFlow.sol";
 import { IRewardPool } from "./interfaces/IRewardPool.sol";
 import { FlowRecipients } from "./library/FlowRecipients.sol";
 import { FlowVotes } from "./library/FlowVotes.sol";
+import { FlowPools } from "./library/FlowPools.sol";
 import { FlowRates } from "./library/FlowRates.sol";
 import { FlowInitialization } from "./library/FlowInitialization.sol";
 
@@ -24,6 +25,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     using FlowVotes for Storage;
     using FlowRates for Storage;
     using FlowInitialization for Storage;
+    using FlowPools for Storage;
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /**
@@ -100,7 +102,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         );
 
         // update member units
-        _updateBonusMemberUnits(recipientAddress, memberUnits);
+        fs.updateBonusMemberUnits(recipientAddress, memberUnits);
 
         // if recipient is a flow contract, set the flow rate for the child contract
         // note - we now do this post-voting to avoid redundant setFlowRate calls on children
@@ -131,7 +133,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
             uint128 newUnits = fs.bonusPool.getUnits(recipientAddress) - allocations[i].memberUnits;
 
             // Update the member units in the pool
-            _updateBonusMemberUnits(recipientAddress, newUnits);
+            fs.updateBonusMemberUnits(recipientAddress, newUnits);
 
             /// @notice - Does not update member units for baseline pool
             /// voting is only for the bonus pool, to ensure all approved recipients get a baseline salary
@@ -220,9 +222,9 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         emit RecipientCreated(_recipientId, fs.recipients[_recipientId], msg.sender);
 
-        _updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
+        fs.updateBaselineMemberUnits(recipientAddress, BASELINE_MEMBER_UNITS);
         // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
-        _updateBonusMemberUnits(recipientAddress, 10);
+        fs.updateBonusMemberUnits(recipientAddress, 10);
 
         return (_recipientId, recipientAddress);
     }
@@ -244,7 +246,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         RecipientMetadata calldata _metadata,
         address _flowManager,
         address _managerRewardPool
-    ) external onlyManager returns (bytes32, address) {
+    ) external onlyManager nonReentrant returns (bytes32, address) {
         FlowRecipients.validateFlowRecipient(_metadata, _flowManager);
 
         address recipient = _deployFlowRecipient(_metadata, _flowManager, _managerRewardPool);
@@ -264,7 +266,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         // do this after so member units based indexer can work
         // for indexer, need to connect tcr item in database to recipient BEFORE handling member units
-        _connectAndInitializeFlowRecipient(recipient);
+        // 10 bonus units for each recipient in case there are no votes yet, everyone will split the bonus salary
+        fs.connectAndInitializeFlowRecipient(recipient, BASELINE_MEMBER_UNITS, 10);
 
         // set the flow rate for the child contract
         _setChildFlowRate(recipient);
@@ -349,21 +352,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
-     * @notice Connects a new Flow contract to both pools and initializes its member units
-     * @param recipient The address of the new Flow contract
-     */
-    function _connectAndInitializeFlowRecipient(address recipient) internal {
-        // Connect the new child contract to both pools
-        Flow(recipient).connectPool(fs.bonusPool);
-        Flow(recipient).connectPool(fs.baselinePool);
-
-        // Initialize member units
-        _updateBaselineMemberUnits(recipient, BASELINE_MEMBER_UNITS);
-        // 10 units for each recipient in case there are no votes yet, everyone will split the bonus salary
-        _updateBonusMemberUnits(recipient, 10);
-    }
-
-    /**
      * @notice Deploys a new Flow contract as a recipient
      * @dev This function is virtual to allow for different deployment strategies in derived contracts
      * @param _metadata The metadata of the recipient
@@ -403,20 +391,8 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         emit RecipientRemoved(recipientAddress, recipientId);
 
-        _removeFromPools(recipientAddress);
-    }
-
-    /**
-     * @notice Resets the flow distribution after removing a recipient
-     * @dev This function should be called after removing a recipient to ensure proper flow rate distribution
-     * @param recipientAddress The address of the removed recipient
-     */
-    function _removeFromPools(address recipientAddress) internal {
         int96 totalFlowRate = getTotalFlowRate();
-        _updateBonusMemberUnits(recipientAddress, 0);
-        _updateBaselineMemberUnits(recipientAddress, 0);
-
-        // limitation of superfluid means that when total member units decrease, you must call `distributeFlow` again
+        fs.removeFromPools(recipientAddress);
         _setFlowRate(totalFlowRate);
     }
 
@@ -457,30 +433,6 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         bool success = fs.superToken.connectPool(poolAddress);
         if (!success) revert POOL_CONNECTION_FAILED();
-    }
-
-    /**
-     * @notice Updates the member units in the Superfluid pool
-     * @param member The address of the member whose units are being updated
-     * @param units The new number of units to be assigned to the member
-     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
-     */
-    function _updateBonusMemberUnits(address member, uint128 units) internal {
-        bool success = fs.superToken.updateMemberUnits(fs.bonusPool, member, units);
-
-        if (!success) revert UNITS_UPDATE_FAILED();
-    }
-
-    /**
-     * @notice Updates the member units for the baseline Superfluid pool
-     * @param member The address of the member whose units are being updated
-     * @param units The new number of units to be assigned to the member
-     * @dev Reverts with UNITS_UPDATE_FAILED if the update fails
-     */
-    function _updateBaselineMemberUnits(address member, uint128 units) internal {
-        bool success = fs.superToken.updateMemberUnits(fs.baselinePool, member, units);
-
-        if (!success) revert UNITS_UPDATE_FAILED();
     }
 
     /**
@@ -548,20 +500,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
         // some flows initially don't have a manager reward pool, so we don't need to set a flow to it
         if (fs.managerRewardPool == address(0)) return;
 
-        int96 rewardPoolFlowRate = getManagerRewardPoolFlowRate();
-
-        if (_newManagerRewardFlowRate > 0) {
-            // if flow to reward pool is 0, create a flow, otherwise update the flow
-            if (rewardPoolFlowRate == 0) {
-                // todo need to check this - could it go to 0, then back to > 0 without needing to create a new flow?
-                fs.superToken.createFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
-            } else {
-                fs.superToken.updateFlow(fs.managerRewardPool, _newManagerRewardFlowRate);
-            }
-        } else if (rewardPoolFlowRate > 0 && _newManagerRewardFlowRate == 0) {
-            // only delete if the flow rate is going to 0 and reward pool flow rate is currently > 0
-            fs.superToken.deleteFlow(address(this), fs.managerRewardPool);
-        }
+        fs.setFlowToManagerRewardPool(address(this), getManagerRewardPoolFlowRate(), _newManagerRewardFlowRate);
         _afterRewardPoolFlowUpdate(_newManagerRewardFlowRate);
     }
 
@@ -570,14 +509,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
      * @param _flowRate The new flow rate to be set
      */
     function _setFlowRate(int96 _flowRate) internal {
-        // if total member units is 0, set 1 member unit to this contract
-        // do this to prevent distribution pool from resetting flow rate to 0
-        if (fs.bonusPool.getTotalUnits() == 0) {
-            _updateBonusMemberUnits(address(this), 1);
-        }
-        if (fs.baselinePool.getTotalUnits() == 0) {
-            _updateBaselineMemberUnits(address(this), 1);
-        }
+        fs.ensureMinimumPoolUnits(address(this));
 
         if (_flowRate < 0) revert FLOW_RATE_NEGATIVE();
 
@@ -588,8 +520,7 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
 
         _setFlowToManagerRewardPool(managerRewardFlowRate);
 
-        fs.superToken.distributeFlow(address(this), fs.bonusPool, bonusFlowRate);
-        fs.superToken.distributeFlow(address(this), fs.baselinePool, baselineFlowRate);
+        fs.distributeFlowToPools(address(this), bonusFlowRate, baselineFlowRate);
 
         // changing flow rate means we need to update all child flow rates
         _setChildrenAsNeedingUpdates(address(0));
