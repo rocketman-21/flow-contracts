@@ -610,6 +610,14 @@ abstract contract Flow is IFlow, UUPSUpgradeable, Ownable2StepUpgradeable, Reent
     }
 
     /**
+     * @notice Retrieves all child flow addresses
+     * @return addresses An array of addresses representing all child flows
+     */
+    function getChildFlows() external view returns (address[] memory) {
+        return _childFlows.values();
+    }
+
+    /**
      * @notice Retrieves the total amount received by a specific member in the pool
      * @param memberAddr The address of the member
      * @return totalAmountReceived The total amount received by the member
